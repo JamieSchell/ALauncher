@@ -818,7 +818,7 @@ com.mojang.authlib.yggdrasil.CompatProfile -> com.mojang.authlib.yggdrasil.Compa
     java.lang.String cloakURL -> cloakURL
     java.lang.String cloakDigest -> cloakDigest
     23:31:void <init>(java.util.UUID,java.lang.String,java.lang.String,java.lang.String,java.lang.String,java.lang.String) -> <init>
-    34:38:com.mojang.authlib.yggdrasil.CompatProfile fromPlayerProfile(launcher.client.PlayerProfile) -> fromPlayerProfile
+    34:38:com.mojang.authlib.yggdrasil.CompatProfile fromPlayerProfile(launcher.KeePErjerRy6bP) -> fromPlayerProfile
     43:56:int countProperties() -> countProperties
 com.mojang.authlib.yggdrasil.LegacyBridge -> com.mojang.authlib.yggdrasil.LegacyBridge:
     14:14:void <init>() -> <init>
@@ -883,8 +883,8 @@ com.mojang.authlib.yggdrasil.YggdrasilMinecraftSessionService -> com.mojang.auth
     42:44:void <init>(com.mojang.authlib.yggdrasil.YggdrasilAuthenticationService) -> <init>
     47:49:void <init>(com.mojang.authlib.yggdrasil.YggdrasilAuthenticationService,com.mojang.authlib.Environment) -> <init>
     52:54:void <init>(com.mojang.authlib.AuthenticationService,com.mojang.authlib.Environment) -> <init>
-    57:74:void fillTextureProperties(com.mojang.authlib.GameProfile,launcher.client.PlayerProfile) -> fillTextureProperties
-    77:79:com.mojang.authlib.GameProfile toGameProfile(launcher.client.PlayerProfile) -> toGameProfile
+    57:74:void fillTextureProperties(com.mojang.authlib.GameProfile,launcher.KeePErjerRy6bP) -> fillTextureProperties
+    77:79:com.mojang.authlib.GameProfile toGameProfile(launcher.KeePErjerRy6bP) -> toGameProfile
     86:110:void getTexturesMojang(java.util.Map,java.lang.String,com.mojang.authlib.GameProfile) -> getTexturesMojang
     115:140:com.mojang.authlib.GameProfile fillProfileProperties(com.mojang.authlib.GameProfile,boolean) -> fillProfileProperties
     145:174:java.util.Map getTextures(com.mojang.authlib.GameProfile,boolean) -> getTextures
@@ -1164,1134 +1164,1134 @@ com.mojang.util.UUIDTypeAdapter -> com.mojang.util.UUIDTypeAdapter:
     26:26:java.util.UUID fromString(java.lang.String) -> fromString
     10:10:java.lang.Object read(com.google.gson.stream.JsonReader) -> read
     10:10:void write(com.google.gson.stream.JsonWriter,java.lang.Object) -> write
-javax.annotation.CheckForNull -> launcher.keepErJErRy6HE:
-javax.annotation.CheckForSigned -> launcher.KeePerjeRryt52:
-javax.annotation.CheckReturnValue -> launcher.keEPERjERryabM:
-    javax.annotation.meta.When when() -> keepErJErRy6HE
-javax.annotation.Detainted -> launcher.keEpErjeRRYsAK:
-javax.annotation.MatchesPattern -> launcher.KeEperJErryz5T:
-    java.lang.String value() -> keepErJErRy6HE
-    int flags() -> keepErJErRy6HE
-javax.annotation.MatchesPattern$Checker -> launcher.keePErjerrYnmV:
-    26:26:void <init>() -> <init>
-    28:31:javax.annotation.meta.When forConstantValue(javax.annotation.MatchesPattern,java.lang.Object) -> keepErJErRy6HE
-    26:26:javax.annotation.meta.When forConstantValue(java.lang.annotation.Annotation,java.lang.Object) -> keepErJErRy6HE
-javax.annotation.Nonnegative -> launcher.kEepERjerryhdF:
-    javax.annotation.meta.When when() -> keepErJErRy6HE
-javax.annotation.Nonnegative$Checker -> launcher.KEEPeRjErrYXff:
-    22:22:void <init>() -> <init>
-    25:41:javax.annotation.meta.When forConstantValue(javax.annotation.Nonnegative,java.lang.Object) -> keepErJErRy6HE
-    22:22:javax.annotation.meta.When forConstantValue(java.lang.annotation.Annotation,java.lang.Object) -> keepErJErRy6HE
-javax.annotation.Nonnull -> launcher.keePErjERRy57k:
-    javax.annotation.meta.When when() -> keepErJErRy6HE
-javax.annotation.Nonnull$Checker -> launcher.keEPErJERRYlXM:
-    24:24:void <init>() -> <init>
-    27:29:javax.annotation.meta.When forConstantValue(javax.annotation.Nonnull,java.lang.Object) -> keepErJErRy6HE
-    24:24:javax.annotation.meta.When forConstantValue(java.lang.annotation.Annotation,java.lang.Object) -> keepErJErRy6HE
-javax.annotation.Nullable -> launcher.KeeperJerRyoBb:
-javax.annotation.OverridingMethodsMustInvokeSuper -> launcher.kEEPErjErRYOqZ:
-javax.annotation.ParametersAreNonnullByDefault -> launcher.KeEPERJErry5NT:
-javax.annotation.ParametersAreNullableByDefault -> launcher.KeEPErJErrYwYP:
-javax.annotation.PropertyKey -> launcher.KEeperJerrYuCQ:
-    javax.annotation.meta.When when() -> keepErJErRy6HE
-javax.annotation.RegEx -> launcher.kEEPerjeRRy6uh:
-    javax.annotation.meta.When when() -> keepErJErRy6HE
-javax.annotation.RegEx$Checker -> launcher.KeePerJeRrY10e:
-    26:26:void <init>() -> <init>
-    29:37:javax.annotation.meta.When forConstantValue(javax.annotation.RegEx,java.lang.Object) -> keepErJErRy6HE
-    26:26:javax.annotation.meta.When forConstantValue(java.lang.annotation.Annotation,java.lang.Object) -> keepErJErRy6HE
-javax.annotation.Signed -> launcher.KeePERjeRrYwGV:
-javax.annotation.Syntax -> launcher.kEEpeRjERryUJl:
-    java.lang.String value() -> keepErJErRy6HE
-    javax.annotation.meta.When when() -> keepErJErRy6HE
-javax.annotation.Tainted -> launcher.KeePeRJErRyoWd:
-javax.annotation.Untainted -> launcher.kEEPErjerRyItY:
-    javax.annotation.meta.When when() -> keepErJErRy6HE
-javax.annotation.WillClose -> launcher.keEPErjERrY1tw:
-javax.annotation.WillCloseWhenClosed -> launcher.kEEpErJERRYmIE:
-javax.annotation.WillNotClose -> launcher.keEpErjERrYAt4:
-javax.annotation.concurrent.GuardedBy -> launcher.KeEpErjERrynz1:
-    java.lang.String value() -> keepErJErRy6HE
-javax.annotation.concurrent.Immutable -> launcher.KEEPERJerRY8WG:
-javax.annotation.concurrent.NotThreadSafe -> launcher.kEEperjERrYOMC:
-javax.annotation.concurrent.ThreadSafe -> launcher.KeepErjERryKEt:
-javax.annotation.meta.Exclusive -> launcher.KeEpErJeRRYycB:
-javax.annotation.meta.Exhaustive -> launcher.KeEperJeRryIQK:
-javax.annotation.meta.TypeQualifier -> launcher.KeEpeRJERrY3B4:
-    java.lang.Class applicableTo() -> keepErJErRy6HE
-javax.annotation.meta.TypeQualifierDefault -> launcher.KeEPerJERryMGV:
-    java.lang.annotation.ElementType[] value() -> keepErJErRy6HE
-javax.annotation.meta.TypeQualifierNickname -> launcher.keEpERJeRryfd4:
-javax.annotation.meta.TypeQualifierValidator -> launcher.KEePErJeRRygYU:
-    javax.annotation.meta.When forConstantValue(java.lang.annotation.Annotation,java.lang.Object) -> keepErJErRy6HE
-javax.annotation.meta.When -> launcher.keEperJerrYANO:
-    javax.annotation.meta.When ALWAYS -> keepErJErRy6HE
-    javax.annotation.meta.When UNKNOWN -> KeePerjeRryt52
-    javax.annotation.meta.When MAYBE -> keEPERjERryabM
-    javax.annotation.meta.When NEVER -> keEpErjeRRYsAK
-    javax.annotation.meta.When[] $VALUES -> keepErJErRy6HE
-    13:13:javax.annotation.meta.When[] values() -> values
-    13:13:javax.annotation.meta.When valueOf(java.lang.String) -> valueOf
-    13:13:void <init>(java.lang.String,int) -> <init>
-    13:21:void <clinit>() -> <clinit>
-launcher.Launcher -> launcher.KEePErJERryNPa:
-    java.lang.String VERSION -> VERSION
-    java.lang.String BUILD -> BUILD
-    int PROTOCOL_MAGIC -> PROTOCOL_MAGIC
-    java.lang.String RUNTIME_DIR -> RUNTIME_DIR
-    java.lang.String CONFIG_FILE -> CONFIG_FILE
-    java.lang.String INIT_SCRIPT_FILE -> INIT_SCRIPT_FILE
-    java.util.concurrent.atomic.AtomicReference CONFIG -> keepErJErRy6HE
-    java.util.concurrent.atomic.AtomicBoolean started -> keepErJErRy6HE
-    javax.script.ScriptEngine engine -> keepErJErRy6HE
-    76:82:void <init>() -> <init>
-    87:162:void addLauncherClassBindings(javax.script.ScriptEngine,java.util.Map) -> addLauncherClassBindings
-    167:176:void addClassBinding(javax.script.ScriptEngine,java.util.Map,java.lang.String,java.lang.Class) -> addClassBinding
-    181:194:launcher.Launcher$Config getConfig() -> getConfig
-    200:215:java.net.URL getResourceURL(java.lang.String) -> getResourceURL
-    222:222:java.lang.String getVersion() -> getVersion
-    227:241:void main(java.lang.String[]) -> main
-    247:251:java.lang.String readBuildNumber() -> keepErJErRy6HE
-    258:262:java.lang.Object loadScript(java.net.URL) -> loadScript
-    268:278:void start(java.lang.String[]) -> start
-    282:288:void setScriptBindings() -> keepErJErRy6HE
-    64:74:void <clinit>() -> <clinit>
-launcher.Launcher$Config -> launcher.keePERjErrYClc:
-    java.lang.String ADDRESS_OVERRIDE_PROPERTY -> ADDRESS_OVERRIDE_PROPERTY
-    java.lang.String ADDRESS_OVERRIDE -> ADDRESS_OVERRIDE
-    java.net.InetSocketAddress address -> address
-    java.security.interfaces.RSAPublicKey publicKey -> publicKey
-    java.util.Map runtime -> runtime
-    308:312:void <init>(java.lang.String,int,java.security.interfaces.RSAPublicKey,java.util.Map) -> <init>
-    316:339:void <init>(launcher.serialize.HInput) -> <init>
-    344:356:void write(launcher.serialize.HOutput) -> write
-    295:295:void <clinit>() -> <clinit>
-launcher.LauncherAPI -> launcher.kEEPErjErryBYR:
-launcher.client.ClientLauncher -> launcher.KeEperjeRrYrnh:
-    java.lang.String SKIN_URL_PROPERTY -> SKIN_URL_PROPERTY
-    java.lang.String SKIN_DIGEST_PROPERTY -> SKIN_DIGEST_PROPERTY
-    java.lang.String CLOAK_URL_PROPERTY -> CLOAK_URL_PROPERTY
-    java.lang.String CLOAK_DIGEST_PROPERTY -> CLOAK_DIGEST_PROPERTY
-    java.lang.String[] EMPTY_ARRAY -> keepErJErRy6HE
-    java.lang.String MAGICAL_INTEL_OPTION -> keepErJErRy6HE
-    java.util.Set BIN_POSIX_PERMISSIONS -> keepErJErRy6HE
-    java.nio.file.Path NATIVES_DIR -> keepErJErRy6HE
-    java.nio.file.Path RESOURCEPACKS_DIR -> KeePerjeRryt52
-    java.util.regex.Pattern UUID_PATTERN -> keepErJErRy6HE
-    java.util.concurrent.atomic.AtomicBoolean LAUNCHED -> keepErJErRy6HE
-    60:61:void <init>() -> <init>
-    66:66:boolean isLaunched() -> isLaunched
-    71:71:java.lang.String jvmProperty(java.lang.String,java.lang.String) -> keepErJErRy6HE
-    80:153:java.lang.Process launch(java.nio.file.Path,launcher.serialize.signed.SignedObjectHolder,launcher.serialize.signed.SignedObjectHolder,launcher.serialize.signed.SignedObjectHolder,launcher.serialize.signed.SignedObjectHolder,launcher.client.ClientLauncher$Params,boolean) -> launch
-    159:222:void main(java.lang.String[]) -> main
-    227:227:java.lang.String toHash(java.util.UUID) -> toHash
-    233:244:void verifyHDir(java.nio.file.Path,launcher.hasher.HashedDir,launcher.hasher.FileNameMatcher,boolean) -> verifyHDir
-    248:315:void addClientArgs(java.util.Collection,launcher.client.ClientProfile,launcher.client.ClientLauncher$Params) -> keepErJErRy6HE
-    319:326:void addClientLegacyArgs(java.util.Collection,launcher.client.ClientProfile,launcher.client.ClientLauncher$Params) -> KeePerjeRryt52
-    331:362:void launch(launcher.client.ClientProfile,launcher.client.ClientLauncher$Params) -> keepErJErRy6HE
-    366:377:java.net.URL[] resolveClassPath(java.nio.file.Path,java.lang.String[]) -> keepErJErRy6HE
-    377:377:java.net.URL[] lambda$resolveClassPath$1(int) -> keepErJErRy6HE
-    164:164:boolean lambda$main$0(int) -> keepErJErRy6HE
-    45:57:void <clinit>() -> <clinit>
-launcher.client.ClientLauncher$1 -> launcher.KeepErJeRrY4b2:
-launcher.client.ClientLauncher$ClassPathFileVisitor -> launcher.kEEperJERRYGIM:
-    java.util.Collection result -> keepErJErRy6HE
-    471:473:void <init>(java.util.Collection) -> <init>
-    478:482:java.nio.file.FileVisitResult visitFile(java.nio.file.Path,java.nio.file.attribute.BasicFileAttributes) -> keepErJErRy6HE
-    466:466:java.nio.file.FileVisitResult visitFile(java.lang.Object,java.nio.file.attribute.BasicFileAttributes) -> visitFile
-    466:466:void <init>(java.util.Collection,launcher.client.ClientLauncher$1) -> <init>
-launcher.client.ClientLauncher$Params -> launcher.keePerJerryeTT:
-    java.nio.file.Path assetDir -> assetDir
-    java.nio.file.Path clientDir -> clientDir
-    launcher.client.PlayerProfile pp -> pp
-    java.lang.String accessToken -> accessToken
-    boolean autoEnter -> autoEnter
-    boolean fullScreen -> fullScreen
-    int ram -> ram
-    int width -> width
-    int height -> height
-    byte[] launcherSign -> keepErJErRy6HE
-    408:423:void <init>(byte[],java.nio.file.Path,java.nio.file.Path,launcher.client.PlayerProfile,java.lang.String,boolean,boolean,int,int,int) -> <init>
-    427:443:void <init>(launcher.serialize.HInput) -> <init>
-    448:463:void write(launcher.serialize.HOutput) -> write
-    380:380:byte[] access$000(launcher.client.ClientLauncher$Params) -> keepErJErRy6HE
-launcher.client.ClientProfile -> launcher.kEepErJErRyqJr:
-    launcher.serialize.stream.StreamObject$Adapter RO_ADAPTER -> RO_ADAPTER
-    launcher.hasher.FileNameMatcher ASSET_MATCHER -> keepErJErRy6HE
-    launcher.serialize.config.entry.StringConfigEntry version -> keepErJErRy6HE
-    launcher.serialize.config.entry.StringConfigEntry assetIndex -> KeePerjeRryt52
-    launcher.serialize.config.entry.IntegerConfigEntry sortIndex -> keepErJErRy6HE
-    launcher.serialize.config.entry.StringConfigEntry title -> keEPERjERryabM
-    launcher.serialize.config.entry.StringConfigEntry serverAddress -> keEpErjeRRYsAK
-    launcher.serialize.config.entry.IntegerConfigEntry serverPort -> KeePerjeRryt52
-    launcher.serialize.config.entry.StringConfigEntry jvmVersion -> KeEperJErryz5T
-    launcher.serialize.config.entry.ListConfigEntry update -> keepErJErRy6HE
-    launcher.serialize.config.entry.ListConfigEntry updateExclusions -> KeePerjeRryt52
-    launcher.serialize.config.entry.ListConfigEntry updateVerify -> keEPERjERryabM
-    launcher.serialize.config.entry.BooleanConfigEntry updateFastCheck -> keepErJErRy6HE
-    launcher.serialize.config.entry.StringConfigEntry mainClass -> keePErjerrYnmV
-    launcher.serialize.config.entry.ListConfigEntry jvmArgs -> keEpErjeRRYsAK
-    launcher.serialize.config.entry.ListConfigEntry classPath -> KeEperJErryz5T
-    launcher.serialize.config.entry.ListConfigEntry clientArgs -> keePErjerrYnmV
-    50:74:void <init>(launcher.serialize.config.entry.BlockConfigEntry) -> <init>
-    79:80:void <init>(launcher.serialize.HInput,boolean) -> <init>
-    85:85:int compareTo(launcher.client.ClientProfile) -> keepErJErRy6HE
-    91:91:java.lang.String toString() -> toString
-    97:97:java.lang.String getAssetIndex() -> getAssetIndex
-    103:104:void setAssetIndex(java.lang.String) -> setAssetIndex
-    109:109:launcher.hasher.FileNameMatcher getAssetUpdateMatcher() -> getAssetUpdateMatcher
-    115:115:java.lang.String[] getClassPath() -> getClassPath
-    121:121:java.lang.String[] getClientArgs() -> getClientArgs
-    127:130:launcher.hasher.FileNameMatcher getClientUpdateMatcher() -> getClientUpdateMatcher
-    135:135:java.lang.String getJvmVersion() -> getJvmVersion
-    141:141:java.lang.String[] getJvmArgs() -> getJvmArgs
-    147:147:java.lang.String getMainClass() -> getMainClass
-    153:153:java.lang.String getServerAddress() -> getServerAddress
-    159:159:int getServerPort() -> getServerPort
-    165:165:java.net.InetSocketAddress getServerSocketAddress() -> getServerSocketAddress
-    171:171:int getSortIndex() -> getSortIndex
-    177:177:java.lang.String getTitle() -> getTitle
-    183:184:void setTitle(java.lang.String) -> setTitle
-    189:189:java.lang.String getVersion() -> getVersion
-    195:196:void setVersion(java.lang.String) -> setVersion
-    201:201:boolean isUpdateFastCheck() -> isUpdateFastCheck
-    208:226:void verify() -> verify
-    16:16:int compareTo(java.lang.Object) -> compareTo
-    141:141:java.lang.String[] lambda$getJvmArgs$6(int) -> keepErJErRy6HE
-    129:129:java.lang.String[] lambda$getClientUpdateMatcher$5(int) -> KeePerjeRryt52
-    128:128:java.lang.String[] lambda$getClientUpdateMatcher$4(int) -> keEPERjERryabM
-    127:127:java.lang.String[] lambda$getClientUpdateMatcher$3(int) -> keEpErjeRRYsAK
-    121:121:java.lang.String[] lambda$getClientArgs$2(int) -> KeEperJErryz5T
-    115:115:java.lang.String[] lambda$getClassPath$1(int) -> keePErjerrYnmV
-    20:20:launcher.client.ClientProfile lambda$static$0(launcher.serialize.HInput) -> keepErJErRy6HE
-    20:21:void <clinit>() -> <clinit>
-launcher.client.ClientProfile$Version -> launcher.KEEPERjeRRyDT2:
+launcher.KEEPERJerRY8WG -> launcher.keepErJErRy6HE:
+launcher.KEEPERjeRRyDT2 -> launcher.KeePerjeRryt52:
     230:230:void <init>() -> <init>
-    232:241:int compare(java.lang.String,java.lang.String) -> keepErJErRy6HE
-launcher.client.PlayerProfile -> launcher.KeePErjerRy6bP:
-    java.util.UUID uuid -> uuid
-    java.lang.String username -> username
-    launcher.client.PlayerProfile$Texture skin -> skin
-    launcher.client.PlayerProfile$Texture cloak -> cloak
-    30:35:void <init>(launcher.serialize.HInput) -> <init>
-    39:44:void <init>(java.util.UUID,java.lang.String,launcher.client.PlayerProfile$Texture,launcher.client.PlayerProfile$Texture) -> <init>
-    49:49:launcher.client.PlayerProfile newOfflineProfile(java.lang.String) -> newOfflineProfile
-    55:55:java.util.UUID offlineUUID(java.lang.String) -> offlineUUID
-    61:75:void write(launcher.serialize.HOutput) -> write
-launcher.client.PlayerProfile$Texture -> launcher.kEeperJErrYOoH:
-    launcher.helper.SecurityHelper$DigestAlgorithm DIGEST_ALGO -> keepErJErRy6HE
-    java.lang.String url -> url
-    byte[] digest -> digest
-    89:92:void <init>(java.lang.String,byte[]) -> <init>
-    96:112:void <init>(java.lang.String,boolean) -> <init>
-    116:119:void <init>(launcher.serialize.HInput) -> <init>
-    124:126:void write(launcher.serialize.HOutput) -> write
-    79:79:void <clinit>() -> <clinit>
-launcher.client.ServerPinger -> launcher.kEEpERjErryuSa:
-    java.lang.String LEGACY_PING_HOST_MAGIC -> keepErJErRy6HE
-    java.lang.String LEGACY_PING_HOST_CHANNEL -> KeePerjeRryt52
-    java.util.regex.Pattern LEGACY_PING_HOST_DELIMETER -> keepErJErRy6HE
-    int PACKET_LENGTH -> keepErJErRy6HE
-    java.net.InetSocketAddress address -> keepErJErRy6HE
-    java.lang.String version -> keEPERjERryabM
-    java.lang.Object cacheLock -> keepErJErRy6HE
-    launcher.client.ServerPinger$Result cache -> keepErJErRy6HE
-    java.lang.Throwable cacheError -> keepErJErRy6HE
-    long cacheUntil -> keepErJErRy6HE
-    35:45:void <init>(java.net.InetSocketAddress,java.lang.String) -> <init>
-    49:51:java.lang.String readUTF16String(launcher.serialize.HInput) -> keepErJErRy6HE
-    56:58:void writeUTF16String(launcher.serialize.HOutput,java.lang.String) -> keepErJErRy6HE
-    63:92:launcher.client.ServerPinger$Result ping() -> ping
-    97:105:launcher.client.ServerPinger$Result doPing() -> keepErJErRy6HE
-    110:174:launcher.client.ServerPinger$Result legacyPing(launcher.serialize.HInput,launcher.serialize.HOutput,boolean) -> keepErJErRy6HE
-    181:230:launcher.client.ServerPinger$Result modernPing(launcher.serialize.HInput,launcher.serialize.HOutput) -> keepErJErRy6HE
-    27:27:void <clinit>() -> <clinit>
-launcher.client.ServerPinger$Result -> launcher.kEePerjErRy09c:
-    int onlinePlayers -> onlinePlayers
-    int maxPlayers -> maxPlayers
-    java.lang.String raw -> raw
-    243:249:void <init>(int,int,java.lang.String) -> <init>
-    254:254:boolean isOverfilled() -> isOverfilled
-launcher.hasher.DirWatcher -> launcher.KeEPerjErRyR55:
-    boolean FILE_TREE_SUPPORTED -> keepErJErRy6HE
-    java.nio.file.WatchEvent$Modifier[] MODIFIERS -> keepErJErRy6HE
-    java.nio.file.WatchEvent$Modifier[] FILE_TREE_MODIFIERS -> KeePerjeRryt52
-    java.nio.file.WatchEvent$Kind[] KINDS -> keepErJErRy6HE
-    java.nio.file.Path dir -> keepErJErRy6HE
-    launcher.hasher.HashedDir hdir -> keepErJErRy6HE
-    launcher.hasher.FileNameMatcher matcher -> keepErJErRy6HE
-    java.nio.file.WatchService service -> keepErJErRy6HE
-    boolean digest -> KeePerjeRryt52
-    45:61:void <init>(java.nio.file.Path,launcher.hasher.HashedDir,launcher.hasher.FileNameMatcher,boolean) -> <init>
-    65:67:void handleError(java.lang.Throwable) -> keepErJErRy6HE
-    71:76:java.util.Deque toPath(java.lang.Iterable) -> keepErJErRy6HE
-    83:84:void close() -> close
-    92:102:void run() -> run
-    106:141:void processKey(java.nio.file.WatchKey) -> keepErJErRy6HE
-    145:149:void processLoop() -> keepErJErRy6HE
-    21:21:java.nio.file.Path access$100(launcher.hasher.DirWatcher) -> keepErJErRy6HE
-    21:21:java.nio.file.WatchService access$200(launcher.hasher.DirWatcher) -> keepErJErRy6HE
-    21:21:java.nio.file.WatchEvent$Kind[] access$300() -> keepErJErRy6HE
-    21:21:java.nio.file.WatchEvent$Modifier[] access$400() -> keepErJErRy6HE
-    21:21:launcher.hasher.FileNameMatcher access$500(launcher.hasher.DirWatcher) -> keepErJErRy6HE
-    23:32:void <clinit>() -> <clinit>
-launcher.hasher.DirWatcher$1 -> launcher.kEEpeRJERRYUDQ:
-launcher.hasher.DirWatcher$RegisterFileVisitor -> launcher.KEEpERJeRrYaXw:
-    java.util.Deque path -> keepErJErRy6HE
-    launcher.hasher.DirWatcher this$0 -> keepErJErRy6HE
-    151:153:void <init>(launcher.hasher.DirWatcher) -> <init>
-    158:163:java.nio.file.FileVisitResult postVisitDirectory(java.nio.file.Path,java.io.IOException) -> keepErJErRy6HE
-    169:185:java.nio.file.FileVisitResult preVisitDirectory(java.nio.file.Path,java.nio.file.attribute.BasicFileAttributes) -> keepErJErRy6HE
+    232:241:int keepErJErRy6HE(java.lang.String,java.lang.String) -> keepErJErRy6HE
+launcher.KEEPErjeRryH1J -> launcher.keEPERjERryabM:
+    launcher.KeEpERJeRRy4zK mismatch -> keepErJErRy6HE
+    launcher.KeEpERJeRRy4zK extra -> KeePerjeRryt52
+    205:208:void <init>(launcher.KeEpERJeRRy4zK,launcher.KeEpERJeRRy4zK) -> <init>
+    213:213:boolean isSame() -> keepErJErRy6HE
+    197:197:void <init>(launcher.KeEpERJeRRy4zK,launcher.KeEpERJeRRy4zK,launcher.KeeperjerRyakP) -> <init>
+launcher.KEEPeRJERrYASS -> launcher.keEpErjeRRYsAK:
+    java.util.UUID keepErJErRy6HE -> keepErJErRy6HE
+    21:23:void <init>(launcher.keePERjErrYClc,java.util.UUID) -> <init>
+    28:29:void <init>(java.util.UUID) -> <init>
+    34:34:launcher.kEePeRJeRryAUj getType() -> keepErJErRy6HE
+    40:44:launcher.KeePErjerRy6bP keepErJErRy6HE(launcher.KEePerjeRry8VJ,launcher.KEeperjERRYyzU) -> keepErJErRy6HE
+    14:14:java.lang.Object requestDo(launcher.KEePerjeRry8VJ,launcher.KEeperjERRYyzU) -> keepErJErRy6HE
+launcher.KEEPeRjErrYXff -> launcher.KeEperJErryz5T:
+    22:22:void <init>() -> <init>
+    25:41:launcher.keEperJerrYANO keepErJErRy6HE(launcher.kEepERjerryhdF,java.lang.Object) -> keepErJErRy6HE
+    22:22:launcher.keEperJerrYANO keepErJErRy6HE(java.lang.annotation.Annotation,java.lang.Object) -> keepErJErRy6HE
+launcher.KEEPerJeRrYDn8 -> launcher.keePErjerrYnmV:
+    launcher.KeePErjerRy6bP pp -> keepErJErRy6HE
+    java.lang.String accessToken -> keepErJErRy6HE
+    63:66:void <init>(launcher.KeePErjerRy6bP,java.lang.String) -> <init>
+    55:55:void <init>(launcher.KeePErjerRy6bP,java.lang.String,launcher.KEEpeRjerRyhZa) -> <init>
+launcher.KEEpERJeRrYaXw -> launcher.kEepERjerryhdF:
+    java.util.Deque keepErJErRy6HE -> keepErJErRy6HE
+    launcher.KeEPerjErRyR55 keepErJErRy6HE -> keepErJErRy6HE
+    151:153:void <init>(launcher.KeEPerjErRyR55) -> <init>
+    158:163:java.nio.file.FileVisitResult keepErJErRy6HE(java.nio.file.Path,java.io.IOException) -> keepErJErRy6HE
+    169:185:java.nio.file.FileVisitResult keepErJErRy6HE(java.nio.file.Path,java.nio.file.attribute.BasicFileAttributes) -> keepErJErRy6HE
     151:151:java.nio.file.FileVisitResult postVisitDirectory(java.lang.Object,java.io.IOException) -> postVisitDirectory
     151:151:java.nio.file.FileVisitResult preVisitDirectory(java.lang.Object,java.nio.file.attribute.BasicFileAttributes) -> preVisitDirectory
-    151:151:void <init>(launcher.hasher.DirWatcher,launcher.hasher.DirWatcher$1) -> <init>
-launcher.hasher.FileNameMatcher -> launcher.KeepeRjeRrycgq:
-    launcher.hasher.FileNameMatcher$Entry[] NO_ENTRIES -> keepErJErRy6HE
-    launcher.hasher.FileNameMatcher$Entry[] update -> KeePerjeRryt52
-    launcher.hasher.FileNameMatcher$Entry[] verify -> keEPERjERryabM
-    launcher.hasher.FileNameMatcher$Entry[] exclusions -> keEpErjeRRYsAK
-    22:26:void <init>(java.lang.String[],java.lang.String[],java.lang.String[]) -> <init>
-    29:33:void <init>(launcher.hasher.FileNameMatcher$Entry[],launcher.hasher.FileNameMatcher$Entry[],launcher.hasher.FileNameMatcher$Entry[]) -> <init>
-    37:37:boolean anyMatch(launcher.hasher.FileNameMatcher$Entry[],java.util.Collection) -> keepErJErRy6HE
-    42:42:launcher.hasher.FileNameMatcher$Entry[] toEntries(java.lang.String[]) -> keepErJErRy6HE
-    48:48:boolean shouldUpdate(java.util.Collection) -> shouldUpdate
-    54:54:boolean shouldVerify(java.util.Collection) -> shouldVerify
-    60:60:launcher.hasher.FileNameMatcher verifyOnly() -> verifyOnly
-    42:42:launcher.hasher.FileNameMatcher$Entry[] lambda$toEntries$2(int) -> keepErJErRy6HE
-    42:42:launcher.hasher.FileNameMatcher$Entry lambda$toEntries$1(java.lang.CharSequence) -> keepErJErRy6HE
-    37:37:boolean lambda$anyMatch$0(java.util.Collection,launcher.hasher.FileNameMatcher$Entry) -> keepErJErRy6HE
-    13:13:void <clinit>() -> <clinit>
-launcher.hasher.FileNameMatcher$1 -> launcher.kEepERJErRyMwq:
-launcher.hasher.FileNameMatcher$Entry -> launcher.kEEpErJerryq4E:
-    java.util.regex.Pattern SPLITTER -> keepErJErRy6HE
-    java.util.regex.Pattern[] parts -> keepErJErRy6HE
-    69:71:void <init>(java.lang.CharSequence) -> <init>
-    75:92:boolean matches(java.util.Collection) -> keepErJErRy6HE
-    70:70:java.util.regex.Pattern[] lambda$new$0(int) -> keepErJErRy6HE
-    63:63:void <init>(java.lang.CharSequence,launcher.hasher.FileNameMatcher$1) -> <init>
-    63:63:boolean access$100(launcher.hasher.FileNameMatcher$Entry,java.util.Collection) -> keepErJErRy6HE
-    65:65:void <clinit>() -> <clinit>
-launcher.hasher.HashedDir -> launcher.KeEpERJeRRy4zK:
-    java.util.Map map -> keepErJErRy6HE
+    151:151:void <init>(launcher.KeEPerjErRyR55,launcher.kEEpeRJERRYUDQ) -> <init>
+launcher.KEEpErJeRrYlil -> launcher.KEEPeRjErrYXff:
+    17:18:void <init>(java.util.Map,boolean,int) -> <init>
+    23:24:void <init>(int) -> <init>
+    29:30:void <init>(launcher.KEePerjeRry8VJ,boolean) -> <init>
+    34:44:java.util.Map keepErJErRy6HE(launcher.KEePerjeRry8VJ,boolean) -> keepErJErRy6HE
+    50:50:launcher.KeEPeRjErrYptJ getType() -> keepErJErRy6HE
+    56:57:java.util.Map keepErJErRy6HE() -> keepErJErRy6HE
+    63:68:void keepErJErRy6HE(java.util.Map) -> keepErJErRy6HE
+    73:80:void write(launcher.KEeperjERRYyzU) -> keepErJErRy6HE
+    85:86:void clear() -> keepErJErRy6HE
+    91:97:launcher.keEPeRjErry4mI getEntry(java.lang.String,java.lang.Class) -> keepErJErRy6HE
+    103:103:java.lang.Object getEntryValue(java.lang.String,java.lang.Class) -> keepErJErRy6HE
+    109:109:boolean hasEntry(java.lang.String) -> keepErJErRy6HE
+    115:116:void remove(java.lang.String) -> keepErJErRy6HE
+    121:122:void setEntry(java.lang.String,launcher.keEPeRjErry4mI) -> keepErJErRy6HE
+    12:12:void keepErJErRy6HE(java.lang.Object) -> keepErJErRy6HE
+    12:12:java.lang.Object getValue() -> keepErJErRy6HE
+launcher.KEEpeRjerRyhZa -> launcher.keePErjERRy57k:
+launcher.KEEpeRjerrYruV -> launcher.keEPErJERRYlXM:
+    11:11:void <init>() -> <init>
+    void write(launcher.KEeperjERRYyzU) -> keepErJErRy6HE
+    21:28:byte[] write() -> keepErJErRy6HE
+launcher.KEEperJerRyucK -> launcher.KeeperJerRyoBb:
+    java.util.regex.Pattern keepErJErRy6HE -> keepErJErRy6HE
+    java.lang.String keepErJErRy6HE -> keepErJErRy6HE
+    java.lang.String KeePerjeRryt52 -> KeePerjeRryt52
+    java.lang.String keEPERjERryabM -> keEPERjERryabM
+    26:30:void <init>(launcher.keePERjErrYClc,java.lang.String,java.lang.String,java.lang.String) -> <init>
+    35:36:void <init>(java.lang.String,java.lang.String,java.lang.String) -> <init>
+    41:41:boolean isValidServerID(java.lang.CharSequence) -> keepErJErRy6HE
+    47:48:java.lang.String verifyServerID(java.lang.String) -> keepErJErRy6HE
+    54:54:launcher.kEePeRJeRryAUj getType() -> keepErJErRy6HE
+    60:68:java.lang.Boolean keepErJErRy6HE(launcher.KEePerjeRry8VJ,launcher.KEeperjERRYyzU) -> keepErJErRy6HE
+    14:14:java.lang.Object requestDo(launcher.KEePerjeRry8VJ,launcher.KEeperjERRYyzU) -> keepErJErRy6HE
+    16:16:void <clinit>() -> <clinit>
+launcher.KEePErJERryNPa -> launcher.kEEPErjErRYOqZ:
+    java.lang.String VERSION -> keepErJErRy6HE
+    java.lang.String BUILD -> KeePerjeRryt52
+    int PROTOCOL_MAGIC -> keepErJErRy6HE
+    java.lang.String RUNTIME_DIR -> keEPERjERryabM
+    java.lang.String CONFIG_FILE -> keEpErjeRRYsAK
+    java.lang.String INIT_SCRIPT_FILE -> KeEperJErryz5T
+    java.util.concurrent.atomic.AtomicReference keepErJErRy6HE -> keepErJErRy6HE
+    java.util.concurrent.atomic.AtomicBoolean keepErJErRy6HE -> keepErJErRy6HE
+    javax.script.ScriptEngine keepErJErRy6HE -> keepErJErRy6HE
+    76:82:void <init>() -> <init>
+    87:162:void addLauncherClassBindings(javax.script.ScriptEngine,java.util.Map) -> keepErJErRy6HE
+    167:176:void addClassBinding(javax.script.ScriptEngine,java.util.Map,java.lang.String,java.lang.Class) -> keepErJErRy6HE
+    181:194:launcher.keePERjErrYClc getConfig() -> keepErJErRy6HE
+    200:215:java.net.URL getResourceURL(java.lang.String) -> keepErJErRy6HE
+    222:222:java.lang.String getVersion() -> keepErJErRy6HE
+    227:241:void main(java.lang.String[]) -> main
+    247:251:java.lang.String keepErJErRy6HE() -> KeePerjeRryt52
+    258:262:java.lang.Object loadScript(java.net.URL) -> keepErJErRy6HE
+    268:278:void start(java.lang.String[]) -> keepErJErRy6HE
+    282:288:void keepErJErRy6HE() -> keepErJErRy6HE
+    64:74:void <clinit>() -> <clinit>
+launcher.KEePErJeRRygYU -> launcher.KeEPERJErry5NT:
+    launcher.keEperJerrYANO keepErJErRy6HE(java.lang.annotation.Annotation,java.lang.Object) -> keepErJErRy6HE
+launcher.KEePeRJeRRy8Jj -> launcher.KeEPErJErrYwYP:
+    java.lang.String[] keepErJErRy6HE -> keepErJErRy6HE
+    14:15:void <init>() -> <init>
+    20:20:java.lang.String low(java.lang.String) -> keepErJErRy6HE
+    26:26:javax.script.ScriptEngine newScriptEngine() -> keepErJErRy6HE
+    32:38:java.lang.Thread newThread(java.lang.String,boolean,java.lang.Runnable) -> keepErJErRy6HE
+    44:48:java.lang.String replace(java.lang.String,java.lang.String[]) -> keepErJErRy6HE
+    11:11:void <clinit>() -> <clinit>
+launcher.KEePerJerrYhCt -> launcher.KEeperJerrYuCQ:
+    launcher.KEePerJerrYhCt keepErJErRy6HE -> keepErJErRy6HE
+    launcher.KEePerJerrYhCt KeePerjeRryt52 -> KeePerjeRryt52
+    launcher.KEePerJerrYhCt keEPERjERryabM -> keEPERjERryabM
+    launcher.KEePerJerrYhCt keEpErjeRRYsAK -> keEpErjeRRYsAK
+    launcher.kEepeRJErRyW5H keepErJErRy6HE -> keepErJErRy6HE
+    int keepErJErRy6HE -> keepErJErRy6HE
+    launcher.KEePerJerrYhCt[] keepErJErRy6HE -> keepErJErRy6HE
+    315:315:launcher.KEePerJerrYhCt[] values() -> values
+    315:315:launcher.KEePerJerrYhCt valueOf(java.lang.String) -> valueOf
+    322:324:void <init>(java.lang.String,int,int) -> <init>
+    328:328:launcher.KEePerJerrYhCt keepErJErRy6HE(launcher.KEePerjeRry8VJ) -> keepErJErRy6HE
+    334:334:int getNumber() -> keepErJErRy6HE
+    315:318:void <clinit>() -> <clinit>
+launcher.KEePerjeRry8VJ -> launcher.kEEPerjeRRy6uh:
+    java.io.InputStream stream -> keepErJErRy6HE
+    21:23:void <init>(java.io.InputStream) -> <init>
+    27:29:void <init>(byte[]) -> <init>
+    34:35:void close() -> close
+    40:40:java.lang.String readASCII(int) -> keepErJErRy6HE
+    46:46:java.math.BigInteger readBigInteger(int) -> keepErJErRy6HE
+    52:60:boolean readBoolean() -> keepErJErRy6HE
+    67:69:byte[] readByteArray(int) -> keepErJErRy6HE
+    75:75:int readInt() -> keepErJErRy6HE
+    81:85:int readLength(int) -> keepErJErRy6HE
+    91:91:long readLong() -> keepErJErRy6HE
+    97:97:short readShort() -> keepErJErRy6HE
+    103:103:java.lang.String readString(int) -> KeePerjeRryt52
+    109:109:java.util.UUID readUUID() -> keepErJErRy6HE
+    115:120:int readUnsignedByte() -> KeePerjeRryt52
+    126:126:int readUnsignedShort() -> keEPERjERryabM
+    132:144:int readVarInt() -> keEpErjeRRYsAK
+    150:162:long readVarLong() -> KeePerjeRryt52
+launcher.KEepErjeRRyzrC -> launcher.KeePerJeRrY10e:
+    java.nio.charset.Charset UNICODE_CHARSET -> keepErJErRy6HE
+    java.nio.charset.Charset ASCII_CHARSET -> KeePerjeRryt52
+    int SOCKET_TIMEOUT -> keepErJErRy6HE
+    int HTTP_TIMEOUT -> KeePerjeRryt52
+    int BUFFER_SIZE -> keEPERjERryabM
+    java.lang.String CROSS_SEPARATOR -> keepErJErRy6HE
+    java.nio.file.FileSystem FS -> keepErJErRy6HE
+    java.lang.String PLATFORM_SEPARATOR -> KeePerjeRryt52
+    boolean POSIX -> keepErJErRy6HE
+    java.nio.file.Path JVM_DIR -> keepErJErRy6HE
+    java.nio.file.Path HOME_DIR -> KeePerjeRryt52
+    java.nio.file.Path HOME_DIR_WIN -> keEPERjERryabM
+    java.nio.file.Path WORKING_DIR -> keEpErjeRRYsAK
+    java.nio.file.OpenOption[] keepErJErRy6HE -> keepErJErRy6HE
+    java.nio.file.OpenOption[] KeePerjeRryt52 -> KeePerjeRryt52
+    java.nio.file.OpenOption[] keEPERjERryabM -> keEPERjERryabM
+    java.nio.file.LinkOption[] keepErJErRy6HE -> keepErJErRy6HE
+    java.nio.file.CopyOption[] keepErJErRy6HE -> keepErJErRy6HE
+    java.util.Set keepErJErRy6HE -> keepErJErRy6HE
+    java.util.regex.Pattern keepErJErRy6HE -> keepErJErRy6HE
+    java.util.regex.Pattern KeePerjeRryt52 -> KeePerjeRryt52
+    82:83:void <init>() -> <init>
+    90:96:void close(java.lang.AutoCloseable) -> keepErJErRy6HE
+    101:103:void copy(java.nio.file.Path,java.nio.file.Path) -> keepErJErRy6HE
+    108:113:void createParentDirs(java.nio.file.Path) -> keepErJErRy6HE
+    118:118:java.lang.String decode(byte[]) -> keepErJErRy6HE
+    124:124:java.lang.String decodeASCII(byte[]) -> KeePerjeRryt52
+    130:131:void deleteDir(java.nio.file.Path,boolean) -> keepErJErRy6HE
+    136:136:byte[] encode(java.lang.String) -> keepErJErRy6HE
+    142:142:byte[] encodeASCII(java.lang.String) -> KeePerjeRryt52
+    148:148:boolean exists(java.nio.file.Path) -> keepErJErRy6HE
+    154:154:java.nio.file.Path getCodeSource(java.lang.Class) -> keepErJErRy6HE
+    160:160:java.lang.String getFileName(java.nio.file.Path) -> keepErJErRy6HE
+    166:166:java.lang.String getIP(java.net.SocketAddress) -> keepErJErRy6HE
+    172:172:byte[] getResourceBytes(java.lang.String) -> keEPERjERryabM
+    178:183:java.net.URL getResourceURL(java.lang.String) -> keepErJErRy6HE
+    189:189:boolean hasExtension(java.nio.file.Path,java.lang.String) -> keepErJErRy6HE
+    195:195:boolean isDir(java.nio.file.Path) -> KeePerjeRryt52
+    201:204:boolean isEmpty(java.nio.file.Path) -> keEPERjERryabM
+    210:210:boolean isFile(java.nio.file.Path) -> keEpErjeRRYsAK
+    216:217:boolean isValidFileName(java.lang.String) -> keepErJErRy6HE
+    225:230:boolean isValidPath(java.lang.String) -> KeePerjeRryt52
+    237:237:boolean isValidTextureBounds(int,int,boolean) -> keepErJErRy6HE
+    244:246:void move(java.nio.file.Path,java.nio.file.Path) -> KeePerjeRryt52
+    251:251:byte[] newBuffer() -> keepErJErRy6HE
+    257:257:java.io.ByteArrayOutputStream newByteArrayOutput() -> keepErJErRy6HE
+    263:263:char[] newCharBuffer() -> keepErJErRy6HE
+    269:282:java.net.URLConnection newConnection(java.net.URL) -> keepErJErRy6HE
+    288:290:java.util.zip.Deflater newDeflater() -> keepErJErRy6HE
+    296:296:java.util.zip.Inflater newInflater() -> keepErJErRy6HE
+    302:302:java.io.InputStream newInput(java.net.URL) -> keepErJErRy6HE
+    308:308:java.io.InputStream newInput(java.nio.file.Path) -> keepErJErRy6HE
+    314:314:java.io.OutputStream newOutput(java.nio.file.Path) -> keepErJErRy6HE
+    320:321:java.io.OutputStream newOutput(java.nio.file.Path,boolean) -> keepErJErRy6HE
+    327:327:java.io.BufferedReader newReader(java.io.InputStream) -> keepErJErRy6HE
+    333:333:java.io.BufferedReader newReader(java.io.InputStream,java.nio.charset.Charset) -> keepErJErRy6HE
+    339:341:java.io.BufferedReader newReader(java.net.URL) -> keepErJErRy6HE
+    347:347:java.io.BufferedReader newReader(java.nio.file.Path) -> keepErJErRy6HE
+    353:355:java.net.Socket newSocket() -> keepErJErRy6HE
+    361:361:java.io.BufferedWriter newWriter(java.io.OutputStream) -> keepErJErRy6HE
+    367:367:java.io.BufferedWriter newWriter(java.nio.file.Path) -> keepErJErRy6HE
+    373:374:java.io.BufferedWriter newWriter(java.nio.file.Path,boolean) -> keepErJErRy6HE
+    380:380:java.io.BufferedWriter newWriter(java.io.FileDescriptor) -> keepErJErRy6HE
+    386:388:java.util.zip.ZipEntry newZipEntry(java.lang.String) -> keepErJErRy6HE
+    394:394:java.util.zip.ZipEntry newZipEntry(java.util.zip.ZipEntry) -> keepErJErRy6HE
+    400:400:java.util.zip.ZipInputStream newZipInput(java.io.InputStream) -> keepErJErRy6HE
+    406:406:java.util.zip.ZipInputStream newZipInput(java.net.URL) -> keepErJErRy6HE
+    412:412:java.util.zip.ZipInputStream newZipInput(java.nio.file.Path) -> keepErJErRy6HE
+    418:432:byte[] read(java.nio.file.Path) -> keepErJErRy6HE
+    438:441:byte[] read(java.net.URL) -> keepErJErRy6HE
+    447:457:void read(java.io.InputStream,byte[]) -> keepErJErRy6HE
+    462:466:byte[] read(java.io.InputStream) -> keepErJErRy6HE
+    472:472:java.nio.file.attribute.BasicFileAttributes readAttributes(java.nio.file.Path) -> keepErJErRy6HE
+    478:497:java.awt.image.BufferedImage readTexture(java.lang.Object,boolean) -> keepErJErRy6HE
+    503:503:java.lang.String request(java.net.URL) -> keepErJErRy6HE
+    509:513:java.net.InetSocketAddress resolve(java.net.InetSocketAddress) -> keepErJErRy6HE
+    519:535:java.nio.file.Path resolveIncremental(java.nio.file.Path,java.lang.String,java.lang.String) -> keepErJErRy6HE
+    543:570:java.nio.file.Path resolveJavaBin(java.nio.file.Path) -> keepErJErRy6HE
+    577:588:void setSocketFlags(java.net.Socket) -> keepErJErRy6HE
+    593:593:java.nio.file.Path toPath(java.lang.String) -> keepErJErRy6HE
+    599:599:java.lang.String toString(java.nio.file.Path) -> KeePerjeRryt52
+    607:611:java.net.URI toURI(java.net.URL) -> keepErJErRy6HE
+    620:624:java.net.URL toURL(java.nio.file.Path) -> keepErJErRy6HE
+    631:638:int transfer(java.io.InputStream,java.io.OutputStream) -> keepErJErRy6HE
+    644:648:void transfer(java.nio.file.Path,java.io.OutputStream) -> keepErJErRy6HE
+    653:653:int transfer(java.io.InputStream,java.nio.file.Path) -> keepErJErRy6HE
+    659:662:int transfer(java.io.InputStream,java.nio.file.Path,boolean) -> keepErJErRy6HE
+    670:674:java.lang.String urlDecode(java.lang.String) -> keepErJErRy6HE
+    683:687:java.lang.String urlEncode(java.lang.String) -> KeePerjeRryt52
+    694:694:java.lang.String verifyFileName(java.lang.String) -> keEPERjERryabM
+    700:704:int verifyLength(int,int) -> keepErJErRy6HE
+    710:711:java.awt.image.BufferedImage verifyTexture(java.awt.image.BufferedImage,boolean) -> keepErJErRy6HE
+    719:724:java.lang.String verifyURL(java.lang.String) -> keEpErjeRRYsAK
+    733:737:java.net.URL convertToURL(java.lang.String) -> KeePerjeRryt52
+    744:745:void walk(java.nio.file.Path,java.nio.file.FileVisitor,boolean) -> keepErJErRy6HE
+    750:752:void write(java.nio.file.Path,byte[]) -> keepErJErRy6HE
+    757:757:java.io.OutputStream newBufferedOutStream(java.io.OutputStream) -> keepErJErRy6HE
+    763:763:java.io.InputStream newBufferedInputStream(java.io.InputStream) -> keepErJErRy6HE
+    710:710:boolean keepErJErRy6HE(boolean,java.awt.image.BufferedImage) -> keepErJErRy6HE
+    217:217:boolean keepErJErRy6HE(int) -> keepErJErRy6HE
+    29:79:void <clinit>() -> <clinit>
+launcher.KEepErjeRrYEkB -> launcher.KeePERjeRrYwGV:
+    int[] keepErJErRy6HE -> keepErJErRy6HE
+    272:272:void <clinit>() -> <clinit>
+launcher.KEepeRjeRRY7ep -> launcher.kEEpeRjERryUJl:
+    java.nio.file.Path BINARY_PATH -> keepErJErRy6HE
+    boolean EXE_BINARY -> keepErJErRy6HE
+    36:37:void <init>(launcher.keePERjErrYClc) -> <init>
+    42:43:void <init>() -> <init>
+    48:72:void update(launcher.keePERjErrYClc,launcher.kEEperjeRryvyX) -> keepErJErRy6HE
+    78:78:launcher.kEePeRJeRryAUj getType() -> keepErJErRy6HE
+    85:113:launcher.kEEperjeRryvyX keepErJErRy6HE(launcher.KEePerjeRry8VJ,launcher.KEeperjERRYyzU) -> keepErJErRy6HE
+    26:26:java.lang.Object requestDo(launcher.KEePerjeRry8VJ,launcher.KEeperjERRYyzU) -> keepErJErRy6HE
+    29:31:void <clinit>() -> <clinit>
+launcher.KEeperJerrYuCQ -> launcher.KeePeRJErRyoWd:
+    launcher.keEperJerrYANO keepErJErRy6HE() -> keepErJErRy6HE
+launcher.KEeperjERRYyzU -> launcher.kEEPErjerRyItY:
+    java.io.OutputStream stream -> keepErJErRy6HE
+    20:22:void <init>(java.io.OutputStream) -> <init>
+    27:28:void close() -> close
+    33:34:void flush() -> flush
+    39:40:void writeASCII(java.lang.String,int) -> keepErJErRy6HE
+    45:46:void writeBigInteger(java.math.BigInteger,int) -> keepErJErRy6HE
+    51:52:void writeBoolean(boolean) -> keepErJErRy6HE
+    57:59:void writeByteArray(byte[],int) -> keepErJErRy6HE
+    64:68:void writeInt(int) -> keepErJErRy6HE
+    73:78:void writeLength(int,int) -> keepErJErRy6HE
+    83:85:void writeLong(long) -> keepErJErRy6HE
+    90:92:void writeShort(short) -> keepErJErRy6HE
+    97:98:void writeString(java.lang.String,int) -> KeePerjeRryt52
+    103:105:void writeUUID(java.util.UUID) -> keepErJErRy6HE
+    110:111:void writeUnsignedByte(int) -> KeePerjeRryt52
+    116:122:void writeVarInt(int) -> keEPERjERryabM
+    127:133:void writeVarLong(long) -> KeePerjeRryt52
+launcher.KeEPERJErry5NT -> launcher.keEPErjERrY1tw:
+launcher.KeEPERjerRyo6P -> launcher.kEEpErJERRYmIE:
+    java.lang.String keepErJErRy6HE -> keepErJErRy6HE
+    java.lang.String KeePerjeRryt52 -> KeePerjeRryt52
+    21:24:void <init>(launcher.keePERjErrYClc,java.lang.String,java.lang.String) -> <init>
+    29:30:void <init>(java.lang.String,java.lang.String) -> <init>
+    35:35:launcher.kEePeRJeRryAUj getType() -> keepErJErRy6HE
+    41:47:launcher.KeePErjerRy6bP keepErJErRy6HE(launcher.KEePerjeRry8VJ,launcher.KEeperjERRYyzU) -> keepErJErRy6HE
+    13:13:java.lang.Object requestDo(launcher.KEePerjeRry8VJ,launcher.KEeperjERRYyzU) -> keepErJErRy6HE
+launcher.KeEPErJErrYwYP -> launcher.keEpErjERrYAt4:
+launcher.KeEPeRjErrYptJ -> launcher.KeEpErjERrynz1:
+    launcher.KeEPeRjErrYptJ BLOCK -> keepErJErRy6HE
+    launcher.KeEPeRjErrYptJ BOOLEAN -> KeePerjeRryt52
+    launcher.KeEPeRjErrYptJ INTEGER -> keEPERjERryabM
+    launcher.KeEPeRjErrYptJ STRING -> keEpErjeRRYsAK
+    launcher.KeEPeRjErrYptJ LIST -> KeEperJErryz5T
+    launcher.kEepeRJErRyW5H SERIALIZER -> keepErJErRy6HE
+    int n -> keepErJErRy6HE
+    launcher.KeEPeRjErrYptJ[] $VALUES -> keepErJErRy6HE
+    100:100:launcher.KeEPeRjErrYptJ[] values() -> values
+    100:100:launcher.KeEPeRjErrYptJ valueOf(java.lang.String) -> valueOf
+    108:110:void <init>(java.lang.String,int,int) -> <init>
+    114:114:launcher.KeEPeRjErrYptJ read(launcher.KEePerjeRry8VJ) -> keepErJErRy6HE
+    120:120:int getNumber() -> keepErJErRy6HE
+    100:104:void <clinit>() -> <clinit>
+launcher.KeEPerJERryMGV -> launcher.KEEPERJerRY8WG:
+    java.lang.annotation.ElementType[] keepErJErRy6HE() -> keepErJErRy6HE
+launcher.KeEPerjErRyR55 -> launcher.kEEperjERrYOMC:
+    boolean keepErJErRy6HE -> keepErJErRy6HE
+    java.nio.file.WatchEvent$Modifier[] keepErJErRy6HE -> keepErJErRy6HE
+    java.nio.file.WatchEvent$Modifier[] KeePerjeRryt52 -> KeePerjeRryt52
+    java.nio.file.WatchEvent$Kind[] keepErJErRy6HE -> keepErJErRy6HE
+    java.nio.file.Path keepErJErRy6HE -> keepErJErRy6HE
+    launcher.KeEpERJeRRy4zK keepErJErRy6HE -> keepErJErRy6HE
+    launcher.KeepeRjeRrycgq keepErJErRy6HE -> keepErJErRy6HE
+    java.nio.file.WatchService keepErJErRy6HE -> keepErJErRy6HE
+    boolean KeePerjeRryt52 -> KeePerjeRryt52
+    45:61:void <init>(java.nio.file.Path,launcher.KeEpERJeRRy4zK,launcher.KeepeRjeRrycgq,boolean) -> <init>
+    65:67:void keepErJErRy6HE(java.lang.Throwable) -> keepErJErRy6HE
+    71:76:java.util.Deque keepErJErRy6HE(java.lang.Iterable) -> keepErJErRy6HE
+    83:84:void close() -> close
+    92:102:void run() -> run
+    106:141:void keepErJErRy6HE(java.nio.file.WatchKey) -> keepErJErRy6HE
+    145:149:void keepErJErRy6HE() -> keepErJErRy6HE
+    21:21:java.nio.file.Path keepErJErRy6HE(launcher.KeEPerjErRyR55) -> keepErJErRy6HE
+    21:21:java.nio.file.WatchService keepErJErRy6HE(launcher.KeEPerjErRyR55) -> keepErJErRy6HE
+    21:21:java.nio.file.WatchEvent$Kind[] keepErJErRy6HE() -> keepErJErRy6HE
+    21:21:java.nio.file.WatchEvent$Modifier[] keepErJErRy6HE() -> keepErJErRy6HE
+    21:21:launcher.KeepeRjeRrycgq keepErJErRy6HE(launcher.KeEPerjErRyR55) -> keepErJErRy6HE
+    23:32:void <clinit>() -> <clinit>
+launcher.KeEPerjerRYDVT -> launcher.KeepErjERryKEt:
+    void println(java.lang.String) -> println
+launcher.KeEpERJeRRy4zK -> launcher.KeEpErJeRRYycB:
+    java.util.Map keepErJErRy6HE -> keepErJErRy6HE
     22:27:void <init>() -> <init>
-    22:33:void <init>(java.nio.file.Path,launcher.hasher.FileNameMatcher,boolean,boolean) -> <init>
-    22:61:void <init>(launcher.serialize.HInput) -> <init>
-    66:66:launcher.hasher.HashedEntry$Type getType() -> getType
-    72:72:long size() -> size
-    78:89:void write(launcher.serialize.HOutput) -> write
-    94:96:launcher.hasher.HashedDir$Diff diff(launcher.hasher.HashedDir,launcher.hasher.FileNameMatcher) -> diff
-    102:102:launcher.hasher.HashedEntry getEntry(java.lang.String) -> getEntry
-    108:108:boolean isEmpty() -> isEmpty
-    114:114:java.util.Map map() -> map
-    120:130:launcher.hasher.HashedEntry resolve(java.lang.Iterable) -> resolve
-    135:194:launcher.hasher.HashedDir sideDiff(launcher.hasher.HashedDir,launcher.hasher.FileNameMatcher,java.util.Deque,boolean) -> keepErJErRy6HE
-    20:20:java.util.Map access$200(launcher.hasher.HashedDir) -> keepErJErRy6HE
-launcher.hasher.HashedDir$1 -> launcher.KeeperjerRyakP:
-    int[] $SwitchMap$launcher$hasher$HashedEntry$Type -> keepErJErRy6HE
-    46:46:void <clinit>() -> <clinit>
-launcher.hasher.HashedDir$Diff -> launcher.KEEPErjeRryH1J:
-    launcher.hasher.HashedDir mismatch -> mismatch
-    launcher.hasher.HashedDir extra -> extra
-    205:208:void <init>(launcher.hasher.HashedDir,launcher.hasher.HashedDir) -> <init>
-    213:213:boolean isSame() -> isSame
-    197:197:void <init>(launcher.hasher.HashedDir,launcher.hasher.HashedDir,launcher.hasher.HashedDir$1) -> <init>
-launcher.hasher.HashedDir$HashFileVisitor -> launcher.KeepERJerrYYq7:
-    java.nio.file.Path dir -> keepErJErRy6HE
-    launcher.hasher.FileNameMatcher matcher -> keepErJErRy6HE
-    boolean allowSymlinks -> keepErJErRy6HE
-    boolean digest -> KeePerjeRryt52
-    java.util.Deque path -> keepErJErRy6HE
-    java.util.Deque stack -> KeePerjeRryt52
-    launcher.hasher.HashedDir current -> KeePerjeRryt52
-    launcher.hasher.HashedDir this$0 -> keepErJErRy6HE
-    223:234:void <init>(launcher.hasher.HashedDir,java.nio.file.Path,launcher.hasher.FileNameMatcher,boolean,boolean) -> <init>
-    239:251:java.nio.file.FileVisitResult postVisitDirectory(java.nio.file.Path,java.io.IOException) -> keepErJErRy6HE
-    257:276:java.nio.file.FileVisitResult preVisitDirectory(java.nio.file.Path,java.nio.file.attribute.BasicFileAttributes) -> keepErJErRy6HE
-    283:292:java.nio.file.FileVisitResult visitFile(java.nio.file.Path,java.nio.file.attribute.BasicFileAttributes) -> KeePerjeRryt52
+    22:33:void <init>(java.nio.file.Path,launcher.KeepeRjeRrycgq,boolean,boolean) -> <init>
+    22:61:void <init>(launcher.KEePerjeRry8VJ) -> <init>
+    66:66:launcher.kEepErjERry3Xj getType() -> keepErJErRy6HE
+    72:72:long size() -> keepErJErRy6HE
+    78:89:void write(launcher.KEeperjERRYyzU) -> keepErJErRy6HE
+    94:96:launcher.KEEPErjeRryH1J diff(launcher.KeEpERJeRRy4zK,launcher.KeepeRjeRrycgq) -> keepErJErRy6HE
+    102:102:launcher.keePeRjErrypC2 getEntry(java.lang.String) -> keepErJErRy6HE
+    108:108:boolean isEmpty() -> keepErJErRy6HE
+    114:114:java.util.Map map() -> keepErJErRy6HE
+    120:130:launcher.keePeRjErrypC2 resolve(java.lang.Iterable) -> keepErJErRy6HE
+    135:194:launcher.KeEpERJeRRy4zK keepErJErRy6HE(launcher.KeEpERJeRRy4zK,launcher.KeepeRjeRrycgq,java.util.Deque,boolean) -> keepErJErRy6HE
+    20:20:java.util.Map keepErJErRy6HE(launcher.KeEpERJeRRy4zK) -> keepErJErRy6HE
+launcher.KeEpERjErRyhvy -> launcher.KeEperJeRryIQK:
+    14:15:void <init>(java.lang.String,boolean,int) -> <init>
+    20:21:void <init>(launcher.KEePerjeRry8VJ,boolean) -> <init>
+    26:26:launcher.KeEPeRjErrYptJ getType() -> keepErJErRy6HE
+    32:33:void keepErJErRy6HE(java.lang.String) -> keepErJErRy6HE
+    38:39:void write(launcher.KEeperjERRYyzU) -> keepErJErRy6HE
+    9:9:void keepErJErRy6HE(java.lang.Object) -> keepErJErRy6HE
+launcher.KeEpErJeRRYycB -> launcher.KeEpeRJERrY3B4:
+launcher.KeEpErjERrynz1 -> launcher.KeEPerJERryMGV:
+    java.lang.String keepErJErRy6HE() -> keepErJErRy6HE
+launcher.KeEpeRJERrY3B4 -> launcher.keEpERJeRryfd4:
+    java.lang.Class keepErJErRy6HE() -> keepErJErRy6HE
+launcher.KeEperJErryz5T -> launcher.KEePErJeRRygYU:
+    java.lang.String keepErJErRy6HE() -> keepErJErRy6HE
+    int keepErJErRy6HE() -> keepErJErRy6HE
+launcher.KeEperJeRryIQK -> launcher.keEperJerrYANO:
+launcher.KeEperjeRrYrnh -> launcher.KEePErJERryNPa:
+    java.lang.String SKIN_URL_PROPERTY -> keepErJErRy6HE
+    java.lang.String SKIN_DIGEST_PROPERTY -> KeePerjeRryt52
+    java.lang.String CLOAK_URL_PROPERTY -> keEPERjERryabM
+    java.lang.String CLOAK_DIGEST_PROPERTY -> keEpErjeRRYsAK
+    java.lang.String[] keepErJErRy6HE -> keepErJErRy6HE
+    java.lang.String keepErJErRy6HE -> KeEperJErryz5T
+    java.util.Set keepErJErRy6HE -> keepErJErRy6HE
+    java.nio.file.Path keepErJErRy6HE -> keepErJErRy6HE
+    java.nio.file.Path KeePerjeRryt52 -> KeePerjeRryt52
+    java.util.regex.Pattern keepErJErRy6HE -> keepErJErRy6HE
+    java.util.concurrent.atomic.AtomicBoolean keepErJErRy6HE -> keepErJErRy6HE
+    60:61:void <init>() -> <init>
+    66:66:boolean isLaunched() -> keepErJErRy6HE
+    71:71:java.lang.String keepErJErRy6HE(java.lang.String,java.lang.String) -> keepErJErRy6HE
+    80:153:java.lang.Process launch(java.nio.file.Path,launcher.kEePerjerryEBg,launcher.kEePerjerryEBg,launcher.kEePerjerryEBg,launcher.kEePerjerryEBg,launcher.keePerJerryeTT,boolean) -> keepErJErRy6HE
+    159:222:void main(java.lang.String[]) -> main
+    227:227:java.lang.String toHash(java.util.UUID) -> keepErJErRy6HE
+    233:244:void verifyHDir(java.nio.file.Path,launcher.KeEpERJeRRy4zK,launcher.KeepeRjeRrycgq,boolean) -> keepErJErRy6HE
+    248:315:void keepErJErRy6HE(java.util.Collection,launcher.kEepErJErRyqJr,launcher.keePerJerryeTT) -> keepErJErRy6HE
+    319:326:void KeePerjeRryt52(java.util.Collection,launcher.kEepErJErRyqJr,launcher.keePerJerryeTT) -> KeePerjeRryt52
+    331:362:void keepErJErRy6HE(launcher.kEepErJErRyqJr,launcher.keePerJerryeTT) -> keepErJErRy6HE
+    366:377:java.net.URL[] keepErJErRy6HE(java.nio.file.Path,java.lang.String[]) -> keepErJErRy6HE
+    377:377:java.net.URL[] keepErJErRy6HE(int) -> keepErJErRy6HE
+    164:164:boolean keepErJErRy6HE(int) -> keepErJErRy6HE
+    45:57:void <clinit>() -> <clinit>
+launcher.KeePERJERryk2s -> launcher.keePERjErrYClc:
+    launcher.KEEpeRjerrYruV convert(launcher.KEePerjeRry8VJ) -> convert
+launcher.KeePERjeRRywbr -> launcher.kEEPErjErryBYR:
+    long fileDownloaded -> keepErJErRy6HE
+    long fileSize -> KeePerjeRryt52
+    long totalDownloaded -> keEPERjERryabM
+    long totalSize -> keEpErjeRRYsAK
+    java.lang.String filePath -> keepErJErRy6HE
+    java.time.Duration duration -> keepErJErRy6HE
+    355:364:void <init>(java.lang.String,long,long,long,long,java.time.Duration) -> <init>
+    369:374:double getBps() -> keepErJErRy6HE
+    380:385:java.time.Duration getEstimatedTime() -> keepErJErRy6HE
+    391:391:double getFileDownloadedKiB() -> KeePerjeRryt52
+    397:397:double getFileDownloadedMiB() -> keEPERjERryabM
+    403:407:double getFileDownloadedPart() -> keEpErjeRRYsAK
+    413:413:long getFileRemaining() -> keepErJErRy6HE
+    419:419:double getFileRemainingKiB() -> KeEperJErryz5T
+    425:425:double getFileRemainingMiB() -> keePErjerrYnmV
+    431:431:double getFileSizeKiB() -> kEepERjerryhdF
+    437:437:double getFileSizeMiB() -> KEEPeRjErrYXff
+    443:443:double getTotalDownloadedKiB() -> keePErjERRy57k
+    449:449:double getTotalDownloadedMiB() -> keEPErJERRYlXM
+    455:459:double getTotalDownloadedPart() -> KeeperJerRyoBb
+    465:465:long getTotalRemaining() -> KeePerjeRryt52
+    471:471:double getTotalRemainingKiB() -> kEEPErjErRYOqZ
+    477:477:double getTotalRemainingMiB() -> KeEPERJErry5NT
+    483:483:double getTotalSizeKiB() -> KeEPErJErrYwYP
+    489:489:double getTotalSizeMiB() -> KEeperJerrYuCQ
+launcher.KeePERjeRrYwGV -> launcher.KeEperjeRrYrnh:
+launcher.KeePErJERrYQ1W -> launcher.KeepErJeRrY4b2:
+    launcher.KeePErJERrYQ1W PLAIN -> keepErJErRy6HE
+    launcher.KeePErJERrYQ1W MD5 -> KeePerjeRryt52
+    launcher.KeePErJERrYQ1W SHA1 -> keEPERjERryabM
+    launcher.KeePErJERrYQ1W SHA224 -> keEpErjeRRYsAK
+    launcher.KeePErJERrYQ1W SHA256 -> KeEperJErryz5T
+    launcher.KeePErJERrYQ1W SHA512 -> keePErjerrYnmV
+    java.util.Map ALGORITHMS -> keepErJErRy6HE
+    java.lang.String name -> keepErJErRy6HE
+    int bits -> keepErJErRy6HE
+    int bytes -> KeePerjeRryt52
+    launcher.KeePErJERrYQ1W[] $VALUES -> keepErJErRy6HE
+    boolean $assertionsDisabled -> keepErJErRy6HE
+    583:583:launcher.KeePErJERrYQ1W[] values() -> values
+    583:583:launcher.KeePErJERrYQ1W valueOf(java.lang.String) -> valueOf
+    605:612:void <init>(java.lang.String,int,java.lang.String,int) -> <init>
+    616:616:launcher.KeePErJERrYQ1W byName(java.lang.String) -> keepErJErRy6HE
+    622:622:java.lang.String toString() -> toString
+    627:631:byte[] verify(byte[]) -> keepErJErRy6HE
+    583:597:void <clinit>() -> <clinit>
+launcher.KeePErjerRy6bP -> launcher.kEEperJERRYGIM:
+    java.util.UUID uuid -> keepErJErRy6HE
+    java.lang.String username -> keepErJErRy6HE
+    launcher.kEeperJErrYOoH skin -> keepErJErRy6HE
+    launcher.kEeperJErrYOoH cloak -> KeePerjeRryt52
+    30:35:void <init>(launcher.KEePerjeRry8VJ) -> <init>
+    39:44:void <init>(java.util.UUID,java.lang.String,launcher.kEeperJErrYOoH,launcher.kEeperJErrYOoH) -> <init>
+    49:49:launcher.KeePErjerRy6bP newOfflineProfile(java.lang.String) -> keepErJErRy6HE
+    55:55:java.util.UUID offlineUUID(java.lang.String) -> keepErJErRy6HE
+    61:75:void write(launcher.KEeperjERRYyzU) -> keepErJErRy6HE
+launcher.KeePErjerRyOyX -> launcher.keePerJerryeTT:
+    launcher.KeePErjerRyOyX DEBUG -> keepErJErRy6HE
+    launcher.KeePErjerRyOyX INFO -> KeePerjeRryt52
+    launcher.KeePErjerRyOyX WARNING -> keEPERjERryabM
+    launcher.KeePErjerRyOyX ERROR -> keEpErjeRRYsAK
+    java.lang.String name -> keepErJErRy6HE
+    launcher.KeePErjerRyOyX[] $VALUES -> keepErJErRy6HE
+    344:344:launcher.KeePErjerRyOyX[] values() -> values
+    344:344:launcher.KeePErjerRyOyX valueOf(java.lang.String) -> valueOf
+    351:353:void <init>(java.lang.String,int,java.lang.String) -> <init>
+    358:358:java.lang.String toString() -> toString
+    344:347:void <clinit>() -> <clinit>
+launcher.KeePeRJErRyHXN -> launcher.kEepErJErRyqJr:
+    java.lang.String keepErJErRy6HE -> keepErJErRy6HE
+    20:22:void <init>(launcher.keePERjErrYClc,java.lang.String) -> <init>
+    27:28:void <init>(java.lang.String) -> <init>
+    33:33:launcher.kEePeRJeRryAUj getType() -> keepErJErRy6HE
+    39:43:launcher.KeePErjerRy6bP keepErJErRy6HE(launcher.KEePerjeRry8VJ,launcher.KEeperjERRYyzU) -> keepErJErRy6HE
+    13:13:java.lang.Object requestDo(launcher.KEePerjeRry8VJ,launcher.KEeperjERRYyzU) -> keepErJErRy6HE
+launcher.KeePeRJErRyoWd -> launcher.KEEPERjeRRyDT2:
+launcher.KeePeRJerryuZn -> launcher.KeePErjerRy6bP:
+    int[] keepErJErRy6HE -> keepErJErRy6HE
+    int[] KeePerjeRryt52 -> KeePerjeRryt52
+    79:156:void <clinit>() -> <clinit>
+launcher.KeePeRjerryDH3 -> launcher.kEeperJErrYOoH:
+    launcher.keePERjErrYClc config -> keepErJErRy6HE
+    java.util.concurrent.atomic.AtomicBoolean keepErJErRy6HE -> keepErJErRy6HE
+    21:27:void <init>(launcher.keePERjErrYClc) -> <init>
+    32:33:void <init>() -> <init>
+    38:38:void requestError(java.lang.String) -> keepErJErRy6HE
+    launcher.kEePeRJeRryAUj getType() -> keepErJErRy6HE
+    java.lang.Object requestDo(launcher.KEePerjeRry8VJ,launcher.KEeperjERRYyzU) -> keepErJErRy6HE
+    51:66:java.lang.Object request() -> keepErJErRy6HE
+    72:77:void readError(launcher.KEePerjeRry8VJ) -> keepErJErRy6HE
+    82:92:void keepErJErRy6HE(launcher.KEePerjeRry8VJ,launcher.KEeperjERRYyzU) -> keepErJErRy6HE
+launcher.KeePerJErRy8Tm -> launcher.kEEpERjErryuSa:
+    int MAX_BATCH_SIZE -> keepErJErRy6HE
+    java.lang.String[] keepErJErRy6HE -> keepErJErRy6HE
+    23:30:void <init>(launcher.keePERjErrYClc,java.lang.String[]) -> <init>
+    35:36:void <init>(java.lang.String[]) -> <init>
+    41:41:launcher.kEePeRJeRryAUj getType() -> keepErJErRy6HE
+    47:62:launcher.KeePErjerRy6bP[] keepErJErRy6HE(launcher.KEePerjeRry8VJ,launcher.KEeperjERRYyzU) -> keepErJErRy6HE
+    14:14:java.lang.Object requestDo(launcher.KEePerjeRry8VJ,launcher.KEeperjERRYyzU) -> keepErJErRy6HE
+launcher.KeePerJeRrY10e -> launcher.kEePerjErRy09c:
+    26:26:void <init>() -> <init>
+    29:37:launcher.keEperJerrYANO keepErJErRy6HE(launcher.kEEPerjeRRy6uh,java.lang.Object) -> keepErJErRy6HE
+    26:26:launcher.keEperJerrYANO keepErJErRy6HE(java.lang.annotation.Annotation,java.lang.Object) -> keepErJErRy6HE
+launcher.KeePerjeRryt52 -> launcher.KeEPerjErRyR55:
+launcher.KeepERJerrYYq7 -> launcher.kEEpeRJERRYUDQ:
+    java.nio.file.Path keepErJErRy6HE -> keepErJErRy6HE
+    launcher.KeepeRjeRrycgq keepErJErRy6HE -> keepErJErRy6HE
+    boolean keepErJErRy6HE -> keepErJErRy6HE
+    boolean KeePerjeRryt52 -> KeePerjeRryt52
+    java.util.Deque keepErJErRy6HE -> keepErJErRy6HE
+    java.util.Deque KeePerjeRryt52 -> KeePerjeRryt52
+    launcher.KeEpERJeRRy4zK KeePerjeRryt52 -> KeePerjeRryt52
+    launcher.KeEpERJeRRy4zK keepErJErRy6HE -> keepErJErRy6HE
+    223:234:void <init>(launcher.KeEpERJeRRy4zK,java.nio.file.Path,launcher.KeepeRjeRrycgq,boolean,boolean) -> <init>
+    239:251:java.nio.file.FileVisitResult keepErJErRy6HE(java.nio.file.Path,java.io.IOException) -> keepErJErRy6HE
+    257:276:java.nio.file.FileVisitResult keepErJErRy6HE(java.nio.file.Path,java.nio.file.attribute.BasicFileAttributes) -> keepErJErRy6HE
+    283:292:java.nio.file.FileVisitResult KeePerjeRryt52(java.nio.file.Path,java.nio.file.attribute.BasicFileAttributes) -> KeePerjeRryt52
     217:217:java.nio.file.FileVisitResult postVisitDirectory(java.lang.Object,java.io.IOException) -> postVisitDirectory
     217:217:java.nio.file.FileVisitResult visitFile(java.lang.Object,java.nio.file.attribute.BasicFileAttributes) -> visitFile
     217:217:java.nio.file.FileVisitResult preVisitDirectory(java.lang.Object,java.nio.file.attribute.BasicFileAttributes) -> preVisitDirectory
-    217:217:void <init>(launcher.hasher.HashedDir,java.nio.file.Path,launcher.hasher.FileNameMatcher,boolean,boolean,launcher.hasher.HashedDir$1) -> <init>
-launcher.hasher.HashedEntry -> launcher.keePeRjErrypC2:
-    boolean flag -> flag
-    11:11:void <init>() -> <init>
-    launcher.hasher.HashedEntry$Type getType() -> getType
-    long size() -> size
-launcher.hasher.HashedEntry$Type -> launcher.kEepErjERry3Xj:
-    launcher.hasher.HashedEntry$Type DIR -> DIR
-    launcher.hasher.HashedEntry$Type FILE -> FILE
-    launcher.serialize.stream.EnumSerializer SERIALIZER -> SERIALIZER
-    int n -> n
-    launcher.hasher.HashedEntry$Type[] $VALUES -> $VALUES
-    22:22:launcher.hasher.HashedEntry$Type[] values() -> values
-    22:22:launcher.hasher.HashedEntry$Type valueOf(java.lang.String) -> valueOf
-    30:32:void <init>(java.lang.String,int,int) -> <init>
-    36:36:launcher.hasher.HashedEntry$Type read(launcher.serialize.HInput) -> read
-    42:42:int getNumber() -> getNumber
-    22:26:void <clinit>() -> <clinit>
-launcher.hasher.HashedFile -> launcher.kEePeRjErryMYl:
-    launcher.helper.SecurityHelper$DigestAlgorithm DIGEST_ALGO -> keepErJErRy6HE
-    long size -> size
-    byte[] digest -> keepErJErRy6HE
-    26:29:void <init>(long,byte[]) -> <init>
-    34:35:void <init>(java.nio.file.Path,long,boolean) -> <init>
-    40:41:void <init>(launcher.serialize.HInput) -> <init>
-    46:46:launcher.hasher.HashedEntry$Type getType() -> getType
-    52:52:long size() -> size
-    58:64:void write(launcher.serialize.HOutput) -> write
-    69:69:boolean isSame(launcher.hasher.HashedFile) -> isSame
-    75:86:boolean isSame(java.nio.file.Path,boolean) -> isSame
-    92:92:boolean isSameDigest(byte[]) -> isSameDigest
-    17:17:void <clinit>() -> <clinit>
-launcher.helper.CommonHelper -> launcher.KEePeRJeRRy8Jj:
-    java.lang.String[] SCRIPT_ENGINE_ARGS -> keepErJErRy6HE
-    14:15:void <init>() -> <init>
-    20:20:java.lang.String low(java.lang.String) -> low
-    26:26:javax.script.ScriptEngine newScriptEngine() -> newScriptEngine
-    32:38:java.lang.Thread newThread(java.lang.String,boolean,java.lang.Runnable) -> newThread
-    44:48:java.lang.String replace(java.lang.String,java.lang.String[]) -> replace
-    11:11:void <clinit>() -> <clinit>
-launcher.helper.IOHelper -> launcher.KEepErjeRRyzrC:
-    java.nio.charset.Charset UNICODE_CHARSET -> UNICODE_CHARSET
-    java.nio.charset.Charset ASCII_CHARSET -> ASCII_CHARSET
-    int SOCKET_TIMEOUT -> SOCKET_TIMEOUT
-    int HTTP_TIMEOUT -> HTTP_TIMEOUT
-    int BUFFER_SIZE -> BUFFER_SIZE
-    java.lang.String CROSS_SEPARATOR -> CROSS_SEPARATOR
-    java.nio.file.FileSystem FS -> FS
-    java.lang.String PLATFORM_SEPARATOR -> PLATFORM_SEPARATOR
-    boolean POSIX -> POSIX
-    java.nio.file.Path JVM_DIR -> JVM_DIR
-    java.nio.file.Path HOME_DIR -> HOME_DIR
-    java.nio.file.Path HOME_DIR_WIN -> HOME_DIR_WIN
-    java.nio.file.Path WORKING_DIR -> WORKING_DIR
-    java.nio.file.OpenOption[] READ_OPTIONS -> keepErJErRy6HE
-    java.nio.file.OpenOption[] WRITE_OPTIONS -> KeePerjeRryt52
-    java.nio.file.OpenOption[] APPEND_OPTIONS -> keEPERjERryabM
-    java.nio.file.LinkOption[] LINK_OPTIONS -> keepErJErRy6HE
-    java.nio.file.CopyOption[] COPY_OPTIONS -> keepErJErRy6HE
-    java.util.Set WALK_OPTIONS -> keepErJErRy6HE
-    java.util.regex.Pattern CROSS_SEPARATOR_PATTERN -> keepErJErRy6HE
-    java.util.regex.Pattern PLATFORM_SEPARATOR_PATTERN -> KeePerjeRryt52
-    82:83:void <init>() -> <init>
-    90:96:void close(java.lang.AutoCloseable) -> close
-    101:103:void copy(java.nio.file.Path,java.nio.file.Path) -> copy
-    108:113:void createParentDirs(java.nio.file.Path) -> createParentDirs
-    118:118:java.lang.String decode(byte[]) -> decode
-    124:124:java.lang.String decodeASCII(byte[]) -> decodeASCII
-    130:131:void deleteDir(java.nio.file.Path,boolean) -> deleteDir
-    136:136:byte[] encode(java.lang.String) -> encode
-    142:142:byte[] encodeASCII(java.lang.String) -> encodeASCII
-    148:148:boolean exists(java.nio.file.Path) -> exists
-    154:154:java.nio.file.Path getCodeSource(java.lang.Class) -> getCodeSource
-    160:160:java.lang.String getFileName(java.nio.file.Path) -> getFileName
-    166:166:java.lang.String getIP(java.net.SocketAddress) -> getIP
-    172:172:byte[] getResourceBytes(java.lang.String) -> getResourceBytes
-    178:183:java.net.URL getResourceURL(java.lang.String) -> getResourceURL
-    189:189:boolean hasExtension(java.nio.file.Path,java.lang.String) -> hasExtension
-    195:195:boolean isDir(java.nio.file.Path) -> isDir
-    201:204:boolean isEmpty(java.nio.file.Path) -> isEmpty
-    210:210:boolean isFile(java.nio.file.Path) -> isFile
-    216:217:boolean isValidFileName(java.lang.String) -> isValidFileName
-    225:230:boolean isValidPath(java.lang.String) -> isValidPath
-    237:237:boolean isValidTextureBounds(int,int,boolean) -> isValidTextureBounds
-    244:246:void move(java.nio.file.Path,java.nio.file.Path) -> move
-    251:251:byte[] newBuffer() -> newBuffer
-    257:257:java.io.ByteArrayOutputStream newByteArrayOutput() -> newByteArrayOutput
-    263:263:char[] newCharBuffer() -> newCharBuffer
-    269:282:java.net.URLConnection newConnection(java.net.URL) -> newConnection
-    288:290:java.util.zip.Deflater newDeflater() -> newDeflater
-    296:296:java.util.zip.Inflater newInflater() -> newInflater
-    302:302:java.io.InputStream newInput(java.net.URL) -> newInput
-    308:308:java.io.InputStream newInput(java.nio.file.Path) -> newInput
-    314:314:java.io.OutputStream newOutput(java.nio.file.Path) -> newOutput
-    320:321:java.io.OutputStream newOutput(java.nio.file.Path,boolean) -> newOutput
-    327:327:java.io.BufferedReader newReader(java.io.InputStream) -> newReader
-    333:333:java.io.BufferedReader newReader(java.io.InputStream,java.nio.charset.Charset) -> newReader
-    339:341:java.io.BufferedReader newReader(java.net.URL) -> newReader
-    347:347:java.io.BufferedReader newReader(java.nio.file.Path) -> newReader
-    353:355:java.net.Socket newSocket() -> newSocket
-    361:361:java.io.BufferedWriter newWriter(java.io.OutputStream) -> newWriter
-    367:367:java.io.BufferedWriter newWriter(java.nio.file.Path) -> newWriter
-    373:374:java.io.BufferedWriter newWriter(java.nio.file.Path,boolean) -> newWriter
-    380:380:java.io.BufferedWriter newWriter(java.io.FileDescriptor) -> newWriter
-    386:388:java.util.zip.ZipEntry newZipEntry(java.lang.String) -> newZipEntry
-    394:394:java.util.zip.ZipEntry newZipEntry(java.util.zip.ZipEntry) -> newZipEntry
-    400:400:java.util.zip.ZipInputStream newZipInput(java.io.InputStream) -> newZipInput
-    406:406:java.util.zip.ZipInputStream newZipInput(java.net.URL) -> newZipInput
-    412:412:java.util.zip.ZipInputStream newZipInput(java.nio.file.Path) -> newZipInput
-    418:432:byte[] read(java.nio.file.Path) -> read
-    438:441:byte[] read(java.net.URL) -> read
-    447:457:void read(java.io.InputStream,byte[]) -> read
-    462:466:byte[] read(java.io.InputStream) -> read
-    472:472:java.nio.file.attribute.BasicFileAttributes readAttributes(java.nio.file.Path) -> readAttributes
-    478:497:java.awt.image.BufferedImage readTexture(java.lang.Object,boolean) -> readTexture
-    503:503:java.lang.String request(java.net.URL) -> request
-    509:513:java.net.InetSocketAddress resolve(java.net.InetSocketAddress) -> resolve
-    519:535:java.nio.file.Path resolveIncremental(java.nio.file.Path,java.lang.String,java.lang.String) -> resolveIncremental
-    543:570:java.nio.file.Path resolveJavaBin(java.nio.file.Path) -> resolveJavaBin
-    577:588:void setSocketFlags(java.net.Socket) -> setSocketFlags
-    593:593:java.nio.file.Path toPath(java.lang.String) -> toPath
-    599:599:java.lang.String toString(java.nio.file.Path) -> toString
-    607:611:java.net.URI toURI(java.net.URL) -> toURI
-    620:624:java.net.URL toURL(java.nio.file.Path) -> toURL
-    631:638:int transfer(java.io.InputStream,java.io.OutputStream) -> transfer
-    644:648:void transfer(java.nio.file.Path,java.io.OutputStream) -> transfer
-    653:653:int transfer(java.io.InputStream,java.nio.file.Path) -> transfer
-    659:662:int transfer(java.io.InputStream,java.nio.file.Path,boolean) -> transfer
-    670:674:java.lang.String urlDecode(java.lang.String) -> urlDecode
-    683:687:java.lang.String urlEncode(java.lang.String) -> urlEncode
-    694:694:java.lang.String verifyFileName(java.lang.String) -> verifyFileName
-    700:704:int verifyLength(int,int) -> verifyLength
-    710:711:java.awt.image.BufferedImage verifyTexture(java.awt.image.BufferedImage,boolean) -> verifyTexture
-    719:724:java.lang.String verifyURL(java.lang.String) -> verifyURL
-    733:737:java.net.URL convertToURL(java.lang.String) -> convertToURL
-    744:745:void walk(java.nio.file.Path,java.nio.file.FileVisitor,boolean) -> walk
-    750:752:void write(java.nio.file.Path,byte[]) -> write
-    757:757:java.io.OutputStream newBufferedOutStream(java.io.OutputStream) -> newBufferedOutStream
-    763:763:java.io.InputStream newBufferedInputStream(java.io.InputStream) -> newBufferedInputStream
-    710:710:boolean lambda$verifyTexture$1(boolean,java.awt.image.BufferedImage) -> keepErJErRy6HE
-    217:217:boolean lambda$isValidFileName$0(int) -> keepErJErRy6HE
-    29:79:void <clinit>() -> <clinit>
-launcher.helper.IOHelper$1 -> launcher.KeepErJerRyaAA:
-launcher.helper.IOHelper$DeleteDirVisitor -> launcher.keEPeRjerry0z3:
-    java.nio.file.Path dir -> keepErJErRy6HE
-    boolean self -> keepErJErRy6HE
-    772:775:void <init>(java.nio.file.Path,boolean) -> <init>
-    780:785:java.nio.file.FileVisitResult postVisitDirectory(java.nio.file.Path,java.io.IOException) -> keepErJErRy6HE
-    791:792:java.nio.file.FileVisitResult visitFile(java.nio.file.Path,java.nio.file.attribute.BasicFileAttributes) -> keepErJErRy6HE
-    766:766:java.nio.file.FileVisitResult postVisitDirectory(java.lang.Object,java.io.IOException) -> postVisitDirectory
-    766:766:java.nio.file.FileVisitResult visitFile(java.lang.Object,java.nio.file.attribute.BasicFileAttributes) -> visitFile
-    766:766:void <init>(java.nio.file.Path,boolean,launcher.helper.IOHelper$1) -> <init>
-launcher.helper.IOHelper$SkipHiddenVisitor -> launcher.kEEPerJERrygyq:
-    java.nio.file.FileVisitor visitor -> keepErJErRy6HE
+    217:217:void <init>(launcher.KeEpERJeRRy4zK,java.nio.file.Path,launcher.KeepeRjeRrycgq,boolean,boolean,launcher.KeeperjerRyakP) -> <init>
+launcher.KeepERjeRRyN4e -> launcher.KEEpERJeRrYaXw:
+    java.lang.String DEBUG_PROPERTY -> keepErJErRy6HE
+    java.lang.String NO_JANSI_PROPERTY -> KeePerjeRryt52
+    boolean JANSI -> keepErJErRy6HE
+    java.time.format.DateTimeFormatter keepErJErRy6HE -> keepErJErRy6HE
+    java.util.concurrent.atomic.AtomicBoolean keepErJErRy6HE -> keepErJErRy6HE
+    java.util.Set keepErJErRy6HE -> keepErJErRy6HE
+    launcher.KeEPerjerRYDVT keepErJErRy6HE -> keepErJErRy6HE
+    80:81:void <init>() -> <init>
+    86:87:void addOutput(launcher.KeEPerjerRYDVT) -> keepErJErRy6HE
+    92:100:void addOutput(java.nio.file.Path) -> keepErJErRy6HE
+    105:106:void addOutput(java.io.Writer) -> keepErJErRy6HE
+    111:115:void debug(java.lang.String) -> keepErJErRy6HE
+    120:121:void debug(java.lang.String,java.lang.Object[]) -> keepErJErRy6HE
+    126:127:void error(java.lang.Throwable) -> keepErJErRy6HE
+    132:133:void error(java.lang.String) -> KeePerjeRryt52
+    138:139:void error(java.lang.String,java.lang.Object[]) -> KeePerjeRryt52
+    144:145:void info(java.lang.String) -> keEPERjERryabM
+    150:151:void info(java.lang.String,java.lang.Object[]) -> keEPERjERryabM
+    156:156:boolean isDebugEnabled() -> keepErJErRy6HE
+    162:163:void setDebugEnabled(boolean) -> keepErJErRy6HE
+    168:171:void log(launcher.KeePErjerRyOyX,java.lang.String,boolean) -> keepErJErRy6HE
+    176:177:void printVersion(java.lang.String) -> keEpErjeRRYsAK
+    182:186:void println(java.lang.String) -> KeEperJErryz5T
+    191:191:boolean removeOutput(launcher.KeEPerjerRYDVT) -> keepErJErRy6HE
+    197:197:boolean removeStdOutput() -> KeePerjeRryt52
+    203:207:void subDebug(java.lang.String) -> keePErjerrYnmV
+    212:213:void subDebug(java.lang.String,java.lang.Object[]) -> keEpErjeRRYsAK
+    218:219:void subInfo(java.lang.String) -> kEepERjerryhdF
+    224:225:void subInfo(java.lang.String,java.lang.Object[]) -> KeEperJErryz5T
+    230:231:void subWarning(java.lang.String) -> KEEPeRjErrYXff
+    236:237:void subWarning(java.lang.String,java.lang.Object[]) -> keePErjerrYnmV
+    242:252:java.lang.String toString(java.lang.Throwable) -> keepErJErRy6HE
+    259:260:void warning(java.lang.String) -> keePErjERRy57k
+    265:266:void warning(java.lang.String,java.lang.Object[]) -> kEepERjerryhdF
+    271:317:java.lang.String keepErJErRy6HE(launcher.KeePErjerRyOyX,java.lang.String,java.lang.String,boolean) -> keepErJErRy6HE
+    322:327:java.lang.String keepErJErRy6HE(java.lang.String) -> keepErJErRy6HE
+    332:336:java.lang.String KeePerjeRryt52(launcher.KeePErjerRyOyX,java.lang.String,java.lang.String,boolean) -> KeePerjeRryt52
+    341:341:java.lang.String KeePerjeRryt52(java.lang.String) -> KeePerjeRryt52
+    32:77:void <clinit>() -> <clinit>
+launcher.KeepErJErrYUKW -> launcher.KeepeRjeRrycgq:
+    14:15:void <init>(launcher.keePERjErrYClc) -> <init>
+    20:21:void <init>() -> <init>
+    26:26:launcher.kEePeRJeRryAUj getType() -> keepErJErRy6HE
+    32:36:java.lang.Object requestDo(launcher.KEePerjeRry8VJ,launcher.KEeperjERRYyzU) -> keepErJErRy6HE
+    java.lang.String getName() -> keepErJErRy6HE
+    java.lang.Object requestDoCustom(launcher.KEePerjeRry8VJ,launcher.KEeperjERRYyzU) -> KeePerjeRryt52
+launcher.KeepErJeRrY4b2 -> launcher.kEepERJErRyMwq:
+launcher.KeepErJerRyaAA -> launcher.kEEpErJerryq4E:
+launcher.KeepErjERryKEt -> launcher.KeEpERJeRRy4zK:
+launcher.KeepeRJERRyWud -> launcher.KeeperjerRyakP:
+    java.util.function.IntPredicate POSITIVE -> keepErJErRy6HE
+    java.util.function.IntPredicate NOT_NEGATIVE -> KeePerjeRryt52
+    java.util.function.LongPredicate L_POSITIVE -> keepErJErRy6HE
+    java.util.function.LongPredicate L_NOT_NEGATIVE -> KeePerjeRryt52
+    java.util.function.Predicate NOT_EMPTY -> keepErJErRy6HE
+    java.util.regex.Pattern USERNAME_PATTERN -> keepErJErRy6HE
+    29:30:void <init>() -> <init>
+    35:35:java.lang.Object getMapValue(java.util.Map,java.lang.Object,java.lang.String) -> keepErJErRy6HE
+    41:41:boolean isValidIDName(java.lang.String) -> keepErJErRy6HE
+    47:47:boolean isValidIDNameChar(int) -> keepErJErRy6HE
+    53:53:boolean isValidUsername(java.lang.CharSequence) -> keepErJErRy6HE
+    59:60:void putIfAbsent(java.util.Map,java.lang.Object,java.lang.Object,java.lang.String) -> keepErJErRy6HE
+    65:65:java.util.function.IntPredicate range(int,int) -> keepErJErRy6HE
+    71:75:java.lang.Object verify(java.lang.Object,java.util.function.Predicate,java.lang.String) -> keepErJErRy6HE
+    81:85:double verifyDouble(double,java.util.function.DoublePredicate,java.lang.String) -> keepErJErRy6HE
+    91:91:java.lang.String verifyIDName(java.lang.String) -> keepErJErRy6HE
+    97:101:int verifyInt(int,java.util.function.IntPredicate,java.lang.String) -> keepErJErRy6HE
+    107:111:long verifyLong(long,java.util.function.LongPredicate,java.lang.String) -> keepErJErRy6HE
+    117:117:java.lang.String verifyUsername(java.lang.String) -> KeePerjeRryt52
+    65:65:boolean keepErJErRy6HE(int,int,int) -> keepErJErRy6HE
+    24:24:boolean keepErJErRy6HE(java.lang.String) -> KeePerjeRryt52
+    22:22:boolean keepErJErRy6HE(long) -> keepErJErRy6HE
+    20:20:boolean KeePerjeRryt52(long) -> KeePerjeRryt52
+    18:18:boolean keepErJErRy6HE(int) -> KeePerjeRryt52
+    16:16:boolean KeePerjeRryt52(int) -> keEPERjERryabM
+    16:26:void <clinit>() -> <clinit>
+launcher.KeepeRJERRyjXj -> launcher.KEEPErjeRryH1J:
+launcher.KeepeRjERryuKZ -> launcher.KeepERJerrYYq7:
+    int[] keepErJErRy6HE -> keepErJErRy6HE
+    82:82:void <clinit>() -> <clinit>
+launcher.KeepeRjeRrycgq -> launcher.keePeRjErrypC2:
+    launcher.kEEpErJerryq4E[] keepErJErRy6HE -> keepErJErRy6HE
+    launcher.kEEpErJerryq4E[] KeePerjeRryt52 -> KeePerjeRryt52
+    launcher.kEEpErJerryq4E[] keEPERjERryabM -> keEPERjERryabM
+    launcher.kEEpErJerryq4E[] keEpErjeRRYsAK -> keEpErjeRRYsAK
+    22:26:void <init>(java.lang.String[],java.lang.String[],java.lang.String[]) -> <init>
+    29:33:void <init>(launcher.kEEpErJerryq4E[],launcher.kEEpErJerryq4E[],launcher.kEEpErJerryq4E[]) -> <init>
+    37:37:boolean keepErJErRy6HE(launcher.kEEpErJerryq4E[],java.util.Collection) -> keepErJErRy6HE
+    42:42:launcher.kEEpErJerryq4E[] keepErJErRy6HE(java.lang.String[]) -> keepErJErRy6HE
+    48:48:boolean shouldUpdate(java.util.Collection) -> keepErJErRy6HE
+    54:54:boolean shouldVerify(java.util.Collection) -> KeePerjeRryt52
+    60:60:launcher.KeepeRjeRrycgq verifyOnly() -> keepErJErRy6HE
+    42:42:launcher.kEEpErJerryq4E[] keepErJErRy6HE(int) -> keepErJErRy6HE
+    42:42:launcher.kEEpErJerryq4E keepErJErRy6HE(java.lang.CharSequence) -> keepErJErRy6HE
+    37:37:boolean keepErJErRy6HE(java.util.Collection,launcher.kEEpErJerryq4E) -> keepErJErRy6HE
+    13:13:void <clinit>() -> <clinit>
+launcher.KeeperJerRyoBb -> launcher.kEepErjERry3Xj:
+launcher.KeeperjerRyakP -> launcher.kEePeRjErryMYl:
+    int[] keepErJErRy6HE -> keepErJErRy6HE
+    46:46:void <clinit>() -> <clinit>
+launcher.kEEPErjErRYOqZ -> launcher.KEePeRJeRRy8Jj:
+launcher.kEEPErjErryBYR -> launcher.KEepErjeRRyzrC:
+launcher.kEEPErjerRyItY -> launcher.KeepErJerRyaAA:
+    launcher.keEperJerrYANO keepErJErRy6HE() -> keepErJErRy6HE
+launcher.kEEPeRJerRYVb1 -> launcher.keEPeRjerry0z3:
+    java.io.Writer keepErJErRy6HE -> keepErJErRy6HE
+    382:384:void <init>(java.io.Writer) -> <init>
+    389:390:void close() -> close
+    397:404:void println(java.lang.String) -> println
+    377:377:void <init>(java.io.Writer,launcher.KEepErjeRrYEkB) -> <init>
+launcher.kEEPeRjerry4x5 -> launcher.kEEPerJERrygyq:
+    14:15:void <init>(boolean,boolean,int) -> <init>
+    20:21:void <init>(launcher.KEePerjeRry8VJ,boolean) -> <init>
+    26:26:launcher.KeEPeRjErrYptJ getType() -> keepErJErRy6HE
+    32:33:void write(launcher.KEeperjERRYyzU) -> keepErJErRy6HE
+launcher.kEEPerJERrygyq -> launcher.keeperjERRyWCz:
+    java.nio.file.FileVisitor keepErJErRy6HE -> keepErJErRy6HE
     801:803:void <init>(java.nio.file.FileVisitor) -> <init>
-    808:808:java.nio.file.FileVisitResult postVisitDirectory(java.nio.file.Path,java.io.IOException) -> keepErJErRy6HE
-    814:814:java.nio.file.FileVisitResult preVisitDirectory(java.nio.file.Path,java.nio.file.attribute.BasicFileAttributes) -> keepErJErRy6HE
-    820:820:java.nio.file.FileVisitResult visitFile(java.nio.file.Path,java.nio.file.attribute.BasicFileAttributes) -> KeePerjeRryt52
-    826:826:java.nio.file.FileVisitResult visitFileFailed(java.nio.file.Path,java.io.IOException) -> KeePerjeRryt52
+    808:808:java.nio.file.FileVisitResult keepErJErRy6HE(java.nio.file.Path,java.io.IOException) -> keepErJErRy6HE
+    814:814:java.nio.file.FileVisitResult keepErJErRy6HE(java.nio.file.Path,java.nio.file.attribute.BasicFileAttributes) -> keepErJErRy6HE
+    820:820:java.nio.file.FileVisitResult KeePerjeRryt52(java.nio.file.Path,java.nio.file.attribute.BasicFileAttributes) -> KeePerjeRryt52
+    826:826:java.nio.file.FileVisitResult KeePerjeRryt52(java.nio.file.Path,java.io.IOException) -> KeePerjeRryt52
     796:796:java.nio.file.FileVisitResult postVisitDirectory(java.lang.Object,java.io.IOException) -> postVisitDirectory
     796:796:java.nio.file.FileVisitResult visitFileFailed(java.lang.Object,java.io.IOException) -> visitFileFailed
     796:796:java.nio.file.FileVisitResult visitFile(java.lang.Object,java.nio.file.attribute.BasicFileAttributes) -> visitFile
     796:796:java.nio.file.FileVisitResult preVisitDirectory(java.lang.Object,java.nio.file.attribute.BasicFileAttributes) -> preVisitDirectory
-    796:796:void <init>(java.nio.file.FileVisitor,launcher.helper.IOHelper$1) -> <init>
-launcher.helper.JVMHelper -> launcher.keeperjERRyWCz:
-    java.lang.management.RuntimeMXBean RUNTIME_MXBEAN -> RUNTIME_MXBEAN
-    com.sun.management.OperatingSystemMXBean OPERATING_SYSTEM_MXBEAN -> OPERATING_SYSTEM_MXBEAN
-    launcher.helper.JVMHelper$OS OS_TYPE -> OS_TYPE
-    java.lang.String OS_VERSION -> OS_VERSION
-    int OS_BITS -> OS_BITS
-    int JVM_BITS -> JVM_BITS
-    int RAM -> RAM
-    sun.misc.Unsafe UNSAFE -> UNSAFE
-    java.lang.invoke.MethodHandles$Lookup LOOKUP -> LOOKUP
-    java.lang.Runtime RUNTIME -> RUNTIME
-    java.lang.ClassLoader LOADER -> LOADER
-    java.lang.String JAVA_LIBRARY_PATH -> keepErJErRy6HE
-    java.lang.Object UCP -> keepErJErRy6HE
-    java.lang.invoke.MethodHandle MH_UCP_ADDURL_METHOD -> keepErJErRy6HE
-    java.lang.invoke.MethodHandle MH_UCP_GETURLS_METHOD -> KeePerjeRryt52
-    java.lang.invoke.MethodHandle MH_UCP_GETRESOURCE_METHOD -> keEPERjERryabM
-    java.lang.invoke.MethodHandle MH_RESOURCE_GETCERTS_METHOD -> keEpErjeRRYsAK
-    90:91:void <init>() -> <init>
-    98:104:void addClassPath(java.net.URL) -> addClassPath
-    110:113:void fullGC() -> fullGC
-    120:125:java.security.cert.Certificate[] getCertificates(java.lang.String) -> getCertificates
-    134:138:java.net.URL[] getClassPath() -> getClassPath
-    145:154:void halt0(int) -> halt0
-    159:159:boolean isJVMMatchesSystemArch() -> isJVMMatchesSystemArch
-    165:181:void verifySystemProperties(java.lang.Class,boolean) -> verifySystemProperties
-    187:193:int getCorrectOSArch() -> keepErJErRy6HE
-    198:199:int getRAMAmount() -> KeePerjeRryt52
-    204:215:java.lang.Class firstClass(java.lang.String[]) -> keepErJErRy6HE
-    23:87:void <clinit>() -> <clinit>
-launcher.helper.JVMHelper$OS -> launcher.keePeRJERRyHjo:
-    launcher.helper.JVMHelper$OS MUSTDIE -> MUSTDIE
-    launcher.helper.JVMHelper$OS LINUX -> LINUX
-    launcher.helper.JVMHelper$OS MACOSX -> MACOSX
-    java.lang.String name -> name
-    launcher.helper.JVMHelper$OS[] $VALUES -> $VALUES
-    218:218:launcher.helper.JVMHelper$OS[] values() -> values
-    218:218:launcher.helper.JVMHelper$OS valueOf(java.lang.String) -> valueOf
-    225:227:void <init>(java.lang.String,int,java.lang.String) -> <init>
-    231:247:launcher.helper.JVMHelper$OS byName(java.lang.String) -> byName
-    218:221:void <clinit>() -> <clinit>
-launcher.helper.LogHelper -> launcher.KeepERjeRRyN4e:
-    java.lang.String DEBUG_PROPERTY -> DEBUG_PROPERTY
-    java.lang.String NO_JANSI_PROPERTY -> NO_JANSI_PROPERTY
-    boolean JANSI -> JANSI
-    java.time.format.DateTimeFormatter DATE_TIME_FORMATTER -> keepErJErRy6HE
-    java.util.concurrent.atomic.AtomicBoolean DEBUG_ENABLED -> keepErJErRy6HE
-    java.util.Set OUTPUTS -> keepErJErRy6HE
-    launcher.helper.LogHelper$Output STD_OUTPUT -> keepErJErRy6HE
-    80:81:void <init>() -> <init>
-    86:87:void addOutput(launcher.helper.LogHelper$Output) -> addOutput
-    92:100:void addOutput(java.nio.file.Path) -> addOutput
-    105:106:void addOutput(java.io.Writer) -> addOutput
-    111:115:void debug(java.lang.String) -> debug
-    120:121:void debug(java.lang.String,java.lang.Object[]) -> debug
-    126:127:void error(java.lang.Throwable) -> error
-    132:133:void error(java.lang.String) -> error
-    138:139:void error(java.lang.String,java.lang.Object[]) -> error
-    144:145:void info(java.lang.String) -> info
-    150:151:void info(java.lang.String,java.lang.Object[]) -> info
-    156:156:boolean isDebugEnabled() -> isDebugEnabled
-    162:163:void setDebugEnabled(boolean) -> setDebugEnabled
-    168:171:void log(launcher.helper.LogHelper$Level,java.lang.String,boolean) -> log
-    176:177:void printVersion(java.lang.String) -> printVersion
-    182:186:void println(java.lang.String) -> println
-    191:191:boolean removeOutput(launcher.helper.LogHelper$Output) -> removeOutput
-    197:197:boolean removeStdOutput() -> removeStdOutput
-    203:207:void subDebug(java.lang.String) -> subDebug
-    212:213:void subDebug(java.lang.String,java.lang.Object[]) -> subDebug
-    218:219:void subInfo(java.lang.String) -> subInfo
-    224:225:void subInfo(java.lang.String,java.lang.Object[]) -> subInfo
-    230:231:void subWarning(java.lang.String) -> subWarning
-    236:237:void subWarning(java.lang.String,java.lang.Object[]) -> subWarning
-    242:252:java.lang.String toString(java.lang.Throwable) -> toString
-    259:260:void warning(java.lang.String) -> warning
-    265:266:void warning(java.lang.String,java.lang.Object[]) -> warning
-    271:317:java.lang.String ansiFormatLog(launcher.helper.LogHelper$Level,java.lang.String,java.lang.String,boolean) -> keepErJErRy6HE
-    322:327:java.lang.String ansiFormatVersion(java.lang.String) -> keepErJErRy6HE
-    332:336:java.lang.String formatLog(launcher.helper.LogHelper$Level,java.lang.String,java.lang.String,boolean) -> KeePerjeRryt52
-    341:341:java.lang.String formatVersion(java.lang.String) -> KeePerjeRryt52
-    32:77:void <clinit>() -> <clinit>
-launcher.helper.LogHelper$1 -> launcher.KEepErjeRrYEkB:
-    int[] $SwitchMap$launcher$helper$LogHelper$Level -> keepErJErRy6HE
-    272:272:void <clinit>() -> <clinit>
-launcher.helper.LogHelper$JAnsiOutput -> launcher.keEpeRJerRYfkE:
-    373:374:void <init>(java.io.OutputStream) -> <init>
-    369:369:void <init>(java.io.OutputStream,launcher.helper.LogHelper$1) -> <init>
-launcher.helper.LogHelper$Level -> launcher.KeePErjerRyOyX:
-    launcher.helper.LogHelper$Level DEBUG -> DEBUG
-    launcher.helper.LogHelper$Level INFO -> INFO
-    launcher.helper.LogHelper$Level WARNING -> WARNING
-    launcher.helper.LogHelper$Level ERROR -> ERROR
-    java.lang.String name -> name
-    launcher.helper.LogHelper$Level[] $VALUES -> $VALUES
-    344:344:launcher.helper.LogHelper$Level[] values() -> values
-    344:344:launcher.helper.LogHelper$Level valueOf(java.lang.String) -> valueOf
-    351:353:void <init>(java.lang.String,int,java.lang.String) -> <init>
-    358:358:java.lang.String toString() -> toString
-    344:347:void <clinit>() -> <clinit>
-launcher.helper.LogHelper$Output -> launcher.KeEPerjerRYDVT:
-    void println(java.lang.String) -> println
-launcher.helper.LogHelper$WriterOutput -> launcher.kEEPeRJerRYVb1:
-    java.io.Writer writer -> keepErJErRy6HE
-    382:384:void <init>(java.io.Writer) -> <init>
-    389:390:void close() -> close
-    397:404:void println(java.lang.String) -> println
-    377:377:void <init>(java.io.Writer,launcher.helper.LogHelper$1) -> <init>
-launcher.helper.SecurityHelper -> launcher.keepERJerRyy82:
-    java.lang.String RSA_ALGO -> RSA_ALGO
-    java.lang.String RSA_SIGN_ALGO -> RSA_SIGN_ALGO
-    java.lang.String RSA_CIPHER_ALGO -> RSA_CIPHER_ALGO
-    int TOKEN_LENGTH -> TOKEN_LENGTH
-    int RSA_KEY_LENGTH_BITS -> RSA_KEY_LENGTH_BITS
-    int RSA_KEY_LENGTH -> RSA_KEY_LENGTH
-    int CRYPTO_MAX_LENGTH -> CRYPTO_MAX_LENGTH
-    java.lang.String CERTIFICATE_DIGEST -> CERTIFICATE_DIGEST
-    java.lang.String HEX -> HEX
-    java.lang.String JWT -> JWT
-    char[] VOWELS -> keepErJErRy6HE
-    char[] CONS -> KeePerjeRryt52
-    60:61:void <init>() -> <init>
-    66:66:byte[] digest(launcher.helper.SecurityHelper$DigestAlgorithm,java.lang.String) -> digest
-    72:75:byte[] digest(launcher.helper.SecurityHelper$DigestAlgorithm,java.net.URL) -> digest
-    81:84:byte[] digest(launcher.helper.SecurityHelper$DigestAlgorithm,java.nio.file.Path) -> digest
-    90:90:byte[] digest(launcher.helper.SecurityHelper$DigestAlgorithm,byte[]) -> digest
-    96:102:byte[] digest(launcher.helper.SecurityHelper$DigestAlgorithm,java.io.InputStream) -> digest
-    110:116:java.security.KeyPair genRSAKeyPair(java.security.SecureRandom) -> genRSAKeyPair
-    123:123:java.security.KeyPair genRSAKeyPair() -> genRSAKeyPair
-    131:135:boolean isValidCertificate(java.security.cert.Certificate) -> isValidCertificate
-    142:142:boolean isValidCertificates(java.security.cert.Certificate[]) -> isValidCertificates
-    149:157:boolean isValidCertificates(java.lang.Class) -> isValidCertificates
-    163:166:boolean isValidSign(java.nio.file.Path,byte[],java.security.interfaces.RSAPublicKey) -> isValidSign
-    172:181:boolean isValidSign(byte[],byte[],java.security.interfaces.RSAPublicKey) -> isValidSign
-    187:189:boolean isValidSign(java.io.InputStream,byte[],java.security.interfaces.RSAPublicKey) -> isValidSign
-    195:198:boolean isValidSign(java.net.URL,byte[],java.security.interfaces.RSAPublicKey) -> isValidSign
-    206:206:boolean isValidToken(java.lang.CharSequence) -> isValidToken
-    212:219:java.security.MessageDigest newDigest(launcher.helper.SecurityHelper$DigestAlgorithm) -> newDigest
-    226:226:javax.crypto.Cipher newRSADecryptCipher(java.security.interfaces.RSAPrivateKey) -> newRSADecryptCipher
-    232:232:javax.crypto.Cipher newRSAEncryptCipher(java.security.interfaces.RSAPublicKey) -> newRSAEncryptCipher
-    238:247:java.security.Signature newRSASignSignature(java.security.interfaces.RSAPrivateKey) -> newRSASignSignature
-    253:262:java.security.Signature newRSAVerifySignature(java.security.interfaces.RSAPublicKey) -> newRSAVerifySignature
-    268:268:java.security.SecureRandom newRandom() -> newRandom
-    274:276:byte[] randomBytes(java.util.Random,int) -> randomBytes
-    282:282:byte[] randomBytes(int) -> randomBytes
-    288:288:java.lang.String randomStringToken(java.util.Random) -> randomStringToken
-    294:294:java.lang.String randomStringToken() -> randomStringToken
-    300:300:byte[] randomToken(java.util.Random) -> randomToken
-    306:306:byte[] randomToken() -> randomToken
-    312:385:java.lang.String randomUsername(java.util.Random) -> randomUsername
-    391:391:java.lang.String randomUsername() -> randomUsername
-    397:405:byte[] sign(java.io.InputStream,java.security.interfaces.RSAPrivateKey) -> sign
-    412:420:byte[] sign(byte[],java.security.interfaces.RSAPrivateKey) -> sign
-    427:430:byte[] sign(java.nio.file.Path,java.security.interfaces.RSAPrivateKey) -> sign
-    436:446:java.lang.String toHex(byte[]) -> toHex
-    452:452:java.security.interfaces.RSAPrivateKey toPrivateRSAKey(byte[]) -> toPrivateRSAKey
-    458:458:java.security.interfaces.RSAPublicKey toPublicRSAKey(byte[]) -> toPublicRSAKey
-    464:468:void verifyCertificates(java.lang.Class) -> verifyCertificates
-    473:477:void verifySign(byte[],byte[],java.security.interfaces.RSAPublicKey) -> verifySign
-    482:486:void verifySign(java.io.InputStream,byte[],java.security.interfaces.RSAPublicKey) -> verifySign
-    491:495:void verifySign(java.nio.file.Path,byte[],java.security.interfaces.RSAPublicKey) -> verifySign
-    500:504:void verifySign(java.net.URL,byte[],java.security.interfaces.RSAPublicKey) -> verifySign
-    509:509:java.lang.String verifyToken(java.lang.String) -> verifyToken
-    517:525:javax.crypto.Cipher newCipher(java.lang.String) -> keepErJErRy6HE
-    531:540:javax.crypto.Cipher newRSACipher(int,java.security.interfaces.RSAKey) -> keepErJErRy6HE
-    547:551:java.security.KeyFactory newRSAKeyFactory() -> keepErJErRy6HE
-    559:563:java.security.Signature newRSASignature() -> keepErJErRy6HE
-    569:581:void updateSignature(java.io.InputStream,java.security.Signature) -> keepErJErRy6HE
-    212:212:boolean lambda$newDigest$1(launcher.helper.SecurityHelper$DigestAlgorithm) -> keepErJErRy6HE
-    206:206:boolean lambda$isValidToken$0(int) -> keepErJErRy6HE
-    56:57:void <clinit>() -> <clinit>
-launcher.helper.SecurityHelper$DigestAlgorithm -> launcher.KeePErJERrYQ1W:
-    launcher.helper.SecurityHelper$DigestAlgorithm PLAIN -> PLAIN
-    launcher.helper.SecurityHelper$DigestAlgorithm MD5 -> MD5
-    launcher.helper.SecurityHelper$DigestAlgorithm SHA1 -> SHA1
-    launcher.helper.SecurityHelper$DigestAlgorithm SHA224 -> SHA224
-    launcher.helper.SecurityHelper$DigestAlgorithm SHA256 -> SHA256
-    launcher.helper.SecurityHelper$DigestAlgorithm SHA512 -> SHA512
-    java.util.Map ALGORITHMS -> ALGORITHMS
-    java.lang.String name -> name
-    int bits -> bits
-    int bytes -> bytes
-    launcher.helper.SecurityHelper$DigestAlgorithm[] $VALUES -> $VALUES
-    boolean $assertionsDisabled -> $assertionsDisabled
-    583:583:launcher.helper.SecurityHelper$DigestAlgorithm[] values() -> values
-    583:583:launcher.helper.SecurityHelper$DigestAlgorithm valueOf(java.lang.String) -> valueOf
-    605:612:void <init>(java.lang.String,int,java.lang.String,int) -> <init>
-    616:616:launcher.helper.SecurityHelper$DigestAlgorithm byName(java.lang.String) -> byName
-    622:622:java.lang.String toString() -> toString
-    627:631:byte[] verify(byte[]) -> verify
-    583:597:void <clinit>() -> <clinit>
-launcher.helper.VerifyHelper -> launcher.KeepeRJERRyWud:
-    java.util.function.IntPredicate POSITIVE -> POSITIVE
-    java.util.function.IntPredicate NOT_NEGATIVE -> NOT_NEGATIVE
-    java.util.function.LongPredicate L_POSITIVE -> L_POSITIVE
-    java.util.function.LongPredicate L_NOT_NEGATIVE -> L_NOT_NEGATIVE
-    java.util.function.Predicate NOT_EMPTY -> NOT_EMPTY
-    java.util.regex.Pattern USERNAME_PATTERN -> USERNAME_PATTERN
-    29:30:void <init>() -> <init>
-    35:35:java.lang.Object getMapValue(java.util.Map,java.lang.Object,java.lang.String) -> getMapValue
-    41:41:boolean isValidIDName(java.lang.String) -> isValidIDName
-    47:47:boolean isValidIDNameChar(int) -> isValidIDNameChar
-    53:53:boolean isValidUsername(java.lang.CharSequence) -> isValidUsername
-    59:60:void putIfAbsent(java.util.Map,java.lang.Object,java.lang.Object,java.lang.String) -> putIfAbsent
-    65:65:java.util.function.IntPredicate range(int,int) -> range
-    71:75:java.lang.Object verify(java.lang.Object,java.util.function.Predicate,java.lang.String) -> verify
-    81:85:double verifyDouble(double,java.util.function.DoublePredicate,java.lang.String) -> verifyDouble
-    91:91:java.lang.String verifyIDName(java.lang.String) -> verifyIDName
-    97:101:int verifyInt(int,java.util.function.IntPredicate,java.lang.String) -> verifyInt
-    107:111:long verifyLong(long,java.util.function.LongPredicate,java.lang.String) -> verifyLong
-    117:117:java.lang.String verifyUsername(java.lang.String) -> verifyUsername
-    65:65:boolean lambda$range$5(int,int,int) -> keepErJErRy6HE
-    24:24:boolean lambda$static$4(java.lang.String) -> keepErJErRy6HE
-    22:22:boolean lambda$static$3(long) -> keepErJErRy6HE
-    20:20:boolean lambda$static$2(long) -> KeePerjeRryt52
-    18:18:boolean lambda$static$1(int) -> keepErJErRy6HE
-    16:16:boolean lambda$static$0(int) -> KeePerjeRryt52
-    16:26:void <clinit>() -> <clinit>
-launcher.helper.js.JSApplication -> launcher.kEepeRjerry9Ep:
-    java.util.concurrent.atomic.AtomicReference INSTANCE -> INSTANCE
-    16:18:void <init>() -> <init>
-    22:22:launcher.helper.js.JSApplication getInstance() -> getInstance
-    12:12:void <clinit>() -> <clinit>
-launcher.request.CustomRequest -> launcher.KeepErJErrYUKW:
-    14:15:void <init>(launcher.Launcher$Config) -> <init>
-    20:21:void <init>() -> <init>
-    26:26:launcher.request.Request$Type getType() -> getType
-    32:36:java.lang.Object requestDo(launcher.serialize.HInput,launcher.serialize.HOutput) -> requestDo
-    java.lang.String getName() -> getName
-    java.lang.Object requestDoCustom(launcher.serialize.HInput,launcher.serialize.HOutput) -> requestDoCustom
-launcher.request.PingRequest -> launcher.kEEperJErryB31:
-    byte EXPECTED_BYTE -> EXPECTED_BYTE
-    18:19:void <init>(launcher.Launcher$Config) -> <init>
+    796:796:void <init>(java.nio.file.FileVisitor,launcher.KeepErJerRyaAA) -> <init>
+launcher.kEEPerjeRRy6uh -> launcher.keePeRJERRyHjo:
+    launcher.keEperJerrYANO keepErJErRy6HE() -> keepErJErRy6HE
+launcher.kEEpERjErryuSa -> launcher.KeepERjeRRyN4e:
+    java.lang.String keepErJErRy6HE -> keepErJErRy6HE
+    java.lang.String KeePerjeRryt52 -> KeePerjeRryt52
+    java.util.regex.Pattern keepErJErRy6HE -> keepErJErRy6HE
+    int keepErJErRy6HE -> keepErJErRy6HE
+    java.net.InetSocketAddress keepErJErRy6HE -> keepErJErRy6HE
+    java.lang.String keEPERjERryabM -> keEPERjERryabM
+    java.lang.Object keepErJErRy6HE -> keepErJErRy6HE
+    launcher.kEePerjErRy09c keepErJErRy6HE -> keepErJErRy6HE
+    java.lang.Throwable keepErJErRy6HE -> keepErJErRy6HE
+    long keepErJErRy6HE -> keepErJErRy6HE
+    35:45:void <init>(java.net.InetSocketAddress,java.lang.String) -> <init>
+    49:51:java.lang.String keepErJErRy6HE(launcher.KEePerjeRry8VJ) -> keepErJErRy6HE
+    56:58:void keepErJErRy6HE(launcher.KEeperjERRYyzU,java.lang.String) -> keepErJErRy6HE
+    63:92:launcher.kEePerjErRy09c ping() -> keepErJErRy6HE
+    97:105:launcher.kEePerjErRy09c keepErJErRy6HE() -> KeePerjeRryt52
+    110:174:launcher.kEePerjErRy09c keepErJErRy6HE(launcher.KEePerjeRry8VJ,launcher.KEeperjERRYyzU,boolean) -> keepErJErRy6HE
+    181:230:launcher.kEePerjErRy09c keepErJErRy6HE(launcher.KEePerjeRry8VJ,launcher.KEeperjERRYyzU) -> keepErJErRy6HE
+    27:27:void <clinit>() -> <clinit>
+launcher.kEEpErJERRYmIE -> launcher.KEepErjeRrYEkB:
+launcher.kEEpErJerryq4E -> launcher.keEpeRJerRYfkE:
+    java.util.regex.Pattern keepErJErRy6HE -> keepErJErRy6HE
+    java.util.regex.Pattern[] keepErJErRy6HE -> keepErJErRy6HE
+    69:71:void <init>(java.lang.CharSequence) -> <init>
+    75:92:boolean keepErJErRy6HE(java.util.Collection) -> keepErJErRy6HE
+    70:70:java.util.regex.Pattern[] keepErJErRy6HE(int) -> keepErJErRy6HE
+    63:63:void <init>(java.lang.CharSequence,launcher.kEepERJErRyMwq) -> <init>
+    63:63:boolean keepErJErRy6HE(launcher.kEEpErJerryq4E,java.util.Collection) -> keepErJErRy6HE
+    65:65:void <clinit>() -> <clinit>
+launcher.kEEpErjERRyAWR -> launcher.KeePErjerRyOyX:
+    14:15:void <init>(int,boolean,int) -> <init>
+    20:21:void <init>(launcher.KEePerjeRry8VJ,boolean) -> <init>
+    26:26:launcher.KeEPeRjErrYptJ getType() -> keepErJErRy6HE
+    32:33:void write(launcher.KEeperjERRYyzU) -> keepErJErRy6HE
+launcher.kEEpErjERrYCqu -> launcher.KeEPerjerRYDVT:
+    java.lang.String keepErJErRy6HE -> keepErJErRy6HE
+    byte[] keepErJErRy6HE -> keepErJErRy6HE
+    23:26:void <init>(launcher.keePERjErrYClc,java.lang.String,byte[]) -> <init>
+    31:32:void <init>(java.lang.String,byte[]) -> <init>
+    37:37:launcher.kEePeRJeRryAUj getType() -> keepErJErRy6HE
+    43:52:launcher.KEEPerJeRrYDn8 keepErJErRy6HE(launcher.KEePerjeRry8VJ,launcher.KEeperjERRYyzU) -> keepErJErRy6HE
+    15:15:java.lang.Object requestDo(launcher.KEePerjeRry8VJ,launcher.KEeperjERRYyzU) -> keepErJErRy6HE
+launcher.kEEpeRJERRYUDQ -> launcher.kEEPeRJerRYVb1:
+launcher.kEEpeRjERryUJl -> launcher.keepERJerRyy82:
+    java.lang.String keepErJErRy6HE() -> keepErJErRy6HE
+    launcher.keEperJerrYANO keepErJErRy6HE() -> keepErJErRy6HE
+launcher.kEEperJERRYGIM -> launcher.KeePErJERrYQ1W:
+    java.util.Collection keepErJErRy6HE -> keepErJErRy6HE
+    471:473:void <init>(java.util.Collection) -> <init>
+    478:482:java.nio.file.FileVisitResult keepErJErRy6HE(java.nio.file.Path,java.nio.file.attribute.BasicFileAttributes) -> keepErJErRy6HE
+    466:466:java.nio.file.FileVisitResult visitFile(java.lang.Object,java.nio.file.attribute.BasicFileAttributes) -> visitFile
+    466:466:void <init>(java.util.Collection,launcher.KeepErJeRrY4b2) -> <init>
+launcher.kEEperJErryB31 -> launcher.KeepeRJERRyWud:
+    byte EXPECTED_BYTE -> keepErJErRy6HE
+    18:19:void <init>(launcher.keePERjErrYClc) -> <init>
     24:25:void <init>() -> <init>
-    30:30:launcher.request.Request$Type getType() -> getType
-    36:41:java.lang.Void requestDo(launcher.serialize.HInput,launcher.serialize.HOutput) -> keepErJErRy6HE
-    10:10:java.lang.Object requestDo(launcher.serialize.HInput,launcher.serialize.HOutput) -> requestDo
-launcher.request.Request -> launcher.KeePeRjerryDH3:
-    launcher.Launcher$Config config -> config
-    java.util.concurrent.atomic.AtomicBoolean started -> keepErJErRy6HE
-    21:27:void <init>(launcher.Launcher$Config) -> <init>
-    32:33:void <init>() -> <init>
-    38:38:void requestError(java.lang.String) -> requestError
-    launcher.request.Request$Type getType() -> getType
-    java.lang.Object requestDo(launcher.serialize.HInput,launcher.serialize.HOutput) -> requestDo
-    51:66:java.lang.Object request() -> request
-    72:77:void readError(launcher.serialize.HInput) -> readError
-    82:92:void writeHandshake(launcher.serialize.HInput,launcher.serialize.HOutput) -> keepErJErRy6HE
-launcher.request.Request$Type -> launcher.kEePeRJeRryAUj:
-    launcher.request.Request$Type PING -> PING
-    launcher.request.Request$Type LAUNCHER -> LAUNCHER
-    launcher.request.Request$Type UPDATE -> UPDATE
-    launcher.request.Request$Type UPDATE_LIST -> UPDATE_LIST
-    launcher.request.Request$Type AUTH -> AUTH
-    launcher.request.Request$Type JOIN_SERVER -> JOIN_SERVER
-    launcher.request.Request$Type CHECK_SERVER -> CHECK_SERVER
-    launcher.request.Request$Type PROFILE_BY_USERNAME -> PROFILE_BY_USERNAME
-    launcher.request.Request$Type PROFILE_BY_UUID -> PROFILE_BY_UUID
-    launcher.request.Request$Type BATCH_PROFILE_BY_USERNAME -> BATCH_PROFILE_BY_USERNAME
-    launcher.request.Request$Type CUSTOM -> CUSTOM
-    launcher.serialize.stream.EnumSerializer SERIALIZER -> SERIALIZER
-    int n -> n
-    launcher.request.Request$Type[] $VALUES -> $VALUES
-    94:94:launcher.request.Request$Type[] values() -> values
-    94:94:launcher.request.Request$Type valueOf(java.lang.String) -> valueOf
+    30:30:launcher.kEePeRJeRryAUj getType() -> keepErJErRy6HE
+    36:41:java.lang.Void keepErJErRy6HE(launcher.KEePerjeRry8VJ,launcher.KEeperjERRYyzU) -> keepErJErRy6HE
+    10:10:java.lang.Object requestDo(launcher.KEePerjeRry8VJ,launcher.KEeperjERRYyzU) -> keepErJErRy6HE
+launcher.kEEperjERrYOMC -> launcher.kEepeRjerry9Ep:
+launcher.kEEperjeRryvyX -> launcher.KeepErJErrYUKW:
+    java.util.List profiles -> keepErJErRy6HE
+    byte[] keepErJErRy6HE -> keepErJErRy6HE
+    byte[] KeePerjeRryt52 -> KeePerjeRryt52
+    124:128:void <init>(byte[],byte[],java.util.List) -> <init>
+    133:133:byte[] getBinary() -> keepErJErRy6HE
+    139:139:byte[] getSign() -> KeePerjeRryt52
+    116:116:byte[] keepErJErRy6HE(launcher.kEEperjeRryvyX) -> keepErJErRy6HE
+    116:116:byte[] KeePerjeRryt52(launcher.kEEperjeRryvyX) -> KeePerjeRryt52
+    116:116:void <init>(byte[],byte[],java.util.List,launcher.KeepeRJERRyjXj) -> <init>
+launcher.kEePErJERRYtY0 -> launcher.kEEperJErryB31:
+    byte[] keepErJErRy6HE -> keepErJErRy6HE
+    byte[] KeePerjeRryt52 -> KeePerjeRryt52
+    22:23:void <init>(launcher.KEePerjeRry8VJ,java.security.interfaces.RSAPublicKey) -> <init>
+    27:31:void <init>(byte[],byte[],java.security.interfaces.RSAPublicKey) -> <init>
+    35:38:void <init>(byte[],java.security.interfaces.RSAPrivateKey) -> <init>
+    43:45:void write(launcher.KEeperjERRYyzU) -> keepErJErRy6HE
+    50:50:byte[] getBytes() -> KeePerjeRryt52
+    56:56:byte[] getSign() -> keEPERjERryabM
+launcher.kEePeRJeRRyds6 -> launcher.KeePeRjerryDH3:
+    launcher.kEePeRJeRRyds6 keepErJErRy6HE -> keepErJErRy6HE
+    launcher.kEePeRJeRRyds6 KeePerjeRryt52 -> KeePerjeRryt52
+    launcher.KEePerJerrYhCt keepErJErRy6HE -> keepErJErRy6HE
+    java.lang.String keepErJErRy6HE -> keepErJErRy6HE
+    launcher.keePeRjErrypC2 keepErJErRy6HE -> keepErJErRy6HE
+    292:296:void <init>(launcher.KEePerJerrYhCt,java.lang.String,launcher.keePeRjErrypC2) -> <init>
+    299:303:void <init>(launcher.KEePerjeRry8VJ) -> <init>
+    308:313:void write(launcher.KEeperjERRYyzU) -> keepErJErRy6HE
+    283:284:void <clinit>() -> <clinit>
+launcher.kEePeRJeRryAUj -> launcher.kEePeRJeRryAUj:
+    launcher.kEePeRJeRryAUj PING -> keepErJErRy6HE
+    launcher.kEePeRJeRryAUj LAUNCHER -> KeePerjeRryt52
+    launcher.kEePeRJeRryAUj UPDATE -> keEPERjERryabM
+    launcher.kEePeRJeRryAUj UPDATE_LIST -> keEpErjeRRYsAK
+    launcher.kEePeRJeRryAUj AUTH -> KeEperJErryz5T
+    launcher.kEePeRJeRryAUj JOIN_SERVER -> keePErjerrYnmV
+    launcher.kEePeRJeRryAUj CHECK_SERVER -> kEepERjerryhdF
+    launcher.kEePeRJeRryAUj PROFILE_BY_USERNAME -> KEEPeRjErrYXff
+    launcher.kEePeRJeRryAUj PROFILE_BY_UUID -> keePErjERRy57k
+    launcher.kEePeRJeRryAUj BATCH_PROFILE_BY_USERNAME -> keEPErJERRYlXM
+    launcher.kEePeRJeRryAUj CUSTOM -> KeeperJerRyoBb
+    launcher.kEepeRJErRyW5H SERIALIZER -> keepErJErRy6HE
+    int n -> keepErJErRy6HE
+    launcher.kEePeRJeRryAUj[] $VALUES -> keepErJErRy6HE
+    94:94:launcher.kEePeRJeRryAUj[] values() -> values
+    94:94:launcher.kEePeRJeRryAUj valueOf(java.lang.String) -> valueOf
     106:108:void <init>(java.lang.String,int,int) -> <init>
-    113:113:launcher.request.Request$Type read(launcher.serialize.HInput) -> read
-    119:119:int getNumber() -> getNumber
+    113:113:launcher.kEePeRJeRryAUj read(launcher.KEePerjeRry8VJ) -> keepErJErRy6HE
+    119:119:int getNumber() -> keepErJErRy6HE
     94:102:void <clinit>() -> <clinit>
-launcher.request.RequestException -> launcher.keePeRJERrYZU2:
-    long serialVersionUID -> keepErJErRy6HE
+launcher.kEePeRjErryMYl -> launcher.keePeRJERrYZU2:
+    launcher.KeePErJERrYQ1W keepErJErRy6HE -> keepErJErRy6HE
+    long size -> keepErJErRy6HE
+    byte[] keepErJErRy6HE -> keepErJErRy6HE
+    26:29:void <init>(long,byte[]) -> <init>
+    34:35:void <init>(java.nio.file.Path,long,boolean) -> <init>
+    40:41:void <init>(launcher.KEePerjeRry8VJ) -> <init>
+    46:46:launcher.kEepErjERry3Xj getType() -> keepErJErRy6HE
+    52:52:long size() -> keepErJErRy6HE
+    58:64:void write(launcher.KEeperjERRYyzU) -> keepErJErRy6HE
+    69:69:boolean isSame(launcher.kEePeRjErryMYl) -> keepErJErRy6HE
+    75:86:boolean isSame(java.nio.file.Path,boolean) -> keepErJErRy6HE
+    92:92:boolean isSameDigest(byte[]) -> keepErJErRy6HE
+    17:17:void <clinit>() -> <clinit>
+launcher.kEePerJERRYGZu -> launcher.kEEpErjERrYCqu:
+    20:21:void <init>(launcher.keePERjErrYClc) -> <init>
+    26:27:void <init>() -> <init>
+    32:32:launcher.kEePeRJeRryAUj getType() -> keepErJErRy6HE
+    38:48:java.util.Set keepErJErRy6HE(launcher.KEePerjeRry8VJ,launcher.KEeperjERRYyzU) -> keepErJErRy6HE
+    15:15:java.lang.Object requestDo(launcher.KEePerjeRry8VJ,launcher.KEeperjERRYyzU) -> keepErJErRy6HE
+launcher.kEePerjErRy09c -> launcher.KEEpeRjerRyhZa:
+    int onlinePlayers -> keepErJErRy6HE
+    int maxPlayers -> KeePerjeRryt52
+    java.lang.String raw -> keepErJErRy6HE
+    243:249:void <init>(int,int,java.lang.String) -> <init>
+    254:254:boolean isOverfilled() -> keepErJErRy6HE
+launcher.kEePerjerryEBg -> launcher.KEEPerJeRrYDn8:
+    launcher.KEEpeRjerrYruV object -> keepErJErRy6HE
+    20:22:void <init>(launcher.KEePerjeRry8VJ,java.security.interfaces.RSAPublicKey,launcher.KeePERJERryk2s) -> <init>
+    27:29:void <init>(launcher.KEEpeRjerrYruV,java.security.interfaces.RSAPrivateKey) -> <init>
+    34:34:boolean equals(java.lang.Object) -> equals
+    40:40:int hashCode() -> hashCode
+    46:46:java.lang.String toString() -> toString
+    52:55:launcher.KEEpeRjerrYruV newInstance(launcher.KeePERJERryk2s) -> keepErJErRy6HE
+launcher.kEepERJErRyMwq -> launcher.KeEPERjerRyo6P:
+launcher.kEepERjerRYZFo -> launcher.KEEperJerRyucK:
+    void keepErJErRy6HE(launcher.KeePERjeRRywbr) -> keepErJErRy6HE
+launcher.kEepERjerryeNm -> launcher.KEepeRjeRRY7ep:
+    launcher.KEEpErJeRrYlil block -> keepErJErRy6HE
+    18:20:void <init>(launcher.KEEpErJeRrYlil) -> <init>
+    25:26:void write(launcher.KEeperjERRYyzU) -> keepErJErRy6HE
+launcher.kEepERjerryhdF -> launcher.KeepeRJERRyjXj:
+    launcher.keEperJerrYANO keepErJErRy6HE() -> keepErJErRy6HE
+launcher.kEepErJErRyqJr -> launcher.kEEperjeRryvyX:
+    launcher.KeePERJERryk2s RO_ADAPTER -> keepErJErRy6HE
+    launcher.KeepeRjeRrycgq keepErJErRy6HE -> keepErJErRy6HE
+    launcher.KeEpERjErRyhvy keepErJErRy6HE -> keepErJErRy6HE
+    launcher.KeEpERjErRyhvy KeePerjeRryt52 -> KeePerjeRryt52
+    launcher.kEEpErjERRyAWR keepErJErRy6HE -> keepErJErRy6HE
+    launcher.KeEpERjErRyhvy keEPERjERryabM -> keEPERjERryabM
+    launcher.KeEpERjErRyhvy keEpErjeRRYsAK -> keEpErjeRRYsAK
+    launcher.kEEpErjERRyAWR KeePerjeRryt52 -> KeePerjeRryt52
+    launcher.KeEpERjErRyhvy KeEperJErryz5T -> KeEperJErryz5T
+    launcher.keePerJErrY4Oi keepErJErRy6HE -> keepErJErRy6HE
+    launcher.keePerJErrY4Oi KeePerjeRryt52 -> KeePerjeRryt52
+    launcher.keePerJErrY4Oi keEPERjERryabM -> keEPERjERryabM
+    launcher.kEEPeRjerry4x5 keepErJErRy6HE -> keepErJErRy6HE
+    launcher.KeEpERjErRyhvy keePErjerrYnmV -> keePErjerrYnmV
+    launcher.keePerJErrY4Oi keEpErjeRRYsAK -> keEpErjeRRYsAK
+    launcher.keePerJErrY4Oi KeEperJErryz5T -> KeEperJErryz5T
+    launcher.keePerJErrY4Oi keePErjerrYnmV -> keePErjerrYnmV
+    50:74:void <init>(launcher.KEEpErJeRrYlil) -> <init>
+    79:80:void <init>(launcher.KEePerjeRry8VJ,boolean) -> <init>
+    85:85:int keepErJErRy6HE(launcher.kEepErJErRyqJr) -> keepErJErRy6HE
+    91:91:java.lang.String toString() -> toString
+    97:97:java.lang.String getAssetIndex() -> keepErJErRy6HE
+    103:104:void setAssetIndex(java.lang.String) -> keepErJErRy6HE
+    109:109:launcher.KeepeRjeRrycgq getAssetUpdateMatcher() -> keepErJErRy6HE
+    115:115:java.lang.String[] getClassPath() -> keepErJErRy6HE
+    121:121:java.lang.String[] getClientArgs() -> KeePerjeRryt52
+    127:130:launcher.KeepeRjeRrycgq getClientUpdateMatcher() -> KeePerjeRryt52
+    135:135:java.lang.String getJvmVersion() -> KeePerjeRryt52
+    141:141:java.lang.String[] getJvmArgs() -> keEPERjERryabM
+    147:147:java.lang.String getMainClass() -> keEPERjERryabM
+    153:153:java.lang.String getServerAddress() -> keEpErjeRRYsAK
+    159:159:int getServerPort() -> keepErJErRy6HE
+    165:165:java.net.InetSocketAddress getServerSocketAddress() -> keepErJErRy6HE
+    171:171:int getSortIndex() -> KeePerjeRryt52
+    177:177:java.lang.String getTitle() -> KeEperJErryz5T
+    183:184:void setTitle(java.lang.String) -> KeePerjeRryt52
+    189:189:java.lang.String getVersion() -> keePErjerrYnmV
+    195:196:void setVersion(java.lang.String) -> keEPERjERryabM
+    201:201:boolean isUpdateFastCheck() -> keepErJErRy6HE
+    208:226:void verify() -> keepErJErRy6HE
+    16:16:int compareTo(java.lang.Object) -> compareTo
+    141:141:java.lang.String[] keepErJErRy6HE(int) -> keepErJErRy6HE
+    129:129:java.lang.String[] KeePerjeRryt52(int) -> KeePerjeRryt52
+    128:128:java.lang.String[] keEPERjERryabM(int) -> keEPERjERryabM
+    127:127:java.lang.String[] keEpErjeRRYsAK(int) -> keEpErjeRRYsAK
+    121:121:java.lang.String[] KeEperJErryz5T(int) -> KeEperJErryz5T
+    115:115:java.lang.String[] keePErjerrYnmV(int) -> keePErjerrYnmV
+    20:20:launcher.kEepErJErRyqJr keepErJErRy6HE(launcher.KEePerjeRry8VJ) -> keepErJErRy6HE
+    20:21:void <clinit>() -> <clinit>
+launcher.kEepErjERry3Xj -> launcher.kEePerJERRYGZu:
+    launcher.kEepErjERry3Xj DIR -> keepErJErRy6HE
+    launcher.kEepErjERry3Xj FILE -> KeePerjeRryt52
+    launcher.kEepeRJErRyW5H SERIALIZER -> keepErJErRy6HE
+    int n -> keepErJErRy6HE
+    launcher.kEepErjERry3Xj[] $VALUES -> keepErJErRy6HE
+    22:22:launcher.kEepErjERry3Xj[] values() -> values
+    22:22:launcher.kEepErjERry3Xj valueOf(java.lang.String) -> valueOf
+    30:32:void <init>(java.lang.String,int,int) -> <init>
+    36:36:launcher.kEepErjERry3Xj read(launcher.KEePerjeRry8VJ) -> keepErJErRy6HE
+    42:42:int getNumber() -> keepErJErRy6HE
+    22:26:void <clinit>() -> <clinit>
+launcher.kEepeRJERrYYjc -> launcher.kEeperjerRYUNg:
+    int[] keepErJErRy6HE -> keepErJErRy6HE
+    30:30:void <clinit>() -> <clinit>
+launcher.kEepeRJErRyW5H -> launcher.KeePeRJerryuZn:
+    java.util.Map keepErJErRy6HE -> keepErJErRy6HE
+    15:24:void <init>(java.lang.Class) -> <init>
+    29:30:void write(launcher.KEeperjERRYyzU,launcher.keEPErJErrYbXW) -> keepErJErRy6HE
+    35:36:java.lang.Enum read(launcher.KEePerjeRry8VJ) -> keepErJErRy6HE
+launcher.kEepeRjerry9Ep -> launcher.kEePeRJeRRyds6:
+    java.util.concurrent.atomic.AtomicReference INSTANCE -> keepErJErRy6HE
+    16:18:void <init>() -> <init>
+    22:22:launcher.kEepeRjerry9Ep getInstance() -> keepErJErRy6HE
+    12:12:void <clinit>() -> <clinit>
+launcher.kEeperJErrYOoH -> launcher.KEePerJerrYhCt:
+    launcher.KeePErJERrYQ1W keepErJErRy6HE -> keepErJErRy6HE
+    java.lang.String url -> keepErJErRy6HE
+    byte[] digest -> keepErJErRy6HE
+    89:92:void <init>(java.lang.String,byte[]) -> <init>
+    96:112:void <init>(java.lang.String,boolean) -> <init>
+    116:119:void <init>(launcher.KEePerjeRry8VJ) -> <init>
+    124:126:void write(launcher.KEeperjERRYyzU) -> keepErJErRy6HE
+    79:79:void <clinit>() -> <clinit>
+launcher.kEeperjerRYUNg -> launcher.KeePERjeRRywbr:
+    int MAX_QUEUE_SIZE -> keepErJErRy6HE
+    java.lang.String keepErJErRy6HE -> keepErJErRy6HE
+    java.nio.file.Path keepErJErRy6HE -> keepErJErRy6HE
+    launcher.KeepeRjeRrycgq keepErJErRy6HE -> keepErJErRy6HE
+    boolean keepErJErRy6HE -> keepErJErRy6HE
+    launcher.kEepERjerRYZFo keepErJErRy6HE -> keepErJErRy6HE
+    launcher.KeEpERJeRRy4zK keepErJErRy6HE -> keepErJErRy6HE
+    long keepErJErRy6HE -> keepErJErRy6HE
+    long KeePerjeRryt52 -> KeePerjeRryt52
+    java.time.Instant keepErJErRy6HE -> keepErJErRy6HE
+    59:64:void <init>(launcher.keePERjErrYClc,java.lang.String,java.nio.file.Path,launcher.KeepeRjeRrycgq,boolean) -> <init>
+    69:70:void <init>(java.lang.String,java.nio.file.Path,launcher.KeepeRjeRrycgq,boolean) -> <init>
+    74:93:void keepErJErRy6HE(java.util.Queue,launcher.KeEpERJeRRy4zK) -> keepErJErRy6HE
+    98:98:launcher.kEePeRJeRryAUj getType() -> keepErJErRy6HE
+    104:108:launcher.kEePerjerryEBg keepErJErRy6HE() -> keepErJErRy6HE
+    115:183:launcher.kEePerjerryEBg keepErJErRy6HE(launcher.KEePerjeRry8VJ,launcher.KEeperjERRYyzU) -> keepErJErRy6HE
+    189:190:void setStateCallback(launcher.kEepERjerRYZFo) -> keepErJErRy6HE
+    194:222:void keepErJErRy6HE(java.nio.file.Path,launcher.KeEpERJeRRy4zK,boolean) -> keepErJErRy6HE
+    226:270:void keepErJErRy6HE(java.nio.file.Path,launcher.kEePeRjErryMYl,java.io.InputStream) -> keepErJErRy6HE
+    274:279:void keepErJErRy6HE(java.lang.String,long,long) -> keepErJErRy6HE
+    38:38:java.lang.Object request() -> keepErJErRy6HE
+    38:38:java.lang.Object requestDo(launcher.KEePerjeRry8VJ,launcher.KEeperjERRYyzU) -> keepErJErRy6HE
+launcher.keEPERjERryabM -> launcher.kEepERjerRYZFo:
+    launcher.keEperJerrYANO keepErJErRy6HE() -> keepErJErRy6HE
+launcher.keEPErJERRYlXM -> launcher.KeePerJErRy8Tm:
+    24:24:void <init>() -> <init>
+    27:29:launcher.keEperJerrYANO keepErJErRy6HE(launcher.keePErjERRy57k,java.lang.Object) -> keepErJErRy6HE
+    24:24:launcher.keEperJerrYANO keepErJErRy6HE(java.lang.annotation.Annotation,java.lang.Object) -> keepErJErRy6HE
+launcher.keEPErJErrYbXW -> launcher.KEEPeRJERrYASS:
+    int getNumber() -> keepErJErRy6HE
+launcher.keEPErjERrY1tw -> launcher.KeePeRJErRyHXN:
+launcher.keEPeRjErry4mI -> launcher.KEePerjeRry8VJ:
+    boolean ro -> keepErJErRy6HE
+    java.lang.String[] keepErJErRy6HE -> keepErJErRy6HE
+    java.lang.Object keepErJErRy6HE -> keepErJErRy6HE
+    21:25:void <init>(java.lang.Object,boolean,int) -> <init>
+    29:43:launcher.keEPeRjErry4mI keepErJErRy6HE(launcher.KEePerjeRry8VJ,boolean) -> keepErJErRy6HE
+    49:51:void keepErJErRy6HE(launcher.keEPeRjErry4mI,launcher.KEeperjERRYyzU) -> keepErJErRy6HE
+    launcher.KeEPeRjErrYptJ getType() -> keepErJErRy6HE
+    59:63:java.lang.String getComment(int) -> keepErJErRy6HE
+    70:70:java.lang.Object getValue() -> keepErJErRy6HE
+    76:78:void setValue(java.lang.Object) -> KeePerjeRryt52
+    83:84:void setComment(int,java.lang.String) -> keepErJErRy6HE
+    88:92:void keepErJErRy6HE() -> KeePerjeRryt52
+    97:98:void keepErJErRy6HE(java.lang.Object) -> keepErJErRy6HE
+launcher.keEPeRjerry0z3 -> launcher.KEeperjERRYyzU:
+    java.nio.file.Path keepErJErRy6HE -> keepErJErRy6HE
+    boolean keepErJErRy6HE -> keepErJErRy6HE
+    772:775:void <init>(java.nio.file.Path,boolean) -> <init>
+    780:785:java.nio.file.FileVisitResult keepErJErRy6HE(java.nio.file.Path,java.io.IOException) -> keepErJErRy6HE
+    791:792:java.nio.file.FileVisitResult keepErJErRy6HE(java.nio.file.Path,java.nio.file.attribute.BasicFileAttributes) -> keepErJErRy6HE
+    766:766:java.nio.file.FileVisitResult postVisitDirectory(java.lang.Object,java.io.IOException) -> postVisitDirectory
+    766:766:java.nio.file.FileVisitResult visitFile(java.lang.Object,java.nio.file.attribute.BasicFileAttributes) -> visitFile
+    766:766:void <init>(java.nio.file.Path,boolean,launcher.KeepErJerRyaAA) -> <init>
+launcher.keEpERJeRryfd4 -> launcher.kEepERjerryeNm:
+launcher.keEpErjERrYAt4 -> launcher.keePerJeRrYtsX:
+launcher.keEpErjeRRYsAK -> launcher.keePErJERRyZc0:
+launcher.keEpErjerrYZ21 -> launcher.keEpErjerrYZ21:
+    java.io.Writer keepErJErRy6HE -> keepErJErRy6HE
+    boolean keepErJErRy6HE -> keepErJErRy6HE
+    19:22:void <init>(java.io.Writer,boolean) -> <init>
+    27:28:void write(launcher.KEEpErJeRrYlil,java.io.Writer,boolean) -> keepErJErRy6HE
+    33:64:void keepErJErRy6HE(launcher.KEEpErJeRrYlil,boolean) -> keepErJErRy6HE
+    68:69:void keepErJErRy6HE(launcher.kEEPeRjerry4x5) -> keepErJErRy6HE
+    73:77:void keepErJErRy6HE(java.lang.String) -> keepErJErRy6HE
+    81:102:void keepErJErRy6HE(launcher.keEPeRjErry4mI) -> keepErJErRy6HE
+    106:107:void keepErJErRy6HE(launcher.kEEpErjERRyAWR) -> keepErJErRy6HE
+    111:132:void keepErJErRy6HE(launcher.keePerJErrY4Oi) -> keepErJErRy6HE
+    136:173:void keepErJErRy6HE(launcher.KeEpERjErRyhvy) -> keepErJErRy6HE
+launcher.keEpeRJerRYfkE -> launcher.KeepeRjERryuKZ:
+    373:374:void <init>(java.io.OutputStream) -> <init>
+    369:369:void <init>(java.io.OutputStream,launcher.KEepErjeRrYEkB) -> <init>
+launcher.keEperJerrYANO -> launcher.KEEpErJeRrYlil:
+    launcher.keEperJerrYANO keepErJErRy6HE -> keepErJErRy6HE
+    launcher.keEperJerrYANO KeePerjeRryt52 -> KeePerjeRryt52
+    launcher.keEperJerrYANO keEPERjERryabM -> keEPERjERryabM
+    launcher.keEperJerrYANO keEpErjeRRYsAK -> keEpErjeRRYsAK
+    launcher.keEperJerrYANO[] keepErJErRy6HE -> keepErJErRy6HE
+    13:13:launcher.keEperJerrYANO[] values() -> values
+    13:13:launcher.keEperJerrYANO valueOf(java.lang.String) -> valueOf
+    13:13:void <init>(java.lang.String,int) -> <init>
+    13:21:void <clinit>() -> <clinit>
+launcher.keePERjErrYClc -> launcher.kEEPeRjerry4x5:
+    java.lang.String ADDRESS_OVERRIDE_PROPERTY -> keepErJErRy6HE
+    java.lang.String ADDRESS_OVERRIDE -> KeePerjeRryt52
+    java.net.InetSocketAddress address -> keepErJErRy6HE
+    java.security.interfaces.RSAPublicKey publicKey -> keepErJErRy6HE
+    java.util.Map runtime -> keepErJErRy6HE
+    308:312:void <init>(java.lang.String,int,java.security.interfaces.RSAPublicKey,java.util.Map) -> <init>
+    316:339:void <init>(launcher.KEePerjeRry8VJ) -> <init>
+    344:356:void write(launcher.KEeperjERRYyzU) -> keepErJErRy6HE
+    295:295:void <clinit>() -> <clinit>
+launcher.keePErJERRyZc0 -> launcher.keEPeRjErry4mI:
+    java.io.LineNumberReader keepErJErRy6HE -> keepErJErRy6HE
+    boolean keepErJErRy6HE -> keepErJErRy6HE
+    java.lang.String keepErJErRy6HE -> keepErJErRy6HE
+    int keepErJErRy6HE -> keepErJErRy6HE
+    20:27:void <init>(java.io.Reader,boolean) -> <init>
+    32:32:launcher.KEEpErJeRrYlil read(java.io.Reader,boolean) -> keepErJErRy6HE
+    37:37:java.io.IOException keepErJErRy6HE(java.lang.String) -> keepErJErRy6HE
+    42:47:int keepErJErRy6HE(boolean) -> keepErJErRy6HE
+    52:53:int KeePerjeRryt52(boolean) -> KeePerjeRryt52
+    58:100:launcher.KEEpErJeRrYlil keepErJErRy6HE(int) -> keepErJErRy6HE
+    106:133:launcher.keEPeRjErry4mI keepErJErRy6HE(int) -> keepErJErRy6HE
+    139:139:launcher.keEPeRjErry4mI KeePerjeRryt52(int) -> KeePerjeRryt52
+    144:179:launcher.keEPeRjErry4mI keEPERjERryabM(int) -> keEPERjERryabM
+    184:229:launcher.keEPeRjErry4mI keEpErjeRRYsAK(int) -> keEpErjeRRYsAK
+    235:248:java.lang.String keepErJErRy6HE() -> keepErJErRy6HE
+    253:258:void keepErJErRy6HE(java.lang.StringBuilder,boolean) -> keepErJErRy6HE
+    262:274:int keEPERjERryabM(boolean) -> keEPERjERryabM
+launcher.keePErjERRy57k -> launcher.kEepeRJERrYYjc:
+    launcher.keEperJerrYANO keepErJErRy6HE() -> keepErJErRy6HE
+launcher.keePErjerrYnmV -> launcher.KeEPeRjErrYptJ:
+    26:26:void <init>() -> <init>
+    28:31:launcher.keEperJerrYANO keepErJErRy6HE(launcher.KeEperJErryz5T,java.lang.Object) -> keepErJErRy6HE
+    26:26:launcher.keEperJerrYANO keepErJErRy6HE(java.lang.annotation.Annotation,java.lang.Object) -> keepErJErRy6HE
+launcher.keePeRJERRyHjo -> launcher.kEEpErjERRyAWR:
+    launcher.keePeRJERRyHjo MUSTDIE -> keepErJErRy6HE
+    launcher.keePeRJERRyHjo LINUX -> KeePerjeRryt52
+    launcher.keePeRJERRyHjo MACOSX -> keEPERjERryabM
+    java.lang.String name -> keepErJErRy6HE
+    launcher.keePeRJERRyHjo[] $VALUES -> keepErJErRy6HE
+    218:218:launcher.keePeRJERRyHjo[] values() -> values
+    218:218:launcher.keePeRJERRyHjo valueOf(java.lang.String) -> valueOf
+    225:227:void <init>(java.lang.String,int,java.lang.String) -> <init>
+    231:247:launcher.keePeRJERRyHjo byName(java.lang.String) -> keepErJErRy6HE
+    218:221:void <clinit>() -> <clinit>
+launcher.keePeRJERrYZU2 -> launcher.keePerJErrY4Oi:
+    long keepErJErRy6HE -> keepErJErRy6HE
     14:15:void <init>(java.lang.String) -> <init>
     20:21:void <init>(java.lang.Throwable) -> <init>
     26:27:void <init>(java.lang.String,java.lang.Throwable) -> <init>
     32:32:java.lang.String toString() -> toString
-launcher.request.auth.AuthRequest -> launcher.kEEpErjERrYCqu:
-    java.lang.String login -> keepErJErRy6HE
-    byte[] encryptedPassword -> keepErJErRy6HE
-    23:26:void <init>(launcher.Launcher$Config,java.lang.String,byte[]) -> <init>
-    31:32:void <init>(java.lang.String,byte[]) -> <init>
-    37:37:launcher.request.Request$Type getType() -> getType
-    43:52:launcher.request.auth.AuthRequest$Result requestDo(launcher.serialize.HInput,launcher.serialize.HOutput) -> keepErJErRy6HE
-    15:15:java.lang.Object requestDo(launcher.serialize.HInput,launcher.serialize.HOutput) -> requestDo
-launcher.request.auth.AuthRequest$1 -> launcher.KEEpeRjerRyhZa:
-launcher.request.auth.AuthRequest$Result -> launcher.KEEPerJeRrYDn8:
-    launcher.client.PlayerProfile pp -> pp
-    java.lang.String accessToken -> accessToken
-    63:66:void <init>(launcher.client.PlayerProfile,java.lang.String) -> <init>
-    55:55:void <init>(launcher.client.PlayerProfile,java.lang.String,launcher.request.auth.AuthRequest$1) -> <init>
-launcher.request.auth.CheckServerRequest -> launcher.KeEPERjerRyo6P:
-    java.lang.String username -> keepErJErRy6HE
-    java.lang.String serverID -> KeePerjeRryt52
-    21:24:void <init>(launcher.Launcher$Config,java.lang.String,java.lang.String) -> <init>
-    29:30:void <init>(java.lang.String,java.lang.String) -> <init>
-    35:35:launcher.request.Request$Type getType() -> getType
-    41:47:launcher.client.PlayerProfile requestDo(launcher.serialize.HInput,launcher.serialize.HOutput) -> keepErJErRy6HE
-    13:13:java.lang.Object requestDo(launcher.serialize.HInput,launcher.serialize.HOutput) -> requestDo
-launcher.request.auth.JoinServerRequest -> launcher.KEEperJerRyucK:
-    java.util.regex.Pattern SERVERID_PATTERN -> keepErJErRy6HE
-    java.lang.String username -> keepErJErRy6HE
-    java.lang.String accessToken -> KeePerjeRryt52
-    java.lang.String serverID -> keEPERjERryabM
-    26:30:void <init>(launcher.Launcher$Config,java.lang.String,java.lang.String,java.lang.String) -> <init>
-    35:36:void <init>(java.lang.String,java.lang.String,java.lang.String) -> <init>
-    41:41:boolean isValidServerID(java.lang.CharSequence) -> isValidServerID
-    47:48:java.lang.String verifyServerID(java.lang.String) -> verifyServerID
-    54:54:launcher.request.Request$Type getType() -> getType
-    60:68:java.lang.Boolean requestDo(launcher.serialize.HInput,launcher.serialize.HOutput) -> keepErJErRy6HE
-    14:14:java.lang.Object requestDo(launcher.serialize.HInput,launcher.serialize.HOutput) -> requestDo
-    16:16:void <clinit>() -> <clinit>
-launcher.request.update.LauncherRequest -> launcher.KEepeRjeRRY7ep:
-    java.nio.file.Path BINARY_PATH -> BINARY_PATH
-    boolean EXE_BINARY -> EXE_BINARY
-    36:37:void <init>(launcher.Launcher$Config) -> <init>
-    42:43:void <init>() -> <init>
-    48:72:void update(launcher.Launcher$Config,launcher.request.update.LauncherRequest$Result) -> update
-    78:78:launcher.request.Request$Type getType() -> getType
-    85:113:launcher.request.update.LauncherRequest$Result requestDo(launcher.serialize.HInput,launcher.serialize.HOutput) -> keepErJErRy6HE
-    26:26:java.lang.Object requestDo(launcher.serialize.HInput,launcher.serialize.HOutput) -> requestDo
-    29:31:void <clinit>() -> <clinit>
-launcher.request.update.LauncherRequest$1 -> launcher.KeepeRJERRyjXj:
-launcher.request.update.LauncherRequest$Result -> launcher.kEEperjeRryvyX:
-    java.util.List profiles -> profiles
-    byte[] binary -> keepErJErRy6HE
-    byte[] sign -> KeePerjeRryt52
-    124:128:void <init>(byte[],byte[],java.util.List) -> <init>
-    133:133:byte[] getBinary() -> getBinary
-    139:139:byte[] getSign() -> getSign
-    116:116:byte[] access$000(launcher.request.update.LauncherRequest$Result) -> keepErJErRy6HE
-    116:116:byte[] access$100(launcher.request.update.LauncherRequest$Result) -> KeePerjeRryt52
-    116:116:void <init>(byte[],byte[],java.util.List,launcher.request.update.LauncherRequest$1) -> <init>
-launcher.request.update.UpdateListRequest -> launcher.kEePerJERRYGZu:
-    20:21:void <init>(launcher.Launcher$Config) -> <init>
-    26:27:void <init>() -> <init>
-    32:32:launcher.request.Request$Type getType() -> getType
-    38:48:java.util.Set requestDo(launcher.serialize.HInput,launcher.serialize.HOutput) -> keepErJErRy6HE
-    15:15:java.lang.Object requestDo(launcher.serialize.HInput,launcher.serialize.HOutput) -> requestDo
-launcher.request.update.UpdateRequest -> launcher.kEeperjerRYUNg:
-    int MAX_QUEUE_SIZE -> MAX_QUEUE_SIZE
-    java.lang.String dirName -> keepErJErRy6HE
-    java.nio.file.Path dir -> keepErJErRy6HE
-    launcher.hasher.FileNameMatcher matcher -> keepErJErRy6HE
-    boolean digest -> keepErJErRy6HE
-    launcher.request.update.UpdateRequest$State$Callback stateCallback -> keepErJErRy6HE
-    launcher.hasher.HashedDir localDir -> keepErJErRy6HE
-    long totalDownloaded -> keepErJErRy6HE
-    long totalSize -> KeePerjeRryt52
-    java.time.Instant startTime -> keepErJErRy6HE
-    59:64:void <init>(launcher.Launcher$Config,java.lang.String,java.nio.file.Path,launcher.hasher.FileNameMatcher,boolean) -> <init>
-    69:70:void <init>(java.lang.String,java.nio.file.Path,launcher.hasher.FileNameMatcher,boolean) -> <init>
-    74:93:void fillActionsQueue(java.util.Queue,launcher.hasher.HashedDir) -> keepErJErRy6HE
-    98:98:launcher.request.Request$Type getType() -> getType
-    104:108:launcher.serialize.signed.SignedObjectHolder request() -> keepErJErRy6HE
-    115:183:launcher.serialize.signed.SignedObjectHolder requestDo(launcher.serialize.HInput,launcher.serialize.HOutput) -> keepErJErRy6HE
-    189:190:void setStateCallback(launcher.request.update.UpdateRequest$State$Callback) -> setStateCallback
-    194:222:void deleteExtraDir(java.nio.file.Path,launcher.hasher.HashedDir,boolean) -> keepErJErRy6HE
-    226:270:void downloadFile(java.nio.file.Path,launcher.hasher.HashedFile,java.io.InputStream) -> keepErJErRy6HE
-    274:279:void updateState(java.lang.String,long,long) -> keepErJErRy6HE
-    38:38:java.lang.Object request() -> request
-    38:38:java.lang.Object requestDo(launcher.serialize.HInput,launcher.serialize.HOutput) -> requestDo
-launcher.request.update.UpdateRequest$1 -> launcher.KeePeRJerryuZn:
-    int[] $SwitchMap$launcher$hasher$HashedEntry$Type -> keepErJErRy6HE
-    int[] $SwitchMap$launcher$request$update$UpdateRequest$Action$Type -> KeePerjeRryt52
-    79:156:void <clinit>() -> <clinit>
-launcher.request.update.UpdateRequest$Action -> launcher.kEePeRJeRRyds6:
-    launcher.request.update.UpdateRequest$Action CD_BACK -> keepErJErRy6HE
-    launcher.request.update.UpdateRequest$Action FINISH -> KeePerjeRryt52
-    launcher.request.update.UpdateRequest$Action$Type type -> keepErJErRy6HE
-    java.lang.String name -> keepErJErRy6HE
-    launcher.hasher.HashedEntry entry -> keepErJErRy6HE
-    292:296:void <init>(launcher.request.update.UpdateRequest$Action$Type,java.lang.String,launcher.hasher.HashedEntry) -> <init>
-    299:303:void <init>(launcher.serialize.HInput) -> <init>
-    308:313:void write(launcher.serialize.HOutput) -> write
-    283:284:void <clinit>() -> <clinit>
-launcher.request.update.UpdateRequest$Action$Type -> launcher.KEePerJerrYhCt:
-    launcher.request.update.UpdateRequest$Action$Type CD -> keepErJErRy6HE
-    launcher.request.update.UpdateRequest$Action$Type CD_BACK -> KeePerjeRryt52
-    launcher.request.update.UpdateRequest$Action$Type GET -> keEPERjERryabM
-    launcher.request.update.UpdateRequest$Action$Type FINISH -> keEpErjeRRYsAK
-    launcher.serialize.stream.EnumSerializer SERIALIZER -> keepErJErRy6HE
-    int n -> keepErJErRy6HE
-    launcher.request.update.UpdateRequest$Action$Type[] $VALUES -> keepErJErRy6HE
-    315:315:launcher.request.update.UpdateRequest$Action$Type[] values() -> values
-    315:315:launcher.request.update.UpdateRequest$Action$Type valueOf(java.lang.String) -> valueOf
-    322:324:void <init>(java.lang.String,int,int) -> <init>
-    328:328:launcher.request.update.UpdateRequest$Action$Type read(launcher.serialize.HInput) -> keepErJErRy6HE
-    334:334:int getNumber() -> getNumber
-    315:318:void <clinit>() -> <clinit>
-launcher.request.update.UpdateRequest$State -> launcher.KeePERjeRRywbr:
-    long fileDownloaded -> fileDownloaded
-    long fileSize -> fileSize
-    long totalDownloaded -> totalDownloaded
-    long totalSize -> totalSize
-    java.lang.String filePath -> filePath
-    java.time.Duration duration -> duration
-    355:364:void <init>(java.lang.String,long,long,long,long,java.time.Duration) -> <init>
-    369:374:double getBps() -> getBps
-    380:385:java.time.Duration getEstimatedTime() -> getEstimatedTime
-    391:391:double getFileDownloadedKiB() -> getFileDownloadedKiB
-    397:397:double getFileDownloadedMiB() -> getFileDownloadedMiB
-    403:407:double getFileDownloadedPart() -> getFileDownloadedPart
-    413:413:long getFileRemaining() -> getFileRemaining
-    419:419:double getFileRemainingKiB() -> getFileRemainingKiB
-    425:425:double getFileRemainingMiB() -> getFileRemainingMiB
-    431:431:double getFileSizeKiB() -> getFileSizeKiB
-    437:437:double getFileSizeMiB() -> getFileSizeMiB
-    443:443:double getTotalDownloadedKiB() -> getTotalDownloadedKiB
-    449:449:double getTotalDownloadedMiB() -> getTotalDownloadedMiB
-    455:459:double getTotalDownloadedPart() -> getTotalDownloadedPart
-    465:465:long getTotalRemaining() -> getTotalRemaining
-    471:471:double getTotalRemainingKiB() -> getTotalRemainingKiB
-    477:477:double getTotalRemainingMiB() -> getTotalRemainingMiB
-    483:483:double getTotalSizeKiB() -> getTotalSizeKiB
-    489:489:double getTotalSizeMiB() -> getTotalSizeMiB
-launcher.request.update.UpdateRequest$State$Callback -> launcher.kEepERjerRYZFo:
-    void call(launcher.request.update.UpdateRequest$State) -> keepErJErRy6HE
-launcher.request.uuid.BatchProfileByUsernameRequest -> launcher.KeePerJErRy8Tm:
-    int MAX_BATCH_SIZE -> MAX_BATCH_SIZE
-    java.lang.String[] usernames -> keepErJErRy6HE
-    23:30:void <init>(launcher.Launcher$Config,java.lang.String[]) -> <init>
-    35:36:void <init>(java.lang.String[]) -> <init>
-    41:41:launcher.request.Request$Type getType() -> getType
-    47:62:launcher.client.PlayerProfile[] requestDo(launcher.serialize.HInput,launcher.serialize.HOutput) -> keepErJErRy6HE
-    14:14:java.lang.Object requestDo(launcher.serialize.HInput,launcher.serialize.HOutput) -> requestDo
-launcher.request.uuid.ProfileByUUIDRequest -> launcher.KEEPeRJERrYASS:
-    java.util.UUID uuid -> keepErJErRy6HE
-    21:23:void <init>(launcher.Launcher$Config,java.util.UUID) -> <init>
-    28:29:void <init>(java.util.UUID) -> <init>
-    34:34:launcher.request.Request$Type getType() -> getType
-    40:44:launcher.client.PlayerProfile requestDo(launcher.serialize.HInput,launcher.serialize.HOutput) -> keepErJErRy6HE
-    14:14:java.lang.Object requestDo(launcher.serialize.HInput,launcher.serialize.HOutput) -> requestDo
-launcher.request.uuid.ProfileByUsernameRequest -> launcher.KeePeRJErRyHXN:
-    java.lang.String username -> keepErJErRy6HE
-    20:22:void <init>(launcher.Launcher$Config,java.lang.String) -> <init>
-    27:28:void <init>(java.lang.String) -> <init>
-    33:33:launcher.request.Request$Type getType() -> getType
-    39:43:launcher.client.PlayerProfile requestDo(launcher.serialize.HInput,launcher.serialize.HOutput) -> keepErJErRy6HE
-    13:13:java.lang.Object requestDo(launcher.serialize.HInput,launcher.serialize.HOutput) -> requestDo
-launcher.serialize.HInput -> launcher.KEePerjeRry8VJ:
-    java.io.InputStream stream -> stream
-    21:23:void <init>(java.io.InputStream) -> <init>
-    27:29:void <init>(byte[]) -> <init>
-    34:35:void close() -> close
-    40:40:java.lang.String readASCII(int) -> readASCII
-    46:46:java.math.BigInteger readBigInteger(int) -> readBigInteger
-    52:60:boolean readBoolean() -> readBoolean
-    67:69:byte[] readByteArray(int) -> readByteArray
-    75:75:int readInt() -> readInt
-    81:85:int readLength(int) -> readLength
-    91:91:long readLong() -> readLong
-    97:97:short readShort() -> readShort
-    103:103:java.lang.String readString(int) -> readString
-    109:109:java.util.UUID readUUID() -> readUUID
-    115:120:int readUnsignedByte() -> readUnsignedByte
-    126:126:int readUnsignedShort() -> readUnsignedShort
-    132:144:int readVarInt() -> readVarInt
-    150:162:long readVarLong() -> readVarLong
-launcher.serialize.HOutput -> launcher.KEeperjERRYyzU:
-    java.io.OutputStream stream -> stream
-    20:22:void <init>(java.io.OutputStream) -> <init>
-    27:28:void close() -> close
-    33:34:void flush() -> flush
-    39:40:void writeASCII(java.lang.String,int) -> writeASCII
-    45:46:void writeBigInteger(java.math.BigInteger,int) -> writeBigInteger
-    51:52:void writeBoolean(boolean) -> writeBoolean
-    57:59:void writeByteArray(byte[],int) -> writeByteArray
-    64:68:void writeInt(int) -> writeInt
-    73:78:void writeLength(int,int) -> writeLength
-    83:85:void writeLong(long) -> writeLong
-    90:92:void writeShort(short) -> writeShort
-    97:98:void writeString(java.lang.String,int) -> writeString
-    103:105:void writeUUID(java.util.UUID) -> writeUUID
-    110:111:void writeUnsignedByte(int) -> writeUnsignedByte
-    116:122:void writeVarInt(int) -> writeVarInt
-    127:133:void writeVarLong(long) -> writeVarLong
-launcher.serialize.config.ConfigObject -> launcher.kEepERjerryeNm:
-    launcher.serialize.config.entry.BlockConfigEntry block -> block
-    18:20:void <init>(launcher.serialize.config.entry.BlockConfigEntry) -> <init>
-    25:26:void write(launcher.serialize.HOutput) -> write
-launcher.serialize.config.ConfigObject$Adapter -> launcher.keePerJeRrYtsX:
-    launcher.serialize.config.ConfigObject convert(launcher.serialize.config.entry.BlockConfigEntry) -> convert
-launcher.serialize.config.TextConfigReader -> launcher.keePErJERRyZc0:
-    java.io.LineNumberReader reader -> keepErJErRy6HE
-    boolean ro -> keepErJErRy6HE
-    java.lang.String skipped -> keepErJErRy6HE
-    int ch -> keepErJErRy6HE
-    20:27:void <init>(java.io.Reader,boolean) -> <init>
-    32:32:launcher.serialize.config.entry.BlockConfigEntry read(java.io.Reader,boolean) -> read
-    37:37:java.io.IOException newIOException(java.lang.String) -> keepErJErRy6HE
-    42:47:int nextChar(boolean) -> keepErJErRy6HE
-    52:53:int nextClean(boolean) -> KeePerjeRryt52
-    58:100:launcher.serialize.config.entry.BlockConfigEntry readBlock(int) -> keepErJErRy6HE
-    106:133:launcher.serialize.config.entry.ConfigEntry readEntry(int) -> keepErJErRy6HE
-    139:139:launcher.serialize.config.entry.ConfigEntry readInteger(int) -> KeePerjeRryt52
-    144:179:launcher.serialize.config.entry.ConfigEntry readList(int) -> keEPERjERryabM
-    184:229:launcher.serialize.config.entry.ConfigEntry readString(int) -> keEpErjeRRYsAK
-    235:248:java.lang.String readToken() -> keepErJErRy6HE
-    253:258:void skipComment(java.lang.StringBuilder,boolean) -> keepErJErRy6HE
-    262:274:int skipWhitespace(boolean) -> keEPERjERryabM
-launcher.serialize.config.TextConfigWriter -> launcher.keEpErjerrYZ21:
-    java.io.Writer writer -> keepErJErRy6HE
-    boolean comments -> keepErJErRy6HE
-    19:22:void <init>(java.io.Writer,boolean) -> <init>
-    27:28:void write(launcher.serialize.config.entry.BlockConfigEntry,java.io.Writer,boolean) -> write
-    33:64:void writeBlock(launcher.serialize.config.entry.BlockConfigEntry,boolean) -> keepErJErRy6HE
-    68:69:void writeBoolean(launcher.serialize.config.entry.BooleanConfigEntry) -> keepErJErRy6HE
-    73:77:void writeComment(java.lang.String) -> keepErJErRy6HE
-    81:102:void writeEntry(launcher.serialize.config.entry.ConfigEntry) -> keepErJErRy6HE
-    106:107:void writeInteger(launcher.serialize.config.entry.IntegerConfigEntry) -> keepErJErRy6HE
-    111:132:void writeList(launcher.serialize.config.entry.ListConfigEntry) -> keepErJErRy6HE
-    136:173:void writeString(launcher.serialize.config.entry.StringConfigEntry) -> keepErJErRy6HE
-launcher.serialize.config.TextConfigWriter$1 -> launcher.KeepeRjERryuKZ:
-    int[] $SwitchMap$launcher$serialize$config$entry$ConfigEntry$Type -> keepErJErRy6HE
-    82:82:void <clinit>() -> <clinit>
-launcher.serialize.config.entry.BlockConfigEntry -> launcher.KEEpErJeRrYlil:
-    17:18:void <init>(java.util.Map,boolean,int) -> <init>
-    23:24:void <init>(int) -> <init>
-    29:30:void <init>(launcher.serialize.HInput,boolean) -> <init>
-    34:44:java.util.Map readMap(launcher.serialize.HInput,boolean) -> keepErJErRy6HE
-    50:50:launcher.serialize.config.entry.ConfigEntry$Type getType() -> getType
-    56:57:java.util.Map getValue() -> keepErJErRy6HE
-    63:68:void uncheckedSetValue(java.util.Map) -> keepErJErRy6HE
-    73:80:void write(launcher.serialize.HOutput) -> write
-    85:86:void clear() -> clear
-    91:97:launcher.serialize.config.entry.ConfigEntry getEntry(java.lang.String,java.lang.Class) -> getEntry
-    103:103:java.lang.Object getEntryValue(java.lang.String,java.lang.Class) -> getEntryValue
-    109:109:boolean hasEntry(java.lang.String) -> hasEntry
-    115:116:void remove(java.lang.String) -> remove
-    121:122:void setEntry(java.lang.String,launcher.serialize.config.entry.ConfigEntry) -> setEntry
-    12:12:void uncheckedSetValue(java.lang.Object) -> keepErJErRy6HE
-    12:12:java.lang.Object getValue() -> getValue
-launcher.serialize.config.entry.BooleanConfigEntry -> launcher.kEEPeRjerry4x5:
-    14:15:void <init>(boolean,boolean,int) -> <init>
-    20:21:void <init>(launcher.serialize.HInput,boolean) -> <init>
-    26:26:launcher.serialize.config.entry.ConfigEntry$Type getType() -> getType
-    32:33:void write(launcher.serialize.HOutput) -> write
-launcher.serialize.config.entry.ConfigEntry -> launcher.keEPeRjErry4mI:
-    boolean ro -> ro
-    java.lang.String[] comments -> keepErJErRy6HE
-    java.lang.Object value -> keepErJErRy6HE
-    21:25:void <init>(java.lang.Object,boolean,int) -> <init>
-    29:43:launcher.serialize.config.entry.ConfigEntry readEntry(launcher.serialize.HInput,boolean) -> keepErJErRy6HE
-    49:51:void writeEntry(launcher.serialize.config.entry.ConfigEntry,launcher.serialize.HOutput) -> keepErJErRy6HE
-    launcher.serialize.config.entry.ConfigEntry$Type getType() -> getType
-    59:63:java.lang.String getComment(int) -> getComment
-    70:70:java.lang.Object getValue() -> getValue
-    76:78:void setValue(java.lang.Object) -> setValue
-    83:84:void setComment(int,java.lang.String) -> setComment
-    88:92:void ensureWritable() -> keepErJErRy6HE
-    97:98:void uncheckedSetValue(java.lang.Object) -> keepErJErRy6HE
-launcher.serialize.config.entry.ConfigEntry$1 -> launcher.kEepeRJERrYYjc:
-    int[] $SwitchMap$launcher$serialize$config$entry$ConfigEntry$Type -> keepErJErRy6HE
-    30:30:void <clinit>() -> <clinit>
-launcher.serialize.config.entry.ConfigEntry$Type -> launcher.KeEPeRjErrYptJ:
-    launcher.serialize.config.entry.ConfigEntry$Type BLOCK -> BLOCK
-    launcher.serialize.config.entry.ConfigEntry$Type BOOLEAN -> BOOLEAN
-    launcher.serialize.config.entry.ConfigEntry$Type INTEGER -> INTEGER
-    launcher.serialize.config.entry.ConfigEntry$Type STRING -> STRING
-    launcher.serialize.config.entry.ConfigEntry$Type LIST -> LIST
-    launcher.serialize.stream.EnumSerializer SERIALIZER -> SERIALIZER
-    int n -> n
-    launcher.serialize.config.entry.ConfigEntry$Type[] $VALUES -> $VALUES
-    100:100:launcher.serialize.config.entry.ConfigEntry$Type[] values() -> values
-    100:100:launcher.serialize.config.entry.ConfigEntry$Type valueOf(java.lang.String) -> valueOf
-    108:110:void <init>(java.lang.String,int,int) -> <init>
-    114:114:launcher.serialize.config.entry.ConfigEntry$Type read(launcher.serialize.HInput) -> read
-    120:120:int getNumber() -> getNumber
-    100:104:void <clinit>() -> <clinit>
-launcher.serialize.config.entry.IntegerConfigEntry -> launcher.kEEpErjERRyAWR:
-    14:15:void <init>(int,boolean,int) -> <init>
-    20:21:void <init>(launcher.serialize.HInput,boolean) -> <init>
-    26:26:launcher.serialize.config.entry.ConfigEntry$Type getType() -> getType
-    32:33:void write(launcher.serialize.HOutput) -> write
-launcher.serialize.config.entry.ListConfigEntry -> launcher.keePerJErrY4Oi:
-    18:19:void <init>(java.util.List,boolean,int) -> <init>
-    24:25:void <init>(launcher.serialize.HInput,boolean) -> <init>
-    29:35:java.util.List readList(launcher.serialize.HInput,boolean) -> keepErJErRy6HE
-    41:41:launcher.serialize.config.entry.ConfigEntry$Type getType() -> getType
-    47:49:void uncheckedSetValue(java.util.List) -> keepErJErRy6HE
-    54:60:void write(launcher.serialize.HOutput) -> write
-    65:65:java.util.stream.Stream stream(java.lang.Class) -> stream
-    71:75:void verifyOfType(launcher.serialize.config.entry.ConfigEntry$Type) -> verifyOfType
-    13:13:void uncheckedSetValue(java.lang.Object) -> keepErJErRy6HE
-    71:71:boolean lambda$verifyOfType$0(launcher.serialize.config.entry.ConfigEntry$Type,launcher.serialize.config.entry.ConfigEntry) -> keepErJErRy6HE
-launcher.serialize.config.entry.StringConfigEntry -> launcher.KeEpERjErRyhvy:
-    14:15:void <init>(java.lang.String,boolean,int) -> <init>
-    20:21:void <init>(launcher.serialize.HInput,boolean) -> <init>
-    26:26:launcher.serialize.config.entry.ConfigEntry$Type getType() -> getType
-    32:33:void uncheckedSetValue(java.lang.String) -> keepErJErRy6HE
-    38:39:void write(launcher.serialize.HOutput) -> write
-    9:9:void uncheckedSetValue(java.lang.Object) -> keepErJErRy6HE
-launcher.serialize.signed.SignedBytesHolder -> launcher.kEePErJERRYtY0:
-    byte[] bytes -> keepErJErRy6HE
-    byte[] sign -> KeePerjeRryt52
-    22:23:void <init>(launcher.serialize.HInput,java.security.interfaces.RSAPublicKey) -> <init>
-    27:31:void <init>(byte[],byte[],java.security.interfaces.RSAPublicKey) -> <init>
-    35:38:void <init>(byte[],java.security.interfaces.RSAPrivateKey) -> <init>
-    43:45:void write(launcher.serialize.HOutput) -> write
-    50:50:byte[] getBytes() -> getBytes
-    56:56:byte[] getSign() -> getSign
-launcher.serialize.signed.SignedObjectHolder -> launcher.kEePerjerryEBg:
-    launcher.serialize.stream.StreamObject object -> object
-    20:22:void <init>(launcher.serialize.HInput,java.security.interfaces.RSAPublicKey,launcher.serialize.stream.StreamObject$Adapter) -> <init>
-    27:29:void <init>(launcher.serialize.stream.StreamObject,java.security.interfaces.RSAPrivateKey) -> <init>
-    34:34:boolean equals(java.lang.Object) -> equals
-    40:40:int hashCode() -> hashCode
-    46:46:java.lang.String toString() -> toString
-    52:55:launcher.serialize.stream.StreamObject newInstance(launcher.serialize.stream.StreamObject$Adapter) -> newInstance
-launcher.serialize.stream.EnumSerializer -> launcher.kEepeRJErRyW5H:
-    java.util.Map map -> keepErJErRy6HE
-    15:24:void <init>(java.lang.Class) -> <init>
-    29:30:void write(launcher.serialize.HOutput,launcher.serialize.stream.EnumSerializer$Itf) -> write
-    35:36:java.lang.Enum read(launcher.serialize.HInput) -> read
-launcher.serialize.stream.EnumSerializer$Itf -> launcher.keEPErJErrYbXW:
-    int getNumber() -> getNumber
-launcher.serialize.stream.StreamObject -> launcher.KEEpeRjerrYruV:
+launcher.keePeRjErrypC2 -> launcher.KeEpERjErRyhvy:
+    boolean flag -> keepErJErRy6HE
     11:11:void <init>() -> <init>
-    void write(launcher.serialize.HOutput) -> write
-    21:28:byte[] write() -> write
-launcher.serialize.stream.StreamObject$Adapter -> launcher.KeePERJERryk2s:
-    launcher.serialize.stream.StreamObject convert(launcher.serialize.HInput) -> convert
+    launcher.kEepErjERry3Xj getType() -> keepErJErRy6HE
+    long size() -> keepErJErRy6HE
+launcher.keePerJErrY4Oi -> launcher.kEePErJERRYtY0:
+    18:19:void <init>(java.util.List,boolean,int) -> <init>
+    24:25:void <init>(launcher.KEePerjeRry8VJ,boolean) -> <init>
+    29:35:java.util.List keepErJErRy6HE(launcher.KEePerjeRry8VJ,boolean) -> keepErJErRy6HE
+    41:41:launcher.KeEPeRjErrYptJ getType() -> keepErJErRy6HE
+    47:49:void keepErJErRy6HE(java.util.List) -> keepErJErRy6HE
+    54:60:void write(launcher.KEeperjERRYyzU) -> keepErJErRy6HE
+    65:65:java.util.stream.Stream stream(java.lang.Class) -> keepErJErRy6HE
+    71:75:void verifyOfType(launcher.KeEPeRjErrYptJ) -> keepErJErRy6HE
+    13:13:void keepErJErRy6HE(java.lang.Object) -> keepErJErRy6HE
+    71:71:boolean keepErJErRy6HE(launcher.KeEPeRjErrYptJ,launcher.keEPeRjErry4mI) -> keepErJErRy6HE
+launcher.keePerJeRrYtsX -> launcher.kEePerjerryEBg:
+    launcher.kEepERjerryeNm convert(launcher.KEEpErJeRrYlil) -> keepErJErRy6HE
+launcher.keePerJerryeTT -> launcher.kEepeRJErRyW5H:
+    java.nio.file.Path assetDir -> keepErJErRy6HE
+    java.nio.file.Path clientDir -> KeePerjeRryt52
+    launcher.KeePErjerRy6bP pp -> keepErJErRy6HE
+    java.lang.String accessToken -> keepErJErRy6HE
+    boolean autoEnter -> keepErJErRy6HE
+    boolean fullScreen -> KeePerjeRryt52
+    int ram -> keepErJErRy6HE
+    int width -> KeePerjeRryt52
+    int height -> keEPERjERryabM
+    byte[] keepErJErRy6HE -> keepErJErRy6HE
+    408:423:void <init>(byte[],java.nio.file.Path,java.nio.file.Path,launcher.KeePErjerRy6bP,java.lang.String,boolean,boolean,int,int,int) -> <init>
+    427:443:void <init>(launcher.KEePerjeRry8VJ) -> <init>
+    448:463:void write(launcher.KEeperjERRYyzU) -> keepErJErRy6HE
+    380:380:byte[] keepErJErRy6HE(launcher.keePerJerryeTT) -> keepErJErRy6HE
+launcher.keepERJerRyy82 -> launcher.keEPErJErrYbXW:
+    java.lang.String RSA_ALGO -> keepErJErRy6HE
+    java.lang.String RSA_SIGN_ALGO -> KeePerjeRryt52
+    java.lang.String RSA_CIPHER_ALGO -> keEPERjERryabM
+    int TOKEN_LENGTH -> keepErJErRy6HE
+    int RSA_KEY_LENGTH_BITS -> KeePerjeRryt52
+    int RSA_KEY_LENGTH -> keEPERjERryabM
+    int CRYPTO_MAX_LENGTH -> keEpErjeRRYsAK
+    java.lang.String CERTIFICATE_DIGEST -> keEpErjeRRYsAK
+    java.lang.String HEX -> KeEperJErryz5T
+    java.lang.String JWT -> keePErjerrYnmV
+    char[] keepErJErRy6HE -> keepErJErRy6HE
+    char[] KeePerjeRryt52 -> KeePerjeRryt52
+    60:61:void <init>() -> <init>
+    66:66:byte[] digest(launcher.KeePErJERrYQ1W,java.lang.String) -> keepErJErRy6HE
+    72:75:byte[] digest(launcher.KeePErJERrYQ1W,java.net.URL) -> keepErJErRy6HE
+    81:84:byte[] digest(launcher.KeePErJERrYQ1W,java.nio.file.Path) -> keepErJErRy6HE
+    90:90:byte[] digest(launcher.KeePErJERrYQ1W,byte[]) -> keepErJErRy6HE
+    96:102:byte[] digest(launcher.KeePErJERrYQ1W,java.io.InputStream) -> keepErJErRy6HE
+    110:116:java.security.KeyPair genRSAKeyPair(java.security.SecureRandom) -> keepErJErRy6HE
+    123:123:java.security.KeyPair genRSAKeyPair() -> keepErJErRy6HE
+    131:135:boolean isValidCertificate(java.security.cert.Certificate) -> keepErJErRy6HE
+    142:142:boolean isValidCertificates(java.security.cert.Certificate[]) -> keepErJErRy6HE
+    149:157:boolean isValidCertificates(java.lang.Class) -> keepErJErRy6HE
+    163:166:boolean isValidSign(java.nio.file.Path,byte[],java.security.interfaces.RSAPublicKey) -> keepErJErRy6HE
+    172:181:boolean isValidSign(byte[],byte[],java.security.interfaces.RSAPublicKey) -> keepErJErRy6HE
+    187:189:boolean isValidSign(java.io.InputStream,byte[],java.security.interfaces.RSAPublicKey) -> keepErJErRy6HE
+    195:198:boolean isValidSign(java.net.URL,byte[],java.security.interfaces.RSAPublicKey) -> keepErJErRy6HE
+    206:206:boolean isValidToken(java.lang.CharSequence) -> keepErJErRy6HE
+    212:219:java.security.MessageDigest newDigest(launcher.KeePErJERrYQ1W) -> keepErJErRy6HE
+    226:226:javax.crypto.Cipher newRSADecryptCipher(java.security.interfaces.RSAPrivateKey) -> keepErJErRy6HE
+    232:232:javax.crypto.Cipher newRSAEncryptCipher(java.security.interfaces.RSAPublicKey) -> keepErJErRy6HE
+    238:247:java.security.Signature newRSASignSignature(java.security.interfaces.RSAPrivateKey) -> keepErJErRy6HE
+    253:262:java.security.Signature newRSAVerifySignature(java.security.interfaces.RSAPublicKey) -> keepErJErRy6HE
+    268:268:java.security.SecureRandom newRandom() -> keepErJErRy6HE
+    274:276:byte[] randomBytes(java.util.Random,int) -> keepErJErRy6HE
+    282:282:byte[] randomBytes(int) -> keepErJErRy6HE
+    288:288:java.lang.String randomStringToken(java.util.Random) -> keepErJErRy6HE
+    294:294:java.lang.String randomStringToken() -> keepErJErRy6HE
+    300:300:byte[] randomToken(java.util.Random) -> keepErJErRy6HE
+    306:306:byte[] randomToken() -> keepErJErRy6HE
+    312:385:java.lang.String randomUsername(java.util.Random) -> KeePerjeRryt52
+    391:391:java.lang.String randomUsername() -> KeePerjeRryt52
+    397:405:byte[] sign(java.io.InputStream,java.security.interfaces.RSAPrivateKey) -> keepErJErRy6HE
+    412:420:byte[] sign(byte[],java.security.interfaces.RSAPrivateKey) -> keepErJErRy6HE
+    427:430:byte[] sign(java.nio.file.Path,java.security.interfaces.RSAPrivateKey) -> keepErJErRy6HE
+    436:446:java.lang.String toHex(byte[]) -> keepErJErRy6HE
+    452:452:java.security.interfaces.RSAPrivateKey toPrivateRSAKey(byte[]) -> keepErJErRy6HE
+    458:458:java.security.interfaces.RSAPublicKey toPublicRSAKey(byte[]) -> keepErJErRy6HE
+    464:468:void verifyCertificates(java.lang.Class) -> keepErJErRy6HE
+    473:477:void verifySign(byte[],byte[],java.security.interfaces.RSAPublicKey) -> keepErJErRy6HE
+    482:486:void verifySign(java.io.InputStream,byte[],java.security.interfaces.RSAPublicKey) -> keepErJErRy6HE
+    491:495:void verifySign(java.nio.file.Path,byte[],java.security.interfaces.RSAPublicKey) -> keepErJErRy6HE
+    500:504:void verifySign(java.net.URL,byte[],java.security.interfaces.RSAPublicKey) -> keepErJErRy6HE
+    509:509:java.lang.String verifyToken(java.lang.String) -> keepErJErRy6HE
+    517:525:javax.crypto.Cipher keepErJErRy6HE(java.lang.String) -> keepErJErRy6HE
+    531:540:javax.crypto.Cipher keepErJErRy6HE(int,java.security.interfaces.RSAKey) -> keepErJErRy6HE
+    547:551:java.security.KeyFactory keepErJErRy6HE() -> keepErJErRy6HE
+    559:563:java.security.Signature keepErJErRy6HE() -> keepErJErRy6HE
+    569:581:void keepErJErRy6HE(java.io.InputStream,java.security.Signature) -> keepErJErRy6HE
+    212:212:boolean keepErJErRy6HE(launcher.KeePErJERrYQ1W) -> keepErJErRy6HE
+    206:206:boolean keepErJErRy6HE(int) -> keepErJErRy6HE
+    56:57:void <clinit>() -> <clinit>
+launcher.keepErJErRy6HE -> launcher.KEEpeRjerrYruV:
+launcher.keeperjERRyWCz -> launcher.KeePERJERryk2s:
+    java.lang.management.RuntimeMXBean RUNTIME_MXBEAN -> keepErJErRy6HE
+    com.sun.management.OperatingSystemMXBean OPERATING_SYSTEM_MXBEAN -> keepErJErRy6HE
+    launcher.keePeRJERRyHjo OS_TYPE -> keepErJErRy6HE
+    java.lang.String OS_VERSION -> keepErJErRy6HE
+    int OS_BITS -> keepErJErRy6HE
+    int JVM_BITS -> KeePerjeRryt52
+    int RAM -> keEPERjERryabM
+    sun.misc.Unsafe UNSAFE -> keepErJErRy6HE
+    java.lang.invoke.MethodHandles$Lookup LOOKUP -> keepErJErRy6HE
+    java.lang.Runtime RUNTIME -> keepErJErRy6HE
+    java.lang.ClassLoader LOADER -> keepErJErRy6HE
+    java.lang.String keepErJErRy6HE -> KeePerjeRryt52
+    java.lang.Object keepErJErRy6HE -> keepErJErRy6HE
+    java.lang.invoke.MethodHandle keepErJErRy6HE -> keepErJErRy6HE
+    java.lang.invoke.MethodHandle KeePerjeRryt52 -> KeePerjeRryt52
+    java.lang.invoke.MethodHandle keEPERjERryabM -> keEPERjERryabM
+    java.lang.invoke.MethodHandle keEpErjeRRYsAK -> keEpErjeRRYsAK
+    90:91:void <init>() -> <init>
+    98:104:void addClassPath(java.net.URL) -> keepErJErRy6HE
+    110:113:void fullGC() -> keepErJErRy6HE
+    120:125:java.security.cert.Certificate[] getCertificates(java.lang.String) -> keepErJErRy6HE
+    134:138:java.net.URL[] getClassPath() -> keepErJErRy6HE
+    145:154:void halt0(int) -> keepErJErRy6HE
+    159:159:boolean isJVMMatchesSystemArch() -> keepErJErRy6HE
+    165:181:void verifySystemProperties(java.lang.Class,boolean) -> keepErJErRy6HE
+    187:193:int keepErJErRy6HE() -> keepErJErRy6HE
+    198:199:int KeePerjeRryt52() -> KeePerjeRryt52
+    204:215:java.lang.Class keepErJErRy6HE(java.lang.String[]) -> keepErJErRy6HE
+    23:87:void <clinit>() -> <clinit>

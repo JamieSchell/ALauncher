@@ -1,0 +1,11 @@
+/build/
+*.class
+*.jar
+*.pack.gz
+.gradle/
+.idea/
+*.iml
+*.iws
+.vscode/
+buildnumber
+*.jks
