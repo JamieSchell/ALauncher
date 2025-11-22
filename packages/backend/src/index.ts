@@ -18,6 +18,7 @@ import profileRoutes from './routes/profiles';
 import updateRoutes from './routes/updates';
 import userRoutes from './routes/users';
 import serverRoutes from './routes/servers';
+import clientVersionRoutes from './routes/clientVersions';
 
 async function bootstrap() {
   const app = express();
@@ -54,6 +55,7 @@ async function bootstrap() {
   app.use('/api/updates', updateRoutes);
   app.use('/api/users', userRoutes);
   app.use('/api/servers', serverRoutes);
+  app.use('/api/client-versions', clientVersionRoutes);
 
   // Health check
   app.get('/health', (req, res) => {

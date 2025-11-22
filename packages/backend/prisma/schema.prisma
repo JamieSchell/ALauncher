@@ -5,7 +5,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -60,21 +60,23 @@ model ClientProfile {
   // Display
   sortIndex     Int
   title         String
+  description   String?  // Описание сервера
+  tags          Json?    // Массив пометок: ["NEW", "TOP", "WIP", "HARD", etc.]
   serverAddress String
   serverPort    Int      @default(25565)
   jvmVersion    String?
   
   // Update settings
   updateFastCheck Boolean @default(true)
-  update          String[] // Array of regex patterns
-  updateVerify    String[]
-  updateExclusions String[]
+  update          Json // Array of regex patterns (stored as JSON)
+  updateVerify    Json
+  updateExclusions Json
   
   // Launch settings
   mainClass     String
-  classPath     String[]
-  jvmArgs       String[]
-  clientArgs    String[]
+  classPath     Json // Array of paths (stored as JSON)
+  jvmArgs       Json // Array of JVM arguments (stored as JSON)
+  clientArgs    Json // Array of client arguments (stored as JSON)
   
   // Metadata
   enabled       Boolean  @default(true)
@@ -141,4 +143,78 @@ model ServerStatus {
   lastChecked   DateTime @default(now())
   
   @@map("server_status")
+}
+
+// Server statistics - статистика онлайн игроков по часам
+model ServerStatistics {
+  id            String   @id @default(uuid())
+  serverAddress String   // Адрес сервера (address:port)
+  timestamp     DateTime  @default(now()) // Время записи
+  hour          Int       // Час (0-23)
+  online        Int       // Текущий онлайн
+  average       Int       // Средний онлайн за час
+  minimum       Int       // Минимальный онлайн за час
+  maximum       Int       // Максимальный онлайн за час
+  
+  @@index([serverAddress, timestamp])
+  @@index([serverAddress, hour])
+  @@map("server_statistics")
+}
+
+// Client Version - хранит информацию о версиях клиентов на сервере
+model ClientVersion {
+  id            String   @id @default(uuid())
+  version       String   @unique // Версия клиента (например, "1.20.4", "custom-1.0")
+  title         String   // Название версии
+  description   String?  // Описание версии
+  
+  // Файлы клиента
+  clientJarPath String   // Путь к client.jar на сервере
+  clientJarHash String   // SHA-256 хеш для проверки целостности
+  clientJarSize BigInt   // Размер файла в байтах
+  
+  // Библиотеки
+  librariesPath String?  // Путь к папке с библиотеками
+  librariesHash  String?  // Хеш всех библиотек
+  
+  // Assets
+  assetsPath    String?  // Путь к папке с assets
+  assetsHash    String?  // Хеш всех assets
+  
+  // Настройки запуска
+  mainClass     String
+  jvmVersion    String   @default("17")
+  jvmArgs       Json     // Массив JVM аргументов
+  clientArgs    Json     // Массив аргументов клиента
+  
+  // Метаданные
+  enabled       Boolean  @default(true)
+  isDefault     Boolean  @default(false) // Версия по умолчанию
+  downloadUrl   String?  // Базовый URL для загрузки (если используется CDN)
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relations
+  files         ClientFile[]
+  
+  @@map("client_versions")
+}
+
+// Client File - информация о каждом файле клиента
+model ClientFile {
+  id            String   @id @default(uuid())
+  versionId     String   // ID версии клиента
+  filePath      String   // Относительный путь к файлу
+  fileHash      String   // SHA-256 хеш
+  fileSize      BigInt   // Размер в байтах
+  fileType      String   // Тип: "jar", "library", "asset", "native", "other"
+  downloadUrl   String?  // Прямой URL для загрузки (если используется CDN)
+  
+  version       ClientVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  
+  @@unique([versionId, filePath])
+  @@index([versionId])
+  @@index([fileType])
+  @@map("client_files")
 }

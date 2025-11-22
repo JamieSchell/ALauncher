@@ -1,139 +1,102 @@
 /**
  * Minecraft server ping service
+ * Uses minecraft-server-util library for reliable server pinging
  */
 
-import net from 'net';
+import { status } from 'minecraft-server-util';
+import axios from 'axios';
 import { ServerStatus } from '@modern-launcher/shared';
 
-export async function pingServer(address: string, port: number = 25565): Promise<ServerStatus> {
-  return new Promise((resolve) => {
-    const start = Date.now();
-    const socket = new net.Socket();
+/**
+ * Fallback method: Use external API to check server status
+ * This is useful when direct connection is blocked by firewall
+ */
+async function pingServerViaAPI(address: string, port: number): Promise<ServerStatus> {
+  try {
+    // Use mcstatus.io API (free, no API key required)
+    const response = await axios.get(`https://api.mcstatus.io/v2/status/java/${address}:${port}`, {
+      timeout: 5000,
+    });
     
-    const timeout = setTimeout(() => {
-      socket.destroy();
-      resolve({
-        online: false,
-        players: { online: 0, max: 0 },
-        version: '',
-        motd: '',
-        ping: 0,
-      });
-    }, 5000);
-
-    socket.connect(port, address, () => {
-      // Create handshake packet
-      const handshake = Buffer.concat([
-        Buffer.from([0x00]), // Packet ID
-        writeVarInt(47), // Protocol version (1.8.x)
-        writeString(address),
-        Buffer.from([port >> 8, port & 0xFF]),
-        writeVarInt(1), // Next state (status)
-      ]);
-
-      // Send handshake
-      socket.write(createPacket(handshake));
-
-      // Send status request
-      socket.write(createPacket(Buffer.from([0x00])));
-    });
-
-    let buffer = Buffer.alloc(0);
-    socket.on('data', (data) => {
-      buffer = Buffer.concat([buffer, data]);
-
-      try {
-        // Parse packet
-        const length = readVarInt(buffer);
-        if (buffer.length < length.value + length.size) {
-          return; // Wait for more data
-        }
-
-        const packetData = buffer.slice(length.size, length.size + length.value);
-        const response = JSON.parse(packetData.slice(1).toString('utf8'));
-
-        const ping = Date.now() - start;
-
-        clearTimeout(timeout);
-        socket.destroy();
-
-        resolve({
-          online: true,
-          players: {
-            online: response.players?.online || 0,
-            max: response.players?.max || 0,
-          },
-          version: response.version?.name || '',
-          motd: response.description?.text || response.description || '',
-          ping,
-        });
-      } catch (error) {
-        clearTimeout(timeout);
-        socket.destroy();
-        resolve({
-          online: false,
-          players: { online: 0, max: 0 },
-          version: '',
-          motd: '',
-          ping: 0,
-        });
-      }
-    });
-
-    socket.on('error', () => {
-      clearTimeout(timeout);
-      socket.destroy();
-      resolve({
-        online: false,
-        players: { online: 0, max: 0 },
-        version: '',
-        motd: '',
-        ping: 0,
-      });
-    });
-  });
-}
-
-function createPacket(data: Buffer): Buffer {
-  const length = writeVarInt(data.length);
-  return Buffer.concat([length, data]);
-}
-
-function writeVarInt(value: number): Buffer {
-  const bytes: number[] = [];
-  do {
-    let temp = value & 0x7F;
-    value >>>= 7;
-    if (value !== 0) {
-      temp |= 0x80;
+    if (response.data && response.data.online) {
+      return {
+        online: true,
+        players: {
+          online: response.data.players?.online || 0,
+          max: response.data.players?.max || 0,
+        },
+        version: response.data.version?.name || '',
+        motd: response.data.motd?.clean || response.data.motd?.html || '',
+        ping: response.data.round_trip_latency_ms || 0,
+      };
     }
-    bytes.push(temp);
-  } while (value !== 0);
-  return Buffer.from(bytes);
+    
+    return {
+      online: false,
+      players: { online: 0, max: 0 },
+      version: '',
+      motd: '',
+      ping: 0,
+    };
+  } catch (error: any) {
+    // If external API fails, throw error
+    throw error;
+  }
 }
 
-function writeString(str: string): Buffer {
-  const strBuf = Buffer.from(str, 'utf8');
-  return Buffer.concat([writeVarInt(strBuf.length), strBuf]);
-}
-
-function readVarInt(buffer: Buffer): { value: number; size: number } {
-  let numRead = 0;
-  let result = 0;
-  let read: number;
-
-  do {
-    if (numRead >= buffer.length) {
-      throw new Error('VarInt is too big');
+/**
+ * Main function to ping a Minecraft server
+ * Uses minecraft-server-util library first, then falls back to external API
+ */
+export async function pingServer(address: string, port: number = 25565): Promise<ServerStatus> {
+  console.log(`[Server Ping] Starting ping for ${address}:${port} using minecraft-server-util`);
+  
+  // Try using minecraft-server-util library first
+  try {
+    const result = await status(address, {
+      port: port,
+      timeout: 5000,
+      enableSRV: true, // Enable SRV record lookup
+    });
+    
+    console.log(`[Server Ping] ✓ Successfully pinged ${address}:${port} using minecraft-server-util`);
+    console.log(`[Server Ping]   Players: ${result.players.online}/${result.players.max}`);
+    console.log(`[Server Ping]   Version: ${result.version.name}`);
+    
+    // Convert to our ServerStatus format
+    return {
+      online: true,
+      players: {
+        online: result.players.online,
+        max: result.players.max,
+      },
+      version: result.version.name,
+      motd: result.motd.clean || result.motd.html || '',
+      ping: result.roundTripLatency || 0,
+    };
+  } catch (error: any) {
+    console.log(`[Server Ping] ✗ minecraft-server-util failed for ${address}:${port}: ${error.message || 'Unknown error'}`);
+    console.log(`[Server Ping]   Attempting fallback to external API...`);
+  }
+  
+  // Fallback to external API if library fails
+  try {
+    const externalStatus = await pingServerViaAPI(address, port);
+    if (externalStatus.online) {
+      console.log(`[Server Ping] ✓ External API reports server ${address}:${port} is online`);
+      return externalStatus;
     }
-    read = buffer[numRead];
-    const value = read & 0x7F;
-    result |= value << (7 * numRead);
-    numRead++;
-    if (numRead > 5) {
-      throw new Error('VarInt is too big');
-    }
-  } while ((read & 0x80) !== 0);
-
-  return { value: result, size: numRead };
+  } catch (error: any) {
+    console.log(`[Server Ping] External API fallback failed: ${error.message || 'Unknown error'}`);
+  }
+  
+  // If all methods failed, return offline status
+  console.log(`[Server Ping] ✗ All ping methods failed for ${address}:${port}`);
+  return {
+    online: false,
+    players: { online: 0, max: 0 },
+    version: '',
+    motd: '',
+    ping: 0,
+  };
 }

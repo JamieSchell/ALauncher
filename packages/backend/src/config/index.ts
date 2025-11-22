@@ -17,7 +17,7 @@ export const config = {
   },
   
   database: {
-    url: process.env.DATABASE_URL || 'postgresql://launcher:password@localhost:5432/launcher',
+    url: process.env.DATABASE_URL || 'mysql://launcher:password@localhost:3306/launcher',
   },
   
   jwt: {

@@ -4,12 +4,33 @@
 
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import axios from 'axios';
+import crypto from 'crypto';
 import { prisma } from './database';
 import { config } from '../config';
 import { PlayerProfile } from '@modern-launcher/shared';
 import { UUIDHelper } from '@modern-launcher/shared';
+import { logger } from '../utils/logger';
 
 const SALT_ROUNDS = 10;
+
+/**
+ * Calculate SHA-256 digest for a texture URL
+ */
+async function calculateTextureDigest(url: string): Promise<string> {
+  try {
+    const response = await axios.get(url, { 
+      responseType: 'arraybuffer',
+      timeout: 10000, // 10 second timeout
+    });
+    const buffer = Buffer.from(response.data);
+    return crypto.createHash('sha256').update(buffer).digest('hex');
+  } catch (error) {
+    logger.warn(`Failed to calculate digest for texture ${url}:`, error);
+    // Return empty string if download fails (texture might be unavailable)
+    return '';
+  }
+}
 
 export interface JWTPayload {
   userId: string;
@@ -98,7 +119,14 @@ export class AuthService {
       };
       const accessToken = this.generateToken(payload);
 
-      // Create session
+      // Delete old sessions for this user (optional - or update existing)
+      await prisma.session.deleteMany({
+        where: {
+          userId: user.id,
+        },
+      });
+
+      // Create new session
       await prisma.session.create({
         data: {
           userId: user.id,
@@ -108,17 +136,22 @@ export class AuthService {
         },
       });
 
-      // Build player profile
+      // Build player profile with texture digests
+      const [skinDigest, cloakDigest] = await Promise.all([
+        user.skinUrl ? calculateTextureDigest(user.skinUrl) : Promise.resolve(''),
+        user.cloakUrl ? calculateTextureDigest(user.cloakUrl) : Promise.resolve(''),
+      ]);
+
       const playerProfile: PlayerProfile = {
         uuid: user.uuid,
         username: user.username,
         skin: user.skinUrl ? {
           url: user.skinUrl,
-          digest: '', // TODO: calculate digest
+          digest: skinDigest,
         } : undefined,
         cloak: user.cloakUrl ? {
           url: user.cloakUrl,
-          digest: '', // TODO: calculate digest
+          digest: cloakDigest,
         } : undefined,
       };
 
@@ -127,10 +160,11 @@ export class AuthService {
         playerProfile,
         accessToken,
       };
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Authentication error:', error);
       return {
         success: false,
-        error: 'Authentication failed',
+        error: error.message || 'Authentication failed',
       };
     }
   }

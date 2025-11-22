@@ -24,11 +24,14 @@ router.post(
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        throw new AppError(400, 'Validation failed');
+        console.error('Validation errors:', errors.array());
+        throw new AppError(400, 'Validation failed: ' + errors.array().map(e => e.msg).join(', '));
       }
 
       const { login, password } = req.body;
-      const ipAddress = req.ip;
+      const ipAddress = req.ip || req.socket.remoteAddress || 'unknown';
+      
+      console.log('Login attempt:', { login, ipAddress });
 
       // Check rate limit
       const isRateLimited = await AuthService.checkRateLimit(ipAddress);
@@ -37,6 +40,8 @@ router.post(
       }
 
       const result = await AuthService.authenticate(login, password, ipAddress);
+      
+      console.log('Authentication result:', { success: result.success, error: result.error });
 
       if (!result.success) {
         throw new AppError(401, result.error || 'Authentication failed');

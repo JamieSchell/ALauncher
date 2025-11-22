@@ -6,6 +6,7 @@ import { Server as HTTPServer } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import { logger } from '../utils/logger';
 import { AuthService } from '../services/auth';
+import { ClientDownloadService } from '../services/clientDownloadService';
 import { WSEvent, UpdateProgress, LaunchStatus } from '@modern-launcher/shared';
 
 interface Client {
@@ -32,6 +33,9 @@ export function initializeWebSocket(server: HTTPServer) {
         switch (data.event) {
           case WSEvent.AUTH:
             await handleAuth(clientId, data.token);
+            break;
+          case WSEvent.DOWNLOAD_CLIENT:
+            await handleDownloadClient(clientId, data.versionId);
             break;
           default:
             logger.warn(`Unknown WS event: ${data.event}`);
@@ -81,6 +85,41 @@ async function handleAuth(clientId: string, token: string) {
     sendToClient(clientId, {
       event: WSEvent.AUTH,
       data: { success: false, error: 'Invalid token' },
+    });
+  }
+}
+
+async function handleDownloadClient(clientId: string, versionId: string) {
+  const client = clients.get(clientId);
+  if (!client || !client.userId) {
+    sendToClient(clientId, {
+      event: WSEvent.DOWNLOAD_CLIENT,
+      data: { success: false, error: 'Not authenticated' },
+    });
+    return;
+  }
+
+  try {
+    await ClientDownloadService.downloadClientVersion(
+      versionId,
+      client.userId,
+      (progress) => {
+        sendToClient(clientId, {
+          event: WSEvent.UPDATE_PROGRESS,
+          data: progress,
+        });
+      }
+    );
+
+    sendToClient(clientId, {
+      event: WSEvent.DOWNLOAD_CLIENT,
+      data: { success: true, versionId },
+    });
+  } catch (error: any) {
+    logger.error(`Download error for client ${clientId}:`, error);
+    sendToClient(clientId, {
+      event: WSEvent.DOWNLOAD_CLIENT,
+      data: { success: false, error: error.message },
     });
   }
 }

@@ -10,6 +10,9 @@ import { prisma } from '../services/database';
 import { HasherService } from '../services/hasher';
 import { sign } from '../services/crypto';
 import { AppError } from '../middleware/errorHandler';
+import { DownloadService } from '../services/downloadService';
+import { sendUpdateProgress } from '../websocket';
+import { AuthService } from '../services/auth';
 
 const router = Router();
 
@@ -160,6 +163,59 @@ router.post('/sync/:profileId', async (req, res, next) => {
     res.json({
       success: true,
       message: 'Sync triggered',
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /api/updates/download/:version
+ * Start downloading Minecraft version files
+ * Downloads in background and sends progress via WebSocket
+ */
+router.post('/download/:version', async (req, res, next) => {
+  try {
+    const { version } = req.params;
+
+    // Validate version format
+    if (!version || !/^\d+\.\d+(\.\d+)?$/.test(version)) {
+      throw new AppError(400, 'Invalid version format');
+    }
+
+    // Get user from token
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      throw new AppError(401, 'Unauthorized');
+    }
+
+    const token = authHeader.substring(7);
+    const payload = await AuthService.validateSession(token);
+    
+    if (!payload) {
+      throw new AppError(401, 'Invalid token');
+    }
+
+    // Start download in background
+    DownloadService.downloadMinecraftVersion(version, (progress) => {
+      sendUpdateProgress(payload.userId, progress);
+    }).catch((error) => {
+      sendUpdateProgress(payload.userId, {
+        profileId: version,
+        stage: 'complete',
+        progress: 0,
+        currentFile: `Error: ${error.message}`,
+        totalFiles: 0,
+        downloadedFiles: 0,
+      });
+    });
+
+    res.json({
+      success: true,
+      data: {
+        version,
+        message: 'Download started. Progress will be sent via WebSocket.',
+      },
     });
   } catch (error) {
     next(error);
