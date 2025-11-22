@@ -24,6 +24,8 @@ export interface ClientProfile {
   // Client params
   sortIndex: number;
   title: string;
+  description?: string;
+  tags?: string[]; // Пометки: ["NEW", "TOP", "WIP", "HARD", etc.]
   serverAddress: string;
   serverPort: number;
   jvmVersion?: string;
@@ -170,6 +172,7 @@ export enum WSEvent {
   UPDATE_PROGRESS = 'update_progress',
   LAUNCH_STATUS = 'launch_status',
   SERVER_STATUS = 'server_status',
+  DOWNLOAD_CLIENT = 'download_client',
 }
 
 export interface UpdateProgress {

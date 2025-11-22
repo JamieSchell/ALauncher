@@ -13,6 +13,7 @@ interface Settings {
   autoEnter: boolean;
   selectedProfile: string | null;
   javaPath: string;
+  workingDir: string;
 }
 
 interface SettingsState extends Settings {
@@ -28,6 +29,7 @@ const defaultSettings: Settings = {
   autoEnter: false,
   selectedProfile: null,
   javaPath: 'java',
+  workingDir: './minecraft',
 };
 
 export const useSettingsStore = create<SettingsState>()(

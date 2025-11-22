@@ -16,6 +16,10 @@ export default defineConfig({
         vite: {
           build: {
             outDir: 'dist-electron',
+            rollupOptions: {
+              external: ['electron'],
+            },
+            format: 'cjs', // Main process should be CommonJS too
           },
         },
       },
@@ -27,6 +31,10 @@ export default defineConfig({
         vite: {
           build: {
             outDir: 'dist-electron',
+            rollupOptions: {
+              external: ['electron'],
+            },
+            format: 'cjs', // Preload must be CommonJS
           },
         },
       },
@@ -37,6 +45,9 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
+  },
+  optimizeDeps: {
+    include: ['@modern-launcher/shared'],
   },
   server: {
     port: 5173,

@@ -36,12 +36,19 @@ export default function LoginPage() {
           setError(result.error || 'Login failed');
         }
       } else {
-        await authAPI.register(username, password, email);
-        setMode('login');
-        setError('');
+        const result = await authAPI.register(username, password, email);
+        if (result.success) {
+          setMode('login');
+          setError('');
+          // Show success message
+          alert('Registration successful! Please login.');
+        } else {
+          setError(result.error || 'Registration failed');
+        }
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || 'An error occurred');
+      console.error('Login error:', err);
+      setError(err.response?.data?.error || err.message || 'An error occurred');
     } finally {
       setLoading(false);
     }

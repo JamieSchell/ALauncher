@@ -4,6 +4,7 @@ import Layout from './components/Layout';
 import LoginPage from './pages/LoginPage';
 import HomePage from './pages/HomePage';
 import SettingsPage from './pages/SettingsPage';
+import ServerDetailsPage from './pages/ServerDetailsPage';
 
 function App() {
   const { isAuthenticated } = useAuthStore();
@@ -29,6 +30,18 @@ function App() {
           isAuthenticated ? (
             <Layout>
               <SettingsPage />
+            </Layout>
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />
+      <Route
+        path="/server/:id"
+        element={
+          isAuthenticated ? (
+            <Layout>
+              <ServerDetailsPage />
             </Layout>
           ) : (
             <Navigate to="/login" replace />
