@@ -1,0 +1,144 @@
+// Prisma Schema for Modern Launcher
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model
+model User {
+  id        String   @id @default(uuid())
+  username  String   @unique
+  password  String   // bcrypt hashed
+  uuid      String   @unique // Minecraft UUID
+  
+  // Profile data
+  email     String?  @unique
+  skinUrl   String?
+  cloakUrl  String?
+  
+  // Metadata
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  lastLogin DateTime?
+  
+  // Relations
+  sessions  Session[]
+  
+  @@map("users")
+}
+
+// Session model (for JWT blacklist and tracking)
+model Session {
+  id           String    @id @default(uuid())
+  userId       String
+  accessToken  String    @unique
+  refreshToken String?   @unique
+  expiresAt    DateTime
+  createdAt    DateTime  @default(now())
+  lastUsedAt   DateTime  @default(now())
+  ipAddress    String?
+  userAgent    String?
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([accessToken])
+  @@map("sessions")
+}
+
+// Client Profile model
+model ClientProfile {
+  id            String   @id @default(uuid())
+  version       String
+  assetIndex    String
+  
+  // Display
+  sortIndex     Int
+  title         String
+  serverAddress String
+  serverPort    Int      @default(25565)
+  jvmVersion    String?
+  
+  // Update settings
+  updateFastCheck Boolean @default(true)
+  update          String[] // Array of regex patterns
+  updateVerify    String[]
+  updateExclusions String[]
+  
+  // Launch settings
+  mainClass     String
+  classPath     String[]
+  jvmArgs       String[]
+  clientArgs    String[]
+  
+  // Metadata
+  enabled       Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@map("client_profiles")
+}
+
+// Update cache model (for tracking file hashes)
+model FileHash {
+  id        String   @id @default(uuid())
+  profileId String
+  path      String
+  hash      String
+  size      BigInt
+  updatedAt DateTime @updatedAt
+  
+  @@unique([profileId, path])
+  @@index([profileId])
+  @@map("file_hashes")
+}
+
+// Auth attempts tracking (for rate limiting)
+model AuthAttempt {
+  id        String   @id @default(uuid())
+  username  String?
+  ipAddress String
+  success   Boolean
+  timestamp DateTime @default(now())
+  
+  @@index([ipAddress, timestamp])
+  @@index([username, timestamp])
+  @@map("auth_attempts")
+}
+
+// IP Whitelist/Blacklist
+model IpRule {
+  id        String   @id @default(uuid())
+  ip        String   @unique
+  type      IpRuleType
+  reason    String?
+  createdAt DateTime @default(now())
+  expiresAt DateTime?
+  
+  @@map("ip_rules")
+}
+
+enum IpRuleType {
+  WHITELIST
+  BLACKLIST
+}
+
+// Server status cache
+model ServerStatus {
+  id            String   @id @default(uuid())
+  serverAddress String   @unique
+  online        Boolean
+  players       Int?
+  maxPlayers    Int?
+  version       String?
+  motd          String?
+  ping          Int?
+  lastChecked   DateTime @default(now())
+  
+  @@map("server_status")
+}
