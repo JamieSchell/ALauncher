@@ -173,6 +173,7 @@ export enum WSEvent {
   LAUNCH_STATUS = 'launch_status',
   SERVER_STATUS = 'server_status',
   DOWNLOAD_CLIENT = 'download_client',
+  LAUNCHER_UPDATE_AVAILABLE = 'launcher_update_available',
 }
 
 export interface UpdateProgress {

@@ -5,6 +5,7 @@
 import { ReactNode } from 'react';
 import TitleBar from './TitleBar';
 import Sidebar from './Sidebar';
+import Breadcrumbs from './Breadcrumbs';
 
 interface LayoutProps {
   children: ReactNode;
@@ -17,6 +18,7 @@ export default function Layout({ children }: LayoutProps) {
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
         <main className="flex-1 overflow-auto p-6">
+          <Breadcrumbs />
           {children}
         </main>
       </div>

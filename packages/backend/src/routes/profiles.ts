@@ -3,9 +3,11 @@
  */
 
 import { Router } from 'express';
+import { body, validationResult } from 'express-validator';
 import { prisma } from '../services/database';
 import { AppError } from '../middleware/errorHandler';
 import { sign } from '../services/crypto';
+import { authenticateToken, requireAdmin, AuthRequest } from '../middleware/auth';
 
 const router = Router();
 
@@ -65,14 +67,55 @@ router.get('/:id', async (req, res, next) => {
 
 /**
  * POST /api/profiles
- * Create new profile
+ * Create new profile (Admin only)
  */
-router.post('/', async (req, res, next) => {
+router.post(
+  '/',
+  authenticateToken,
+  requireAdmin,
+  [
+    body('version').trim().notEmpty().withMessage('Version is required'),
+    body('title').trim().notEmpty().withMessage('Title is required'),
+    body('serverAddress').trim().notEmpty().withMessage('Server address is required'),
+    body('serverPort').isInt({ min: 1, max: 65535 }).withMessage('Server port must be between 1 and 65535'),
+    body('mainClass').trim().notEmpty().withMessage('Main class is required'),
+    body('classPath').isArray().withMessage('Class path must be an array'),
+    body('jvmArgs').isArray().withMessage('JVM args must be an array'),
+    body('clientArgs').isArray().withMessage('Client args must be an array'),
+    body('sortIndex').isInt().withMessage('Sort index must be an integer'),
+    body('assetIndex').trim().notEmpty().withMessage('Asset index is required'),
+  ],
+  async (req: AuthRequest, res, next) => {
   try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        throw new AppError(400, 'Validation failed: ' + errors.array().map(e => e.msg).join(', '));
+      }
+
     const profileData = req.body;
 
+      // Ensure arrays are properly formatted
     const profile = await prisma.clientProfile.create({
-      data: profileData,
+        data: {
+          version: profileData.version,
+          title: profileData.title,
+          description: profileData.description || null,
+          serverAddress: profileData.serverAddress,
+          serverPort: profileData.serverPort,
+          mainClass: profileData.mainClass,
+          classPath: Array.isArray(profileData.classPath) ? profileData.classPath : [],
+          jvmArgs: Array.isArray(profileData.jvmArgs) ? profileData.jvmArgs : [],
+          clientArgs: Array.isArray(profileData.clientArgs) ? profileData.clientArgs : [],
+          sortIndex: profileData.sortIndex || 0,
+          assetIndex: profileData.assetIndex,
+          jvmVersion: profileData.jvmVersion || null,
+          updateFastCheck: profileData.updateFastCheck !== undefined ? profileData.updateFastCheck : true,
+          update: Array.isArray(profileData.update) ? profileData.update : [],
+          updateVerify: Array.isArray(profileData.updateVerify) ? profileData.updateVerify : [],
+          updateExclusions: Array.isArray(profileData.updateExclusions) ? profileData.updateExclusions : [],
+          tags: Array.isArray(profileData.tags) ? profileData.tags : [],
+          enabled: profileData.enabled !== undefined ? profileData.enabled : true,
+        },
     });
 
     res.status(201).json({
@@ -82,20 +125,70 @@ router.post('/', async (req, res, next) => {
   } catch (error) {
     next(error);
   }
-});
+  }
+);
 
 /**
  * PUT /api/profiles/:id
- * Update profile
+ * Update profile (Admin only)
  */
-router.put('/:id', async (req, res, next) => {
+router.put(
+  '/:id',
+  authenticateToken,
+  requireAdmin,
+  [
+    body('version').optional().trim().notEmpty().withMessage('Version cannot be empty'),
+    body('title').optional().trim().notEmpty().withMessage('Title cannot be empty'),
+    body('serverAddress').optional().trim().notEmpty().withMessage('Server address cannot be empty'),
+    body('serverPort').optional().isInt({ min: 1, max: 65535 }).withMessage('Server port must be between 1 and 65535'),
+    body('mainClass').optional().trim().notEmpty().withMessage('Main class cannot be empty'),
+    body('classPath').optional().isArray().withMessage('Class path must be an array'),
+    body('jvmArgs').optional().isArray().withMessage('JVM args must be an array'),
+    body('clientArgs').optional().isArray().withMessage('Client args must be an array'),
+  ],
+  async (req: AuthRequest, res, next) => {
   try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        throw new AppError(400, 'Validation failed: ' + errors.array().map(e => e.msg).join(', '));
+      }
+
     const { id } = req.params;
     const profileData = req.body;
 
+      // Check if profile exists
+      const existing = await prisma.clientProfile.findUnique({
+        where: { id },
+      });
+
+      if (!existing) {
+        throw new AppError(404, 'Profile not found');
+      }
+
+      // Prepare update data
+      const updateData: any = {};
+      if (profileData.version !== undefined) updateData.version = profileData.version;
+      if (profileData.title !== undefined) updateData.title = profileData.title;
+      if (profileData.description !== undefined) updateData.description = profileData.description;
+      if (profileData.serverAddress !== undefined) updateData.serverAddress = profileData.serverAddress;
+      if (profileData.serverPort !== undefined) updateData.serverPort = profileData.serverPort;
+      if (profileData.mainClass !== undefined) updateData.mainClass = profileData.mainClass;
+      if (profileData.classPath !== undefined) updateData.classPath = Array.isArray(profileData.classPath) ? profileData.classPath : [];
+      if (profileData.jvmArgs !== undefined) updateData.jvmArgs = Array.isArray(profileData.jvmArgs) ? profileData.jvmArgs : [];
+      if (profileData.clientArgs !== undefined) updateData.clientArgs = Array.isArray(profileData.clientArgs) ? profileData.clientArgs : [];
+      if (profileData.sortIndex !== undefined) updateData.sortIndex = profileData.sortIndex;
+      if (profileData.assetIndex !== undefined) updateData.assetIndex = profileData.assetIndex;
+      if (profileData.jvmVersion !== undefined) updateData.jvmVersion = profileData.jvmVersion;
+      if (profileData.updateFastCheck !== undefined) updateData.updateFastCheck = profileData.updateFastCheck;
+      if (profileData.update !== undefined) updateData.update = Array.isArray(profileData.update) ? profileData.update : [];
+      if (profileData.updateVerify !== undefined) updateData.updateVerify = Array.isArray(profileData.updateVerify) ? profileData.updateVerify : [];
+      if (profileData.updateExclusions !== undefined) updateData.updateExclusions = Array.isArray(profileData.updateExclusions) ? profileData.updateExclusions : [];
+      if (profileData.tags !== undefined) updateData.tags = Array.isArray(profileData.tags) ? profileData.tags : [];
+      if (profileData.enabled !== undefined) updateData.enabled = profileData.enabled;
+
     const profile = await prisma.clientProfile.update({
       where: { id },
-      data: profileData,
+        data: updateData,
     });
 
     res.json({
@@ -105,15 +198,25 @@ router.put('/:id', async (req, res, next) => {
   } catch (error) {
     next(error);
   }
-});
+  }
+);
 
 /**
  * DELETE /api/profiles/:id
- * Delete profile
+ * Delete profile (Admin only)
  */
-router.delete('/:id', async (req, res, next) => {
+router.delete('/:id', authenticateToken, requireAdmin, async (req: AuthRequest, res, next) => {
   try {
     const { id } = req.params;
+
+    // Check if profile exists
+    const profile = await prisma.clientProfile.findUnique({
+      where: { id },
+    });
+
+    if (!profile) {
+      throw new AppError(404, 'Profile not found');
+    }
 
     await prisma.clientProfile.delete({
       where: { id },

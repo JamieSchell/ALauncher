@@ -4,6 +4,8 @@
 
 import { Request, Response, NextFunction } from 'express';
 import { logger } from '../utils/logger';
+import { prisma } from '../services/database';
+import { LauncherErrorType } from '@prisma/client';
 
 export class AppError extends Error {
   constructor(
@@ -16,27 +18,149 @@ export class AppError extends Error {
   }
 }
 
+/**
+ * Determine error type from error and request
+ */
+function determineErrorType(err: Error | AppError, req: Request): LauncherErrorType {
+  const message = err.message.toLowerCase();
+  const stack = err.stack?.toLowerCase() || '';
+  
+  // Database connection errors
+  if (message.includes('can\'t reach database') || 
+      message.includes('database server') || 
+      message.includes('connection refused') ||
+      message.includes('econnrefused') ||
+      message.includes('prisma') && (message.includes('connection') || message.includes('timeout'))) {
+    return 'NETWORK_ERROR'; // Database connection is a network issue
+  }
+  
+  // Optional files (like .blockmap) - don't log as errors
+  if (message.includes('blockmap') && message.includes('optional')) {
+    return 'UNKNOWN_ERROR'; // Don't log optional file errors
+  }
+  
+  if (message.includes('authentication') || message.includes('auth') || message.includes('token')) {
+    return 'AUTHENTICATION_ERROR';
+  }
+  if (message.includes('validation') || message.includes('invalid')) {
+    return 'VALIDATION_ERROR';
+  }
+  if (message.includes('file') || message.includes('download') || message.includes('fs')) {
+    return 'FILE_DOWNLOAD_ERROR';
+  }
+  if (message.includes('network') || message.includes('connection') || message.includes('timeout')) {
+    return 'NETWORK_ERROR';
+  }
+  if (message.includes('filesystem') || message.includes('permission denied') || message.includes('eacces') || message.includes('enoent')) {
+    return 'FILE_SYSTEM_ERROR';
+  }
+  
+  // Check if it's an API error
+  if (req.path.startsWith('/api/')) {
+    return 'API_ERROR';
+  }
+  
+  return 'UNKNOWN_ERROR';
+}
+
+/**
+ * Log error to database automatically
+ */
+async function logErrorToDatabase(
+  err: Error | AppError,
+  req: Request,
+  statusCode: number
+): Promise<void> {
+  try {
+    // Skip logging for optional .blockmap files (they're not errors)
+    const errorMessage = err.message || String(err);
+    const requestUrl = req.originalUrl || req.url || '';
+    
+    // Check both error message and request URL for .blockmap files
+    if ((errorMessage.includes('blockmap') || requestUrl.includes('.blockmap')) && 
+        (errorMessage.includes('optional') || errorMessage.includes('not found') || statusCode === 404)) {
+      return; // Don't log optional file errors
+    }
+    
+    const errorType = determineErrorType(err, req);
+    const stackTrace = err.stack || null;
+    
+    // Extract user info from request (if authenticated)
+    const userId = (req as any).user?.userId || null;
+    const username = (req as any).user?.username || null;
+    
+    // Get launcher version from headers
+    const launcherVersion = req.headers['x-launcher-version'] as string || null;
+    
+    await prisma.launcherError.create({
+      data: {
+        userId,
+        username,
+        errorType,
+        errorMessage: errorMessage.substring(0, 10000), // Limit length
+        stackTrace: stackTrace ? stackTrace.substring(0, 50000) : null, // Limit length
+        component: req.path,
+        action: req.method,
+        url: req.originalUrl || req.url,
+        statusCode,
+        userAgent: req.headers['user-agent'] || null,
+        os: process.platform,
+        osVersion: process.platform === 'win32' ? process.getSystemVersion?.() || null : null,
+        launcherVersion,
+      },
+    });
+    
+    logger.info(`[ErrorHandler] Error logged to database: ${errorType} - ${errorMessage.substring(0, 100)}`);
+  } catch (dbError) {
+    // Don't log database errors to prevent infinite loops
+    logger.error('[ErrorHandler] Failed to log error to database:', dbError);
+  }
+}
+
 export function errorHandler(
   err: Error | AppError,
   req: Request,
   res: Response,
   next: NextFunction
 ) {
-  if (err instanceof AppError) {
-    logger.error(`${err.statusCode} - ${err.message}`, {
-      path: req.path,
-      method: req.method,
-    });
+  const statusCode = err instanceof AppError ? err.statusCode : 500;
+  const errorMessage = err.message || String(err);
+  
+  // Skip logging for optional .blockmap files (they're not errors)
+  const isBlockmapError = errorMessage.includes('blockmap') && 
+                          (errorMessage.includes('not found') || statusCode === 404);
+  
+  // Log to console (but not for optional .blockmap files)
+  if (!isBlockmapError) {
+    if (err instanceof AppError) {
+      logger.error(`${statusCode} - ${err.message}`, {
+        path: req.path,
+        method: req.method,
+      });
+    } else {
+      logger.error('Unexpected error:', err);
+    }
+  } else {
+    // Just log as info for .blockmap files (they're optional)
+    logger.info(`[Launcher] Optional .blockmap file not found: ${req.path}`);
+  }
 
-    return res.status(err.statusCode).json({
+  // Automatically log to database (async, don't wait) - but skip for .blockmap files
+  if (!isBlockmapError) {
+    logErrorToDatabase(err, req, statusCode).catch(() => {
+      // Silently fail to prevent infinite loops
+    });
+  }
+
+  // Send response
+  if (err instanceof AppError) {
+    return res.status(statusCode).json({
       success: false,
       error: err.message,
     });
   }
 
   // Unexpected errors
-  logger.error('Unexpected error:', err);
-
   return res.status(500).json({
     success: false,
     error: 'Internal server error',

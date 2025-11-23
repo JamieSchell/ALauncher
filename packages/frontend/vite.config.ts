@@ -47,7 +47,17 @@ export default defineConfig({
     },
   },
   optimizeDeps: {
-    include: ['@modern-launcher/shared'],
+    include: ['@modern-launcher/shared', 'gifuct-js'],
+    esbuildOptions: {
+      target: 'es2020',
+    },
+  },
+  build: {
+    base: './', // Use relative paths for Electron
+    commonjsOptions: {
+      include: [/node_modules/, /shared/],
+      transformMixedEsModules: true,
+    },
   },
   server: {
     port: 5173,

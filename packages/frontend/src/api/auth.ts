@@ -5,8 +5,16 @@
 import { apiClient } from './client';
 import { AuthRequest, AuthResponse, ApiResponse } from '@modern-launcher/shared';
 
+export interface LoginResponse {
+  success: boolean;
+  playerProfile?: any;
+  accessToken?: string;
+  role?: 'USER' | 'ADMIN';
+  error?: string;
+}
+
 export const authAPI = {
-  async login(login: string, password: string): Promise<AuthResponse> {
+  async login(login: string, password: string): Promise<LoginResponse> {
     try {
       const response = await apiClient.post<ApiResponse<{
         playerProfile: any;
@@ -21,6 +29,7 @@ export const authAPI = {
           success: true,
           playerProfile: response.data.data.playerProfile,
           accessToken: response.data.data.accessToken,
+          role: response.data.data.role || 'USER',
         };
       }
       

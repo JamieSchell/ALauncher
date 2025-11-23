@@ -3,13 +3,13 @@
  */
 
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Settings, User, LogOut } from 'lucide-react';
+import { Home, Settings, User, LogOut, Shield, AlertTriangle, Users, BarChart3, LayoutDashboard } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { authAPI } from '../api/auth';
 
 export default function Sidebar() {
   const location = useLocation();
-  const { playerProfile, clearAuth } = useAuthStore();
+  const { playerProfile, clearAuth, isAdmin } = useAuthStore();
 
   const handleLogout = async () => {
     try {
@@ -23,13 +23,24 @@ export default function Sidebar() {
 
   const navItems = [
     { path: '/', icon: Home, label: 'Home' },
+    { path: '/profile', icon: User, label: 'Profile' },
+    { path: '/statistics', icon: BarChart3, label: 'Statistics' },
     { path: '/settings', icon: Settings, label: 'Settings' },
+    ...(isAdmin() ? [
+      { path: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+      { path: '/admin/profiles', icon: Shield, label: 'Manage Profiles' },
+      { path: '/admin/users', icon: Users, label: 'Manage Users' },
+      { path: '/admin/crashes', icon: AlertTriangle, label: 'Crashes & Issues' },
+    ] : []),
   ];
 
   return (
     <aside className="w-64 bg-black/30 backdrop-blur-sm border-r border-white/10 flex flex-col">
       <div className="p-6">
-        <div className="flex items-center gap-3 p-3 bg-white/5 rounded-lg">
+        <Link
+          to="/profile"
+          className="flex items-center gap-3 p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+        >
           <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-700 rounded-lg flex items-center justify-center">
             <User size={20} className="text-white" />
           </div>
@@ -37,9 +48,9 @@ export default function Sidebar() {
             <p className="text-sm font-medium text-white truncate">
               {playerProfile?.username || 'Player'}
             </p>
-            <p className="text-xs text-gray-400">Online</p>
+            <p className="text-xs text-gray-400">Click to view profile</p>
           </div>
-        </div>
+        </Link>
       </div>
 
       <nav className="flex-1 px-4">

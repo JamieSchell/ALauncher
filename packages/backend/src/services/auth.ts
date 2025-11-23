@@ -19,7 +19,15 @@ const SALT_ROUNDS = 10;
  */
 async function calculateTextureDigest(url: string): Promise<string> {
   try {
-    const response = await axios.get(url, { 
+    // If URL is relative (starts with /), convert to absolute URL
+    let absoluteUrl = url;
+    if (url.startsWith('/')) {
+      // Use localhost for relative paths (textures are served by this server)
+      const baseUrl = `http://localhost:${config.server.port}`;
+      absoluteUrl = `${baseUrl}${url}`;
+    }
+    
+    const response = await axios.get(absoluteUrl, { 
       responseType: 'arraybuffer',
       timeout: 10000, // 10 second timeout
     });
@@ -36,6 +44,7 @@ export interface JWTPayload {
   userId: string;
   username: string;
   uuid: string;
+  role: 'USER' | 'ADMIN';
 }
 
 export class AuthService {
@@ -58,8 +67,8 @@ export class AuthService {
    */
   static generateToken(payload: JWTPayload): string {
     return jwt.sign(payload, config.jwt.secret, {
-      expiresIn: config.jwt.expiry,
-    });
+      expiresIn: String(config.jwt.expiry),
+    } as jwt.SignOptions);
   }
 
   /**
@@ -94,6 +103,12 @@ export class AuthService {
         return { success: false, error: 'Invalid credentials' };
       }
 
+      // Check if user is banned
+      if (user.banned) {
+        await this.recordAuthAttempt(login, ipAddress, false);
+        return { success: false, error: 'Account is banned' };
+      }
+
       // Verify password
       const isValid = await this.verifyPassword(password, user.password);
       
@@ -116,18 +131,20 @@ export class AuthService {
         userId: user.id,
         username: user.username,
         uuid: user.uuid,
+        role: user.role,
       };
       const accessToken = this.generateToken(payload);
 
       // Delete old sessions for this user (optional - or update existing)
-      await prisma.session.deleteMany({
+      const deletedCount = await prisma.session.deleteMany({
         where: {
           userId: user.id,
         },
       });
+      console.log('[Auth] Deleted', deletedCount.count, 'old sessions for user:', user.username);
 
       // Create new session
-      await prisma.session.create({
+      const session = await prisma.session.create({
         data: {
           userId: user.id,
           accessToken,
@@ -260,22 +277,66 @@ export class AuthService {
    */
   static async validateSession(token: string): Promise<JWTPayload | null> {
     const payload = this.verifyToken(token);
-    if (!payload) return null;
-
-    // Check if session exists and is valid
-    const session = await prisma.session.findUnique({
-      where: { accessToken: token },
-    });
-
-    if (!session || session.expiresAt < new Date()) {
+    if (!payload) {
+      console.log('[Auth] Token verification failed - invalid JWT');
       return null;
     }
 
-    // Update last used
-    await prisma.session.update({
-      where: { id: session.id },
-      data: { lastUsedAt: new Date() },
-    });
+    // Check if session exists and is valid
+    let session;
+    try {
+      session = await prisma.session.findUnique({
+        where: { accessToken: token },
+        include: { user: true },
+      });
+    } catch (dbError: any) {
+      // Database connection error - treat as invalid session
+      if (dbError.message.includes("Can't reach database") || dbError.message.includes("database server")) {
+        console.warn(`[Auth] Database unavailable during session validation: ${dbError.message}`);
+        return null; // Return null to indicate invalid session, but don't crash
+      }
+      // Other database errors should be thrown
+      throw dbError;
+    }
+
+    if (!session) {
+      return null;
+    }
+
+    if (session.expiresAt < new Date()) {
+      return null;
+    }
+
+    // Check if user is banned
+    if (session.user.banned) {
+      console.log('[Auth] User is banned:', session.user.username);
+      // Delete session for banned user (only if DB is available)
+      try {
+        await prisma.session.delete({
+          where: { id: session.id },
+        });
+      } catch (deleteError: any) {
+        // Database might be unavailable, that's okay
+        if (!deleteError.message.includes("Can't reach database") && !deleteError.message.includes("database server")) {
+          console.warn('[Auth] Failed to delete banned user session:', deleteError);
+        }
+      }
+      return null;
+    }
+
+    // Update last used - use updateMany to avoid error if session was deleted
+    // This can happen if session was deleted between findUnique and update
+    try {
+      await prisma.session.updateMany({
+        where: { id: session.id },
+        data: { lastUsedAt: new Date() },
+      });
+    } catch (error: any) {
+      // Session might have been deleted or DB unavailable - that's okay, just log and continue
+      if (!error.message.includes("Can't reach database") && !error.message.includes("database server")) {
+        console.warn('[Auth] Failed to update session lastUsedAt (session may have been deleted):', error.message);
+      }
+    }
 
     return payload;
   }

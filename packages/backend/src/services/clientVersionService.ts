@@ -18,7 +18,7 @@ export interface ClientVersionInfo {
   description?: string;
   clientJarPath: string;
   clientJarHash: string;
-  clientJarSize: bigint;
+  clientJarSize: string; // Converted to string for JSON serialization
   librariesPath?: string;
   assetsPath?: string;
   mainClass: string;
@@ -29,7 +29,7 @@ export interface ClientVersionInfo {
   files: Array<{
     filePath: string;
     fileHash: string;
-    fileSize: bigint;
+    fileSize: string; // Converted to string for JSON serialization
     fileType: string;
   }>;
 }
@@ -56,8 +56,13 @@ export class ClientVersionService {
 
     return versions.map(v => ({
       ...v,
+      clientJarSize: v.clientJarSize.toString(),
       jvmArgs: v.jvmArgs as string[],
       clientArgs: v.clientArgs as string[],
+      files: v.files.map(file => ({
+        ...file,
+        fileSize: file.fileSize.toString(),
+      })),
     }));
   }
 
@@ -83,8 +88,13 @@ export class ClientVersionService {
 
     return {
       ...version,
+      clientJarSize: version.clientJarSize.toString(),
       jvmArgs: version.jvmArgs as string[],
       clientArgs: version.clientArgs as string[],
+      files: version.files.map(file => ({
+        ...file,
+        fileSize: file.fileSize.toString(),
+      })),
     };
   }
 
@@ -110,8 +120,13 @@ export class ClientVersionService {
 
     return {
       ...clientVersion,
+      clientJarSize: clientVersion.clientJarSize.toString(),
       jvmArgs: clientVersion.jvmArgs as string[],
       clientArgs: clientVersion.clientArgs as string[],
+      files: clientVersion.files.map(file => ({
+        ...file,
+        fileSize: file.fileSize.toString(),
+      })),
     };
   }
 

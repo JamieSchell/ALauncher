@@ -65,6 +65,8 @@ export function initializeWebSocket(server: HTTPServer) {
   logger.info('WebSocket server initialized');
 }
 
+
+
 async function handleAuth(clientId: string, token: string) {
   const client = clients.get(clientId);
   if (!client) return;

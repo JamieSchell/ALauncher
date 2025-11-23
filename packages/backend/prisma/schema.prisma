@@ -21,23 +21,37 @@ model User {
   skinUrl   String?
   cloakUrl  String?
   
+  // Role
+  role      UserRole @default(USER)
+  
+  // Ban status
+  banned    Boolean  @default(false)
+  bannedAt  DateTime?
+  banReason String?
+  
   // Metadata
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   lastLogin DateTime?
   
   // Relations
-  sessions  Session[]
+  sessions      Session[]
+  notifications Notification[]
   
   @@map("users")
+}
+
+enum UserRole {
+  USER
+  ADMIN
 }
 
 // Session model (for JWT blacklist and tracking)
 model Session {
   id           String    @id @default(uuid())
   userId       String
-  accessToken  String    @unique
-  refreshToken String?   @unique
+  accessToken  String    @unique @db.VarChar(500)
+  refreshToken String?   @unique @db.VarChar(500)
   expiresAt    DateTime
   createdAt    DateTime  @default(now())
   lastUsedAt   DateTime  @default(now())
@@ -217,4 +231,250 @@ model ClientFile {
   @@index([versionId])
   @@index([fileType])
   @@map("client_files")
+}
+
+// Game Crash - логирование крэшей игры
+model GameCrash {
+  id            String   @id @default(uuid())
+  userId        String?  // ID пользователя (если авторизован)
+  username      String?  // Имя пользователя (для анонимных крэшей)
+  profileId     String?  // ID профиля клиента
+  profileVersion String? // Версия профиля
+  serverAddress String?  // Адрес сервера
+  serverPort    Int?     // Порт сервера
+  
+  // Информация о крэше
+  exitCode      Int      // Код выхода процесса
+  errorMessage  String?  @db.Text // Сообщение об ошибке
+  stackTrace    String?  @db.Text // Stack trace (если есть)
+  stderrOutput  String?  @db.Text // Вывод stderr
+  stdoutOutput  String?  @db.Text // Последние строки stdout
+  
+  // Системная информация
+  javaVersion   String?  // Версия Java
+  javaPath      String?  // Путь к Java
+  os            String?  // Операционная система
+  osVersion     String?  // Версия ОС
+  
+  // Метаданные
+  createdAt     DateTime @default(now())
+  
+  @@index([userId])
+  @@index([profileId])
+  @@index([serverAddress])
+  @@index([createdAt])
+  @@map("game_crashes")
+}
+
+// Server Connection Issue - проблемы с подключением к серверу
+model ServerConnectionIssue {
+  id            String   @id @default(uuid())
+  userId        String?  // ID пользователя (если авторизован)
+  username      String?  // Имя пользователя
+  profileId     String?  // ID профиля клиента
+  profileVersion String? // Версия профиля
+  serverAddress String   // Адрес сервера
+  serverPort    Int      // Порт сервера
+  
+  // Информация о проблеме
+  issueType     ConnectionIssueType // Тип проблемы
+  errorMessage  String?  @db.Text // Сообщение об ошибке
+  logOutput     String?  @db.Text // Логи игры (релевантные строки)
+  
+  // Системная информация
+  javaVersion   String?  // Версия Java
+  os            String?  // Операционная система
+  
+  // Метаданные
+  createdAt     DateTime @default(now())
+  
+  @@index([userId])
+  @@index([profileId])
+  @@index([serverAddress, serverPort])
+  @@index([issueType])
+  @@index([createdAt])
+  @@map("server_connection_issues")
+}
+
+enum ConnectionIssueType {
+  CONNECTION_REFUSED      // Соединение отклонено
+  CONNECTION_TIMEOUT      // Таймаут соединения
+  AUTHENTICATION_FAILED   // Ошибка аутентификации
+  SERVER_FULL             // Сервер переполнен
+  VERSION_MISMATCH        // Несовпадение версий
+  NETWORK_ERROR           // Сетевая ошибка
+  UNKNOWN                 // Неизвестная ошибка
+}
+
+// Launcher Error - ошибки лаунчера при запуске и работе
+model LauncherError {
+  id            String   @id @default(uuid())
+  userId        String?  // ID пользователя (если авторизован)
+  username      String?  // Имя пользователя
+  
+  // Информация об ошибке
+  errorType     LauncherErrorType // Тип ошибки
+  errorMessage  String   @db.Text // Сообщение об ошибке
+  stackTrace    String?  @db.Text // Stack trace (если есть)
+  component     String?  // Компонент, где произошла ошибка (например, "ProfileLoader", "FileDownloader")
+  
+  // Контекст ошибки
+  action        String?  // Действие, которое выполнялось (например, "loadProfile", "downloadClient")
+  url           String?  // URL, если ошибка связана с HTTP запросом
+  statusCode    Int?     // HTTP статус код, если применимо
+  
+  // Системная информация
+  userAgent     String?  // User agent браузера/Electron
+  os            String?  // Операционная система
+  osVersion     String?  // Версия ОС
+  launcherVersion String? // Версия лаунчера
+  
+  // Метаданные
+  createdAt     DateTime @default(now())
+  
+  @@index([userId])
+  @@index([errorType])
+  @@index([component])
+  @@index([createdAt])
+  @@map("launcher_errors")
+}
+
+enum LauncherErrorType {
+  PROFILE_LOAD_ERROR      // Ошибка загрузки профиля
+  FILE_DOWNLOAD_ERROR     // Ошибка загрузки файла
+  API_ERROR               // Ошибка API запроса
+  AUTHENTICATION_ERROR    // Ошибка аутентификации
+  VALIDATION_ERROR        // Ошибка валидации данных
+  FILE_SYSTEM_ERROR       // Ошибка файловой системы
+  NETWORK_ERROR           // Сетевая ошибка
+  ELECTRON_ERROR          // Ошибка Electron
+  JAVA_DETECTION_ERROR    // Ошибка определения Java
+  CLIENT_LAUNCH_ERROR     // Ошибка запуска клиента
+  UNKNOWN_ERROR           // Неизвестная ошибка
+}
+
+// Game Launch - запись о каждом запуске игры
+model GameLaunch {
+  id            String   @id @default(uuid())
+  userId        String?  // ID пользователя (если авторизован)
+  username      String?  // Имя пользователя
+  profileId     String?  // ID профиля клиента
+  profileVersion String? // Версия профиля
+  serverAddress String?  // Адрес сервера
+  serverPort    Int?     // Порт сервера
+  
+  // Информация о запуске
+  javaVersion   String?  // Версия Java
+  javaPath      String?  // Путь к Java
+  ram           Int?     // Выделенная RAM (MB)
+  resolution    String?  // Разрешение экрана (widthxheight)
+  fullScreen    Boolean  @default(false)
+  autoEnter     Boolean  @default(false)
+  
+  // Системная информация
+  os            String?  // Операционная система
+  osVersion     String?  // Версия ОС
+  
+  // Метаданные
+  createdAt     DateTime @default(now())
+  
+  // Relations
+  session       GameSession?
+  
+  @@index([userId])
+  @@index([profileId])
+  @@index([serverAddress])
+  @@index([createdAt])
+  @@map("game_launches")
+}
+
+// Game Session - сессия игры (от запуска до закрытия)
+model GameSession {
+  id            String   @id @default(uuid())
+  launchId      String   @unique // ID запуска игры
+  userId        String?  // ID пользователя
+  username      String?  // Имя пользователя
+  profileId     String?  // ID профиля клиента
+  profileVersion String? // Версия профиля
+  serverAddress String?  // Адрес сервера
+  serverPort    Int?     // Порт сервера
+  
+  // Время сессии
+  startedAt     DateTime @default(now()) // Время запуска
+  endedAt       DateTime? // Время закрытия (null если игра еще запущена)
+  duration      Int?     // Длительность в секундах (вычисляется при закрытии)
+  
+  // Статус
+  exitCode      Int?     // Код выхода (0 = успешно, другие = ошибка)
+  crashed       Boolean  @default(false) // Была ли игра закрыта из-за крэша
+  
+  // Метаданные
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relations
+  launch        GameLaunch @relation(fields: [launchId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([profileId])
+  @@index([serverAddress])
+  @@index([startedAt])
+  @@index([endedAt])
+  @@map("game_sessions")
+}
+
+// Notification - система уведомлений
+model Notification {
+  id            String   @id @default(uuid())
+  userId        String   // ID пользователя
+  type          NotificationType // Тип уведомления
+  title         String   // Заголовок уведомления
+  message       String   @db.Text // Текст уведомления
+  data          Json?    // Дополнительные данные (JSON)
+  
+  // Статус
+  read          Boolean  @default(false) // Прочитано ли уведомление
+  readAt        DateTime? // Время прочтения
+  
+  // Метаданные
+  createdAt     DateTime @default(now())
+  
+  // Relations
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([type])
+  @@index([read])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+enum NotificationType {
+  CLIENT_UPDATE_AVAILABLE    // Доступно обновление клиента
+  SERVER_STATUS_CHANGE      // Изменение статуса сервера
+  LAUNCHER_UPDATE_AVAILABLE  // Доступно обновление лаунчера
+  GAME_CRASH                 // Крэш игры
+  CONNECTION_ISSUE           // Проблема подключения
+  LAUNCHER_ERROR             // Ошибка лаунчера
+  SYSTEM_MESSAGE             // Системное сообщение
+  ADMIN_ALERT                // Административное предупреждение
+}
+
+// Launcher Version - версии лаунчера для обновлений
+model LauncherVersion {
+  id            String   @id @default(uuid())
+  version       String   @unique // Версия лаунчера (например, "1.0.132")
+  downloadUrl   String?  // URL для скачивания обновления
+  fileHash      String?  // SHA-256 хеш файла для проверки целостности
+  fileSize      BigInt?  // Размер файла в байтах
+  releaseNotes  String?  @db.Text // Заметки о релизе
+  isRequired    Boolean  @default(false) // Обязательное обновление
+  enabled       Boolean  @default(true) // Включена ли версия
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@index([version])
+  @@index([enabled])
+  @@index([createdAt])
+  @@map("launcher_versions")
 }

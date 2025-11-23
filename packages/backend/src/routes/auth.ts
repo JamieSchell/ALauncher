@@ -2,7 +2,7 @@
  * Authentication routes
  */
 
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { body, validationResult } from 'express-validator';
 import { AuthService } from '../services/auth';
 import { AppError } from '../middleware/errorHandler';
@@ -20,7 +20,7 @@ router.post(
     body('login').trim().notEmpty().withMessage('Login is required'),
     body('password').notEmpty().withMessage('Password is required'),
   ],
-  async (req, res, next) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -47,11 +47,15 @@ router.post(
         throw new AppError(401, result.error || 'Authentication failed');
       }
 
+      // Decode token to get role
+      const payload = AuthService.verifyToken(result.accessToken!);
+      
       res.json({
         success: true,
         data: {
           playerProfile: result.playerProfile,
           accessToken: result.accessToken,
+          role: payload?.role || 'USER',
         },
       });
     } catch (error) {
@@ -81,7 +85,7 @@ router.post(
       .isEmail()
       .withMessage('Invalid email address'),
   ],
-  async (req, res, next) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {

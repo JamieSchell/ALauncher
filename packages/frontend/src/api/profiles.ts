@@ -21,4 +21,19 @@ export const profilesAPI = {
     }>>(`/profiles/${id}`);
     return response.data.data!;
   },
+
+  async createProfile(profileData: Partial<ClientProfile>) {
+    const response = await apiClient.post<ApiResponse<ClientProfile>>('/profiles', profileData);
+    return response.data;
+  },
+
+  async updateProfile(id: string, profileData: Partial<ClientProfile>) {
+    const response = await apiClient.put<ApiResponse<ClientProfile>>(`/profiles/${id}`, profileData);
+    return response.data;
+  },
+
+  async deleteProfile(id: string) {
+    const response = await apiClient.delete<ApiResponse>(`/profiles/${id}`);
+    return response.data;
+  },
 };

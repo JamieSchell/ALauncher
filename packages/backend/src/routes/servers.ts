@@ -17,35 +17,43 @@ router.get('/:address/status', async (req, res, next) => {
   try {
     const { address } = req.params;
     const port = parseInt(req.query.port as string) || 25565;
+    const serverAddress = `${address}:${port}`;
 
-    // Check cache first
-    const cached = await prisma.serverStatus.findUnique({
-      where: { serverAddress: `${address}:${port}` },
-    });
-
-    // If cached and recent (< 10 seconds), return it
-    // Reduced cache time to ensure fresh data
-    const cacheAge = cached ? Date.now() - cached.lastChecked.getTime() : Infinity;
-    if (cached && cacheAge < 10000) {
-      console.log(`[Server Status] Returning cached status for ${address}:${port} (age: ${Math.round(cacheAge / 1000)}s)`);
-      return res.json({
-        success: true,
-        data: {
-          online: cached.online,
-          players: {
-            online: cached.players || 0,
-            max: cached.maxPlayers || 0,
-          },
-          version: cached.version || '',
-          motd: cached.motd || '',
-          ping: cached.ping || 0,
-        },
+    // Try to check cache first (if database is available)
+    let cached = null;
+    try {
+      cached = await prisma.serverStatus.findUnique({
+        where: { serverAddress },
       });
-    }
-    
-    // If cache is stale (offline status), force refresh
-    if (cached && !cached.online && cacheAge < 60000) {
-      console.log(`[Server Status] Cached offline status for ${address}:${port} is ${Math.round(cacheAge / 1000)}s old, but forcing refresh`);
+
+      // If cached and recent (< 10 seconds), return it
+      // Reduced cache time to ensure fresh data
+      const cacheAge = cached ? Date.now() - cached.lastChecked.getTime() : Infinity;
+      if (cached && cacheAge < 10000) {
+        console.log(`[Server Status] Returning cached status for ${address}:${port} (age: ${Math.round(cacheAge / 1000)}s)`);
+        return res.json({
+          success: true,
+          data: {
+            online: cached.online,
+            players: {
+              online: cached.players || 0,
+              max: cached.maxPlayers || 0,
+            },
+            version: cached.version || '',
+            motd: cached.motd || '',
+            ping: cached.ping || 0,
+          },
+        });
+      }
+      
+      // If cache is stale (offline status), force refresh
+      if (cached && !cached.online && cacheAge < 60000) {
+        console.log(`[Server Status] Cached offline status for ${address}:${port} is ${Math.round(cacheAge / 1000)}s old, but forcing refresh`);
+      }
+    } catch (dbError: any) {
+      // Database connection error - continue without cache
+      console.warn(`[Server Status] Database unavailable, skipping cache: ${dbError.message}`);
+      // Continue to ping server without cache
     }
 
     // Ping server
@@ -53,34 +61,43 @@ router.get('/:address/status', async (req, res, next) => {
     
     console.log(`[Server Status] ${address}:${port} - Online: ${status.online}, Players: ${status.players?.online}/${status.players?.max}`);
 
-    const serverAddress = `${address}:${port}`;
+    // Try to update cache (if database is available)
+    try {
+      await prisma.serverStatus.upsert({
+        where: { serverAddress },
+        create: {
+          serverAddress,
+          online: status.online,
+          players: status.players?.online || 0,
+          maxPlayers: status.players?.max || 0,
+          version: status.version || null,
+          motd: status.motd || null,
+          ping: status.ping || null,
+        },
+        update: {
+          online: status.online,
+          players: status.players?.online || 0,
+          maxPlayers: status.players?.max || 0,
+          version: status.version || null,
+          motd: status.motd || null,
+          ping: status.ping || null,
+          lastChecked: new Date(),
+        },
+      });
 
-    // Update cache
-    await prisma.serverStatus.upsert({
-      where: { serverAddress },
-      create: {
-        serverAddress,
-        online: status.online,
-        players: status.players?.online || 0,
-        maxPlayers: status.players?.max || 0,
-        version: status.version || null,
-        motd: status.motd || null,
-        ping: status.ping || null,
-      },
-      update: {
-        online: status.online,
-        players: status.players?.online || 0,
-        maxPlayers: status.players?.max || 0,
-        version: status.version || null,
-        motd: status.motd || null,
-        ping: status.ping || null,
-        lastChecked: new Date(),
-      },
-    });
-
-    // Сохранить статистику (даже если сервер офлайн, чтобы видеть историю)
-    const onlineCount = status.online && status.players?.online !== undefined ? status.players.online : 0;
-    await saveServerStatistics(serverAddress, onlineCount);
+      // Сохранить статистику (даже если сервер офлайн, чтобы видеть историю)
+      const onlineCount = status.online && status.players?.online !== undefined ? status.players.online : 0;
+      try {
+        await saveServerStatistics(serverAddress, onlineCount);
+      } catch (statsError: any) {
+        // Statistics save failed - log but don't fail the request
+        console.warn(`[Server Status] Failed to save statistics: ${statsError.message}`);
+      }
+    } catch (dbError: any) {
+      // Database connection error - log but continue
+      console.warn(`[Server Status] Database unavailable, skipping cache update: ${dbError.message}`);
+      // Continue to return status even if cache update failed
+    }
 
     res.json({
       success: true,
@@ -101,12 +118,25 @@ router.get('/:address/statistics', async (req, res, next) => {
     const port = parseInt(req.query.port as string) || 25565;
     const serverAddress = `${address}:${port}`;
 
-    const statistics = await getServerStatistics24h(serverAddress);
-
-    res.json({
-      success: true,
-      data: statistics,
-    });
+    try {
+      const statistics = await getServerStatistics24h(serverAddress);
+      res.json({
+        success: true,
+        data: statistics,
+      });
+    } catch (dbError: any) {
+      // Database connection error - return empty statistics
+      console.warn(`[Server Statistics] Database unavailable: ${dbError.message}`);
+      res.json({
+        success: true,
+        data: {
+          hourly: [],
+          average: 0,
+          peak: 0,
+          total: 0,
+        },
+      });
+    }
   } catch (error) {
     next(error);
   }

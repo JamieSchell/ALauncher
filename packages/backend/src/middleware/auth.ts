@@ -11,6 +11,7 @@ export interface AuthRequest extends Request {
     userId: string;
     username: string;
     uuid: string;
+    role: 'USER' | 'ADMIN';
   };
 }
 
@@ -21,9 +22,10 @@ export async function authenticateToken(
 ) {
   try {
     const authHeader = req.headers.authorization;
-    const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7).trim() : null;
 
     if (!token) {
+      console.log('[Auth] No token provided');
       throw new AppError(401, 'Authentication required');
     }
 
@@ -32,7 +34,6 @@ export async function authenticateToken(
     if (!payload) {
       throw new AppError(401, 'Invalid or expired token');
     }
-
     req.user = payload;
     next();
   } catch (error) {
@@ -54,8 +55,31 @@ export function optionalAuth(
         req.user = payload;
       }
       next();
-    }).catch(() => next());
+    }).catch((error) => {
+      // Database errors are handled in validateSession, but catch any unexpected errors
+      console.warn('[Auth] Optional auth failed:', error instanceof Error ? error.message : String(error));
+      next(); // Continue without authentication
+    });
   } else {
     next();
   }
+}
+
+/**
+ * Middleware to check if user is admin
+ */
+export function requireAdmin(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) {
+  if (!req.user) {
+    return next(new AppError(401, 'Authentication required'));
+  }
+
+  if (req.user.role !== 'ADMIN') {
+    return next(new AppError(403, 'Admin access required'));
+  }
+
+  next();
 }

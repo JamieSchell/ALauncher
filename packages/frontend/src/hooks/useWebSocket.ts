@@ -1,7 +1,3 @@
-/**
- * WebSocket Hook for real-time updates
- */
-
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { WSEvent, UpdateProgress } from '@modern-launcher/shared';
@@ -39,6 +35,15 @@ export function useWebSocket() {
       console.error('WebSocket error:', error);
     };
 
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        // Handle other WebSocket events here if needed
+      } catch (error) {
+        // Ignore parsing errors for other messages
+      }
+    };
+
     return () => {
       if (ws.readyState === WebSocket.OPEN) {
         ws.close();
@@ -57,7 +62,7 @@ export function useWebSocket() {
 
 export function useDownloadProgress(
   onProgress: (progress: UpdateProgress) => void,
-  onFileList?: (files: Array<{ filePath: string; fileHash: string; fileSize: bigint; fileType: string }>) => void
+  onFileList?: (files: Array<{ filePath: string; fileHash: string; fileSize: number | string; fileType: string }>) => void
 ) {
   const { ws, isConnected } = useWebSocket();
 
@@ -101,4 +106,3 @@ export function useClientDownload() {
 
   return { downloadClient, isConnected };
 }
-

@@ -53,8 +53,7 @@ export async function pingServer(address: string, port: number = 25565): Promise
   
   // Try using minecraft-server-util library first
   try {
-    const result = await status(address, {
-      port: port,
+    const result = await status(address, port, {
       timeout: 5000,
       enableSRV: true, // Enable SRV record lookup
     });

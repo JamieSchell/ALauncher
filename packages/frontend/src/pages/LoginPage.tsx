@@ -2,10 +2,10 @@
  * Login Page
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { LogIn, UserPlus } from 'lucide-react';
+import { LogIn, UserPlus, Minus, Square, X, ChevronDown, Info } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { authAPI } from '../api/auth';
 
@@ -19,6 +19,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [launcherVersion, setLauncherVersion] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,7 +31,7 @@ export default function LoginPage() {
         const result = await authAPI.login(username, password);
         
         if (result.success && result.accessToken && result.playerProfile) {
-          setAuth(result.accessToken, result.playerProfile);
+          setAuth(result.accessToken, result.playerProfile, result.role || 'USER');
           navigate('/');
         } else {
           setError(result.error || 'Login failed');
@@ -54,12 +55,94 @@ export default function LoginPage() {
     }
   };
 
+  const handleMinimize = () => {
+    if (window.electronAPI) {
+      window.electronAPI.minimizeWindow();
+    }
+  };
+
+  const handleMaximize = () => {
+    if (window.electronAPI) {
+      window.electronAPI.maximizeWindow();
+    }
+  };
+
+  const handleClose = () => {
+    if (window.electronAPI) {
+      window.electronAPI.closeWindow();
+    }
+  };
+
+  const handleMinimizeToTray = () => {
+    if (window.electronAPI) {
+      window.electronAPI.minimizeToTray();
+    }
+  };
+
+  // Get launcher version
+  useEffect(() => {
+    const getVersion = async () => {
+      if (window.electronAPI) {
+        try {
+          const version = await window.electronAPI.getAppVersion();
+          setLauncherVersion(version);
+        } catch (error) {
+          console.error('Failed to get launcher version:', error);
+        }
+      }
+    };
+    
+    // Get version immediately
+    getVersion();
+    
+    // Refresh version periodically
+    const interval = setInterval(() => {
+      getVersion();
+    }, 30000); // Every 30 seconds
+    
+    return () => {
+      clearInterval(interval);
+    };
+  }, []);
+
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black">
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black relative window-drag">
+      {/* Window controls in top-right corner */}
+      <div className="absolute top-4 right-4 flex items-center gap-2 z-50 window-no-drag">
+        <button
+          onClick={handleMinimize}
+          className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+          title="Minimize"
+        >
+          <Minus size={18} className="text-white" />
+        </button>
+        <button
+          onClick={handleMaximize}
+          className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+          title="Maximize"
+        >
+          <Square size={16} className="text-white" />
+        </button>
+        <button
+          onClick={handleMinimizeToTray}
+          className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+          title="Minimize to Tray"
+        >
+          <ChevronDown size={18} className="text-white" />
+        </button>
+        <button
+          onClick={handleClose}
+          className="p-2 hover:bg-red-600/80 rounded-lg transition-colors"
+          title="Close"
+        >
+          <X size={18} className="text-white" />
+        </button>
+      </div>
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md p-8"
+        className="w-full max-w-md p-8 window-no-drag"
       >
         <div className="glass rounded-2xl p-8 shadow-2xl">
           <div className="flex items-center justify-center mb-8">
@@ -152,6 +235,21 @@ export default function LoginPage() {
               {mode === 'login' ? "Don't have an account? Register" : 'Already have an account? Login'}
             </button>
           </div>
+
+          {/* Launcher Version */}
+          {launcherVersion && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+              className="mt-6 pt-6 border-t border-white/10 flex items-center justify-center gap-2"
+            >
+              <Info size={14} className="text-gray-500" />
+              <span className="text-xs text-gray-500">
+                Launcher v{launcherVersion}
+              </span>
+            </motion.div>
+          )}
         </div>
       </motion.div>
     </div>

@@ -64,8 +64,8 @@ router.get('/:profileId/:dirType', async (req, res, next) => {
     // Hash directory
     const hashedDir = await HasherService.hashDirectory(
       dirPath,
-      dirType === 'client' ? profile.updateVerify : undefined,
-      dirType === 'client' ? profile.updateExclusions : undefined
+      dirType === 'client' ? (profile.updateVerify as string[] | undefined) : undefined,
+      dirType === 'client' ? (profile.updateExclusions as string[] | undefined) : undefined
     );
 
     // Sign the hashed dir

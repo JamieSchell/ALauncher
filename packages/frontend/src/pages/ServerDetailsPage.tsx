@@ -23,6 +23,8 @@ import {
 import { profilesAPI } from '../api/profiles';
 import { serversAPI } from '../api/servers';
 import { downloadsAPI } from '../api/downloads';
+import { crashesAPI } from '../api/crashes';
+import { statisticsAPI } from '../api/statistics';
 import { useSettingsStore } from '../stores/settingsStore';
 import { useAuthStore } from '../stores/authStore';
 import ServerBadge from '../components/ServerBadge';
@@ -42,6 +44,7 @@ export default function ServerDetailsPage() {
   const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [downloadingVersion, setDownloadingVersion] = useState<string | null>(null);
   const [clientReady, setClientReady] = useState(false);
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
 
   const { data: profileData, isLoading } = useQuery({
     queryKey: ['profile', id],
@@ -78,43 +81,66 @@ export default function ServerDetailsPage() {
   // Check if client files are downloaded
   const checkClientFiles = async (version: string): Promise<boolean> => {
     try {
+      // Получить правильный путь к updates директории (используем ту же логику, что и при запуске)
+      const updatesDirBase = await window.electronAPI.getUpdatesDir();
+      const updatesDir = `${updatesDirBase}/${version}`;
+
+      // Получить информацию о версии клиента с сервера
       const versionInfo = await downloadsAPI.getClientVersionByVersion(version);
-      if (!versionInfo.data) {
-        return false;
-      }
-
-      const files = versionInfo.data.files;
-      if (files.length === 0) {
-        return false;
-      }
-
-      const appPaths = await window.electronAPI.getAppPaths();
-      const updatesDir = `${appPaths.userData}/updates/${version}`;
-
-      for (const file of files) {
-        const destPath = `${updatesDir}/${file.filePath}`;
+      
+      // Если версия есть в БД и есть список файлов - проверяем все файлы
+      if (versionInfo.data && versionInfo.data.files && versionInfo.data.files.length > 0) {
+        const files = versionInfo.data.files;
         
-        try {
-          const exists = await window.electronAPI.fileExists(destPath);
-          if (!exists) {
-            return false;
-          }
+        // Проверить каждый файл
+        for (const file of files) {
+          const destPath = `${updatesDir}/${file.filePath}`;
           
-          const hash = await window.electronAPI.calculateFileHash(destPath, 'sha256');
-          if (hash !== file.fileHash) {
+          try {
+            const exists = await window.electronAPI.fileExists(destPath);
+            if (!exists) {
+              return false;
+            }
+            
+            // Проверяем хеш только если он не placeholder (не все нули)
+            if (file.fileHash && !file.fileHash.match(/^0+$/)) {
+              const hash = await window.electronAPI.calculateFileHash(destPath, 'sha256');
+              if (hash !== file.fileHash) {
+                return false;
+              }
+            }
+          } catch {
             return false;
           }
-        } catch {
-          return false;
         }
+
+        return true;
       }
 
+      // Если версия есть в БД, но файлов нет (placeholder версия) - проверяем основные файлы напрямую
+      // Или если версии нет в БД - тоже проверяем основные файлы
+      // Проверяем наличие client.jar
+      const clientJarPath = `${updatesDir}/client.jar`;
+      const clientJarExists = await window.electronAPI.fileExists(clientJarPath);
+      
+      if (!clientJarExists) {
+        return false;
+      }
+
+      // Если есть client.jar - считаем клиент готовым
       return true;
     } catch (error: any) {
       // Don't log 404 errors as they're expected when version is not in database
       if (error.response?.status === 404) {
-        // Version not found in database - this is normal, just return false
-        return false;
+        // Version not found in database - check files directly
+        try {
+          const updatesDirBase = await window.electronAPI.getUpdatesDir();
+          const updatesDir = `${updatesDirBase}/${version}`;
+          const clientJarPath = `${updatesDir}/client.jar`;
+          return await window.electronAPI.fileExists(clientJarPath);
+        } catch {
+          return false;
+        }
       }
       // Only log unexpected errors
       console.error('Error checking client files:', error);
@@ -130,6 +156,108 @@ export default function ServerDetailsPage() {
       });
     }
   }, [profileData?.profile.version]);
+
+  // Listen to game exit events
+  React.useEffect(() => {
+    // Check if electronAPI is available
+    if (!window.electronAPI) {
+      console.warn('electronAPI is not available. Preload script may not have loaded.');
+      return;
+    }
+
+    const handleExit = async (code: number) => {
+      console.log('Game exited with code:', code);
+      setLaunching(false);
+      
+          // Завершить сессию игры в статистике
+          if (currentSessionId) {
+            try {
+              console.log('[Statistics] Ending game session...', {
+                sessionId: currentSessionId,
+                exitCode: code,
+                crashed: code !== 0 && code !== null,
+              });
+              
+              const result = await statisticsAPI.endGameSession({
+                sessionId: currentSessionId,
+                exitCode: code,
+                crashed: code !== 0 && code !== null,
+              });
+              
+              if (result.success) {
+                console.log('[Statistics] ✅ Game session ended successfully');
+              } else {
+                console.warn('[Statistics] ⚠️ Failed to end game session:', result);
+              }
+              
+              setCurrentSessionId(null);
+            } catch (error: any) {
+              console.error('[Statistics] ❌ Error ending game session:', error);
+              console.error('[Statistics] Error details:', {
+                message: error.message,
+                response: error.response?.data,
+                status: error.response?.status,
+              });
+            }
+          } else {
+            console.warn('[Statistics] ⚠️ No session ID available to end session');
+          }
+      
+      if (code !== 0 && code !== null) {
+        setLaunchError(`Game exited with code ${code}. Check logs for details.`);
+      } else {
+        // Clear error on successful exit
+        setLaunchError(null);
+      }
+    };
+
+    const handleError = (error: string) => {
+      console.error('Game error:', error);
+      setLaunchError(error);
+    };
+
+    const handleCrash = async (crashData: any) => {
+      console.error('Game crashed:', crashData);
+      try {
+        await crashesAPI.logCrash(crashData);
+        console.log('Crash logged successfully');
+      } catch (error) {
+        console.error('Failed to log crash:', error);
+      }
+    };
+
+    const handleConnectionIssue = async (issueData: any) => {
+      console.error('Connection issue detected:', issueData);
+      if (!profileData) return;
+      
+      try {
+        await crashesAPI.logConnectionIssue({
+          serverAddress: profileData.profile.serverAddress,
+          serverPort: profileData.profile.serverPort,
+          issueType: issueData.type || 'UNKNOWN',
+          errorMessage: issueData.message,
+          logOutput: issueData.message,
+          profileId: profileData.profile.id,
+          profileVersion: profileData.profile.version,
+          username: playerProfile?.username,
+        });
+        console.log('Connection issue logged successfully');
+      } catch (error) {
+        console.error('Failed to log connection issue:', error);
+      }
+    };
+
+    window.electronAPI.onGameExit(handleExit);
+    window.electronAPI.onGameError(handleError);
+    window.electronAPI.onGameCrash(handleCrash);
+    window.electronAPI.onGameConnectionIssue(handleConnectionIssue);
+
+    return () => {
+      // Cleanup listeners if needed
+      // Note: ipcRenderer.removeListener would be needed, but preload doesn't expose it
+      // The listeners will be cleaned up when component unmounts
+    };
+  }, []);
 
   if (isLoading) {
     return (
@@ -224,8 +352,9 @@ export default function ServerDetailsPage() {
           currentFile: 'Preparing download...',
         } : null);
 
-        const appPaths = await window.electronAPI.getAppPaths();
-        const updatesDir = `${appPaths.userData}/updates/${profile.version}`;
+        // Получить путь к updates директории (используем ту же логику, что и при проверке)
+        const updatesDirBase = await window.electronAPI.getUpdatesDir();
+        const updatesDir = `${updatesDirBase}/${profile.version}`;
 
         for (let i = 0; i < files.length; i++) {
           const file = files[i];
@@ -250,8 +379,9 @@ export default function ServerDetailsPage() {
             // Файл не существует или ошибка проверки, продолжаем загрузку
           }
 
-          const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:7240';
-          const fileUrl = `${apiUrl}/api/client-versions/${versionId}/file/${file.filePath}`;
+          // Get base URL without /api suffix
+          const baseUrl = (import.meta.env.VITE_API_URL || 'http://localhost:7240/api').replace(/\/api$/, '');
+          const fileUrl = `${baseUrl}/api/client-versions/${versionId}/file/${file.filePath}`;
 
           const fileName = file.filePath.split(/[/\\]/).pop() || file.filePath;
           setDownloadProgress(prev => prev ? {
@@ -266,7 +396,7 @@ export default function ServerDetailsPage() {
               progress: fileProgress,
               downloadedFiles: i + (progress === 100 ? 1 : 0),
             } : null);
-          });
+          }, accessToken || undefined);
 
           const hash = await window.electronAPI.calculateFileHash(destPath, 'sha256');
           if (hash !== file.fileHash) {
@@ -320,6 +450,18 @@ export default function ServerDetailsPage() {
 
     try {
       const profile = profileData.profile;
+      
+      // Get Java version requirement from ClientVersion
+      let jvmVersion = '8'; // Default to Java 8
+      try {
+        const versionInfo = await downloadsAPI.getClientVersionByVersion(profile.version);
+        if (versionInfo.data?.jvmVersion) {
+          jvmVersion = versionInfo.data.jvmVersion;
+        }
+      } catch (error) {
+        console.warn('Failed to get ClientVersion info, using default Java 8');
+      }
+      
       const jvmArgs = [
         `-Xms${ram}M`,
         `-Xmx${ram}M`,
@@ -353,11 +495,68 @@ export default function ServerDetailsPage() {
         gameArgs,
         workingDir,
         version: profile.version,
+        jvmVersion,
+        profileId: profile.id,
+        serverAddress: profile.serverAddress,
+        serverPort: profile.serverPort,
+        userId: playerProfile?.id,
+        username: playerProfile?.username,
       });
 
       if (result.success) {
         console.log('Game launched successfully, PID:', result.pid);
         setLaunchError(null);
+        
+        // Логировать запуск игры в статистике
+        try {
+          // Determine OS platform (process.platform is not available in renderer)
+          let osPlatform: string | null = null;
+          if (window.electronAPI) {
+            // In Electron, we can get OS info from main process if needed
+            // For now, use navigator or set to null
+            const userAgent = navigator.userAgent.toLowerCase();
+            if (userAgent.includes('win')) osPlatform = 'win32';
+            else if (userAgent.includes('mac')) osPlatform = 'darwin';
+            else if (userAgent.includes('linux')) osPlatform = 'linux';
+          }
+          
+          console.log('[Statistics] Creating game launch record...', {
+            profileId: profile.id,
+            profileVersion: profile.version,
+            serverAddress: profile.serverAddress,
+            serverPort: profile.serverPort,
+          });
+          
+          const launchResult = await statisticsAPI.createGameLaunch({
+            profileId: profile.id,
+            profileVersion: profile.version,
+            serverAddress: profile.serverAddress,
+            serverPort: profile.serverPort,
+            javaVersion: jvmVersion,
+            javaPath: javaPath,
+            ram: ram,
+            resolution: `${width}x${height}`,
+            fullScreen: fullScreen,
+            autoEnter: autoEnter,
+            os: osPlatform,
+            osVersion: null,
+          });
+          
+          if (launchResult.success && launchResult.data) {
+            setCurrentSessionId(launchResult.data.sessionId);
+            console.log('[Statistics] ✅ Game launch logged successfully:', launchResult.data);
+          } else {
+            console.warn('[Statistics] ⚠️ Failed to log game launch:', launchResult);
+          }
+        } catch (error: any) {
+          console.error('[Statistics] ❌ Error logging game launch:', error);
+          console.error('[Statistics] Error details:', {
+            message: error.message,
+            response: error.response?.data,
+            status: error.response?.status,
+          });
+          // Не блокируем запуск игры, если логирование не удалось
+        }
       } else {
         setLaunchError(result.error || 'Failed to launch game');
         setLaunching(false);

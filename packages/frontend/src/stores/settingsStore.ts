@@ -5,6 +5,17 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+interface NotificationSettings {
+  desktop?: boolean;
+  sound?: boolean;
+  clientUpdates?: boolean;
+  serverStatus?: boolean;
+  gameCrashes?: boolean;
+  connectionIssues?: boolean;
+  launcherErrors?: boolean;
+  systemMessages?: boolean;
+}
+
 interface Settings {
   ram: number;
   width: number;
@@ -14,6 +25,7 @@ interface Settings {
   selectedProfile: string | null;
   javaPath: string;
   workingDir: string;
+  notifications?: NotificationSettings;
 }
 
 interface SettingsState extends Settings {
@@ -30,6 +42,16 @@ const defaultSettings: Settings = {
   selectedProfile: null,
   javaPath: 'java',
   workingDir: './minecraft',
+  notifications: {
+    desktop: true,
+    sound: true,
+    clientUpdates: true,
+    serverStatus: true,
+    gameCrashes: true,
+    connectionIssues: true,
+    launcherErrors: true,
+    systemMessages: true,
+  },
 };
 
 export const useSettingsStore = create<SettingsState>()(
