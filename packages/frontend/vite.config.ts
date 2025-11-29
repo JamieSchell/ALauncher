@@ -66,6 +66,7 @@ export default defineConfig({
   },
   build: {
     base: './', // Use relative paths for Electron
+    cssCodeSplit: false, // Ensure CSS is not split to prevent loading issues
     commonjsOptions: {
       include: [/node_modules/, /shared/],
       transformMixedEsModules: true,
