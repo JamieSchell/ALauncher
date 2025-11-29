@@ -7,7 +7,9 @@ import { cspReplace } from './vite-plugins/csp-replace';
 
 export default defineConfig({
   plugins: [
-    react(),
+    react({
+      jsxRuntime: 'automatic',
+    }),
     cspReplace(),
     electron([
       {
@@ -51,6 +53,8 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      'react': path.resolve(__dirname, './node_modules/react'),
+      'react-dom': path.resolve(__dirname, './node_modules/react-dom'),
     },
   },
   optimizeDeps: {
@@ -58,6 +62,7 @@ export default defineConfig({
     esbuildOptions: {
       target: 'es2020',
     },
+    dedupe: ['react', 'react-dom'],
   },
   build: {
     base: './', // Use relative paths for Electron
@@ -71,7 +76,7 @@ export default defineConfig({
         manualChunks: (id) => {
           // Split vendor chunks for better code splitting
           if (id.includes('node_modules')) {
-            // React core libraries
+            // React core libraries - ensure single instance
             if (id.includes('react/') || id.includes('react-dom/') || id.includes('scheduler/')) {
               return 'react-core';
             }
