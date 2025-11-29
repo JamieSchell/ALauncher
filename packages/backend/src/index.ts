@@ -129,7 +129,7 @@ async function bootstrap() {
   // Initialize file sync service (auto-sync files from updates directory)
   if (config.env === 'production' || process.env.ENABLE_FILE_SYNC !== 'false') {
     const { initializeFileWatcher } = await import('./services/fileSyncService');
-    initializeFileWatcher();
+    await initializeFileWatcher();
   }
 
   // CLI is now started separately via "npm run cli" command

@@ -7,7 +7,7 @@
 import path from 'path';
 import fs from 'fs/promises';
 import crypto from 'crypto';
-import chokidar from 'chokidar';
+import type { FSWatcher } from 'chokidar';
 import { config } from '../config';
 import { logger } from '../utils/logger';
 import { broadcastToAll } from '../websocket';
@@ -555,11 +555,14 @@ export async function verifyVersionIntegrity(version: string): Promise<{
 /**
  * Инициализировать file watcher для автоматической синхронизации
  */
-export function initializeFileWatcher(): void {
+export async function initializeFileWatcher(): Promise<void> {
   const updatesDir = config.paths.updates;
   
+  // Динамический импорт chokidar (ES модуль)
+  const chokidar = await import('chokidar');
+  
   // Создать watcher для папки updates
-  const watcher = chokidar.watch(updatesDir, {
+  const watcher = chokidar.default.watch(updatesDir, {
     ignored: /(^|[\/\\])\../, // Игнорировать скрытые файлы
     persistent: true,
     ignoreInitial: false, // Обработать существующие файлы при запуске
