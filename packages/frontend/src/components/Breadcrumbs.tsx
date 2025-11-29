@@ -5,6 +5,7 @@
 
 import { Link, useLocation } from 'react-router-dom';
 import { ChevronRight, Home } from 'lucide-react';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface BreadcrumbItem {
   label: string;
@@ -17,18 +18,19 @@ interface BreadcrumbsProps {
 
 export default function Breadcrumbs({ items }: BreadcrumbsProps) {
   const location = useLocation();
+  const { t } = useTranslation();
 
   // Auto-generate breadcrumbs from path if not provided
   const breadcrumbs: BreadcrumbItem[] = items || (() => {
     const paths = location.pathname.split('/').filter(Boolean);
-    const result: BreadcrumbItem[] = [{ label: 'Home', path: '/' }];
+    const result: BreadcrumbItem[] = [{ label: t('nav.home'), path: '/' }];
     
     // Special handling for /server/:id routes
     if (paths.length >= 2 && paths[0] === 'server') {
       // For /server/:id, create a single breadcrumb "Server Details" that links back to home
       // Don't create a clickable /server breadcrumb since that route doesn't exist
       result.push({ 
-        label: 'Server Details', 
+        label: t('server.serverDetails'), 
         path: location.pathname // Use full path, but make it non-clickable
       });
       return result;
@@ -43,13 +45,19 @@ export default function Breadcrumbs({ items }: BreadcrumbsProps) {
       if (path === 'admin') {
         label = 'Admin';
       } else if (path === 'profiles') {
-        label = 'Manage Profiles';
+        label = t('nav.manageProfiles');
       } else if (path === 'users') {
-        label = 'Manage Users';
+        label = t('nav.manageUsers');
       } else if (path === 'crashes') {
-        label = 'Crashes & Issues';
+        label = t('nav.crashes');
       } else if (path === 'settings') {
-        label = 'Settings';
+        label = t('nav.settings');
+      } else if (path === 'profile') {
+        label = t('nav.profile');
+      } else if (path === 'statistics') {
+        label = t('nav.statistics');
+      } else if (path === 'dashboard') {
+        label = t('nav.dashboard');
       } else {
         // Capitalize first letter
         label = path.charAt(0).toUpperCase() + path.slice(1).replace(/-/g, ' ');
@@ -75,7 +83,7 @@ export default function Breadcrumbs({ items }: BreadcrumbsProps) {
             {index === 0 ? (
               <Link
                 to={item.path}
-                className="flex items-center gap-1 text-gray-400 hover:text-white transition-colors"
+                className="flex items-center gap-1 text-gray-400 hover:text-[#6b8e23] transition-colors"
               >
                 <Home size={16} />
                 <span>{item.label}</span>
@@ -85,7 +93,7 @@ export default function Breadcrumbs({ items }: BreadcrumbsProps) {
             ) : (
               <Link
                 to={item.path}
-                className="text-gray-400 hover:text-white transition-colors"
+                className="text-gray-400 hover:text-[#6b8e23] transition-colors"
               >
                 {item.label}
               </Link>

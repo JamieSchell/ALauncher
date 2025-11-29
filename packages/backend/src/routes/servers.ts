@@ -30,7 +30,6 @@ router.get('/:address/status', async (req, res, next) => {
       // Reduced cache time to ensure fresh data
       const cacheAge = cached ? Date.now() - cached.lastChecked.getTime() : Infinity;
       if (cached && cacheAge < 10000) {
-        console.log(`[Server Status] Returning cached status for ${address}:${port} (age: ${Math.round(cacheAge / 1000)}s)`);
         return res.json({
           success: true,
           data: {
@@ -46,20 +45,13 @@ router.get('/:address/status', async (req, res, next) => {
         });
       }
       
-      // If cache is stale (offline status), force refresh
-      if (cached && !cached.online && cacheAge < 60000) {
-        console.log(`[Server Status] Cached offline status for ${address}:${port} is ${Math.round(cacheAge / 1000)}s old, but forcing refresh`);
-      }
     } catch (dbError: any) {
       // Database connection error - continue without cache
-      console.warn(`[Server Status] Database unavailable, skipping cache: ${dbError.message}`);
       // Continue to ping server without cache
     }
 
     // Ping server
     const status = await pingServer(address, port);
-    
-    console.log(`[Server Status] ${address}:${port} - Online: ${status.online}, Players: ${status.players?.online}/${status.players?.max}`);
 
     // Try to update cache (if database is available)
     try {
@@ -90,13 +82,10 @@ router.get('/:address/status', async (req, res, next) => {
       try {
         await saveServerStatistics(serverAddress, onlineCount);
       } catch (statsError: any) {
-        // Statistics save failed - log but don't fail the request
-        console.warn(`[Server Status] Failed to save statistics: ${statsError.message}`);
+        // Statistics save failed - silent fail
       }
     } catch (dbError: any) {
-      // Database connection error - log but continue
-      console.warn(`[Server Status] Database unavailable, skipping cache update: ${dbError.message}`);
-      // Continue to return status even if cache update failed
+      // Database connection error - continue silently
     }
 
     res.json({
@@ -126,7 +115,6 @@ router.get('/:address/statistics', async (req, res, next) => {
       });
     } catch (dbError: any) {
       // Database connection error - return empty statistics
-      console.warn(`[Server Statistics] Database unavailable: ${dbError.message}`);
       res.json({
         success: true,
         data: {

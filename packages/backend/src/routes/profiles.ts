@@ -8,6 +8,8 @@ import { prisma } from '../services/database';
 import { AppError } from '../middleware/errorHandler';
 import { sign } from '../services/crypto';
 import { authenticateToken, requireAdmin, AuthRequest } from '../middleware/auth';
+import { EconomyLeaderboardConfig } from '@modern-launcher/shared';
+import { getEconomyLeaderboard } from '../services/economyLeaderboard';
 
 const router = Router();
 
@@ -115,6 +117,7 @@ router.post(
           updateExclusions: Array.isArray(profileData.updateExclusions) ? profileData.updateExclusions : [],
           tags: Array.isArray(profileData.tags) ? profileData.tags : [],
           enabled: profileData.enabled !== undefined ? profileData.enabled : true,
+          economyConfig: profileData.economyConfig || null,
         },
     });
 
@@ -185,6 +188,7 @@ router.put(
       if (profileData.updateExclusions !== undefined) updateData.updateExclusions = Array.isArray(profileData.updateExclusions) ? profileData.updateExclusions : [];
       if (profileData.tags !== undefined) updateData.tags = Array.isArray(profileData.tags) ? profileData.tags : [];
       if (profileData.enabled !== undefined) updateData.enabled = profileData.enabled;
+      if (profileData.economyConfig !== undefined) updateData.economyConfig = profileData.economyConfig;
 
     const profile = await prisma.clientProfile.update({
       where: { id },
@@ -225,6 +229,50 @@ router.delete('/:id', authenticateToken, requireAdmin, async (req: AuthRequest, 
     res.json({
       success: true,
       message: 'Profile deleted',
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /api/profiles/:id/economy/top
+ * Get top balances for server leaderboard
+ */
+router.get('/:id/economy/top', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const profile = await prisma.clientProfile.findUnique({
+      where: { id },
+    });
+
+    if (!profile) {
+      throw new AppError(404, 'Profile not found');
+    }
+
+    const economyConfig = profile.economyConfig
+      ? (profile.economyConfig as unknown as EconomyLeaderboardConfig)
+      : null;
+
+    if (!economyConfig || economyConfig.enabled === false) {
+      return res.json({
+        success: true,
+        data: {
+          players: [],
+          currencySymbol: economyConfig?.currencySymbol,
+          precision: typeof economyConfig?.precision === 'number' ? economyConfig.precision : 0,
+          limit: 0,
+          lastUpdated: new Date().toISOString(),
+        },
+      });
+    }
+
+    const leaderboard = await getEconomyLeaderboard(economyConfig);
+
+    res.json({
+      success: true,
+      data: leaderboard,
     });
   } catch (error) {
     next(error);

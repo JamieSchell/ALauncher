@@ -9,7 +9,7 @@
 
   color-scheme: dark;
   color: rgba(255, 255, 255, 0.87);
-  background-color: #0a0a0a;
+  background-color: #1a1a1a;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -46,12 +46,12 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #333;
+  background: #3d3d3d;
   border-radius: 5px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #444;
+  background: #4d4d4d;
 }
 
 /* Window drag region */
@@ -93,26 +93,25 @@ body {
   animation: slideUp 0.4s ease-out;
 }
 
-/* Glass effect */
+/* Glass effect - Minecraft style */
 .glass {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(42, 42, 42, 0.8);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(61, 61, 61, 0.5);
 }
 
-/* Glass effect without blur on hover for cards */
+/* Glass effect without blur on hover for cards - Minecraft style */
 .glass-card {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(42, 42, 42, 0.8);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(61, 61, 61, 0.5);
   transition: backdrop-filter 0.2s ease, background 0.2s ease, border-color 0.2s ease;
 }
 
 .glass-card:hover {
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(8px);
+  background: rgba(47, 47, 47, 0.85);
+  border-color: rgba(107, 142, 35, 0.5);
 }
 
 /* Custom select styling */
@@ -131,7 +130,7 @@ select option:hover {
 }
 
 select option:checked {
-  background-color: #3b82f6;
+  background-color: #6b8e23;
   color: #ffffff;
 }
 
@@ -156,7 +155,23 @@ select option:checked {
 }
 
 .animate-shimmer {
-  animation: shimmer 2s infinite;
+  animation: shimmer 3s infinite;
+}
+
+/* Pulse animation for background orbs */
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.1);
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 4s ease-in-out infinite;
 }
 
 /* Custom scrollbar for release notes */

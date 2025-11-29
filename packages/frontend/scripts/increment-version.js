@@ -35,7 +35,7 @@ function updateVersion() {
     const newVersion = incrementVersion(currentVersion);
     
     console.log(`\n🔄 Incrementing launcher version:`);
-    console.log(`   ${currentVersion} -> ${newVersion}\n`);
+    console.log(`   ${currentVersion} -> ${newVersion}`);
     
     // Update package.json
     packageJson.version = newVersion;
@@ -45,7 +45,7 @@ function updateVersion() {
       'utf-8'
     );
     
-    console.log(`✅ Version updated to ${newVersion} in package.json\n`);
+    console.log(`✅ Version updated to ${newVersion} in package.json`);
     
     return newVersion;
   } catch (error) {

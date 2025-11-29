@@ -10,7 +10,7 @@ export const serversAPI = {
     try {
       // Use longer timeout for server status requests (15 seconds)
       // This allows time for multiple protocol version attempts on backend
-      const response = await apiClient.get<ApiResponse<ServerStatus>>(
+      const response = await apiClient.get(
         `/servers/${address}/status?port=${port}`,
         { timeout: 15000 }
       );
@@ -50,7 +50,7 @@ export const serversAPI = {
 
   async getServerStatistics(address: string, port: number = 25565): Promise<Array<{ online: number; average: number; minimum: number; maximum: number }>> {
     try {
-      const response = await apiClient.get<ApiResponse<Array<{ online: number; average: number; minimum: number; maximum: number }>>>(
+      const response = await apiClient.get(
         `/servers/${address}/statistics?port=${port}`
       );
       return response.data.data || [];

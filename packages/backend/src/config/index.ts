@@ -46,6 +46,11 @@ export const config = {
     checkInterval: parseInt(process.env.UPDATE_CHECK_INTERVAL || '300000', 10),
   },
   
+  economy: {
+    defaultLimit: parseInt(process.env.ECONOMY_LEADERBOARD_DEFAULT_LIMIT || '5', 10),
+    maxLimit: parseInt(process.env.ECONOMY_LEADERBOARD_MAX_LIMIT || '20', 10),
+  },
+  
   logging: {
     level: process.env.LOG_LEVEL || 'info',
   },

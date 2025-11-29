@@ -70,12 +70,14 @@ model ClientProfile {
   id            String   @id @default(uuid())
   version       String
   assetIndex    String
+  clientDirectory String @default("") // Имя папки для файлов клиента (например, "HiTech", "HiPower")
   
   // Display
   sortIndex     Int
   title         String
   description   String?  // Описание сервера
   tags          Json?    // Массив пометок: ["NEW", "TOP", "WIP", "HARD", etc.]
+  economyConfig Json?    // Конфигурация таблицы топа экономики
   serverAddress String
   serverPort    Int      @default(25565)
   jvmVersion    String?
@@ -224,12 +226,17 @@ model ClientFile {
   fileSize      BigInt   // Размер в байтах
   fileType      String   // Тип: "jar", "library", "asset", "native", "other"
   downloadUrl   String?  // Прямой URL для загрузки (если используется CDN)
+  verified      Boolean  @default(false) // Файл проверен на целостность
+  lastVerified  DateTime? // Время последней проверки целостности
+  integrityCheckFailed Boolean @default(false) // Флаг нарушения целостности
   
   version       ClientVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
   
   @@unique([versionId, filePath])
   @@index([versionId])
   @@index([fileType])
+  @@index([verified])
+  @@index([integrityCheckFailed])
   @@map("client_files")
 }
 

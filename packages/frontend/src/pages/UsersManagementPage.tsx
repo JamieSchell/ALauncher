@@ -59,7 +59,7 @@ export default function UsersManagementPage() {
   const users = usersData?.data || [];
 
   const handleBan = async (user: UserListItem, banned: boolean) => {
-    if (user.id === playerProfile?.id) {
+    if (user.id === playerProfile?.uuid) {
       alert('Cannot ban yourself');
       return;
     }
@@ -98,7 +98,7 @@ export default function UsersManagementPage() {
     if (!selectedUser) return;
 
     // Prevent editing other admins (except yourself)
-    if (selectedUser.role === 'ADMIN' && selectedUser.id !== playerProfile?.id) {
+    if (selectedUser.role === 'ADMIN' && selectedUser.id !== playerProfile?.uuid) {
       alert('Cannot edit another administrator');
       return;
     }
@@ -142,7 +142,7 @@ export default function UsersManagementPage() {
   };
 
   const handleDelete = async (id: string, username: string) => {
-    if (id === playerProfile?.id) {
+    if (id === playerProfile?.uuid) {
       alert('Cannot delete yourself');
       return;
     }
@@ -373,7 +373,7 @@ export default function UsersManagementPage() {
                       <Edit size={18} />
                     )}
                   </button>
-                  {user.id !== playerProfile?.id && user.role !== 'ADMIN' && (
+                  {user.id !== playerProfile?.uuid && user.role !== 'ADMIN' && (
                     <>
                       {user.banned ? (
                         <button
@@ -542,7 +542,7 @@ export default function UsersManagementPage() {
                   <select
                     value={editRole}
                     onChange={(e) => setEditRole(e.target.value as 'USER' | 'ADMIN')}
-                    disabled={selectedUser.role === 'ADMIN' && selectedUser.id !== playerProfile?.id}
+                    disabled={selectedUser.role === 'ADMIN' && selectedUser.id !== playerProfile?.uuid}
                     className="w-full pl-3 pr-10 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none cursor-pointer hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <option value="USER" className="bg-gray-800">User</option>
@@ -550,7 +550,7 @@ export default function UsersManagementPage() {
                   </select>
                   <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                 </div>
-                {selectedUser.role === 'ADMIN' && selectedUser.id !== playerProfile?.id && (
+                {selectedUser.role === 'ADMIN' && selectedUser.id !== playerProfile?.uuid && (
                   <p className="text-xs text-gray-500 mt-1">Cannot change role of another administrator</p>
                 )}
               </div>

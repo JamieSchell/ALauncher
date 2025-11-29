@@ -6,7 +6,6 @@ import { Server as HTTPServer } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import { logger } from '../utils/logger';
 import { AuthService } from '../services/auth';
-import { ClientDownloadService } from '../services/clientDownloadService';
 import { WSEvent, UpdateProgress, LaunchStatus } from '@modern-launcher/shared';
 
 interface Client {
@@ -16,14 +15,21 @@ interface Client {
 }
 
 const clients = new Map<string, Client>();
+let wss: WebSocketServer | null = null;
 
 export function initializeWebSocket(server: HTTPServer) {
-  const wss = new WebSocketServer({ server, path: '/ws' });
+  wss = new WebSocketServer({ 
+    server, 
+    path: '/ws',
+    // Allow connections from any origin (including null for Electron file://)
+    verifyClient: () => {
+      // Accept all connections, including null origin (Electron file://)
+      return true;
+    },
+  });
 
   wss.on('connection', (ws: WebSocket, req) => {
     const clientId = `${Date.now()}-${Math.random()}`;
-    logger.info(`WebSocket client connected: ${clientId}`);
-
     clients.set(clientId, { ws });
 
     ws.on('message', async (message: Buffer) => {
@@ -34,9 +40,6 @@ export function initializeWebSocket(server: HTTPServer) {
           case WSEvent.AUTH:
             await handleAuth(clientId, data.token);
             break;
-          case WSEvent.DOWNLOAD_CLIENT:
-            await handleDownloadClient(clientId, data.versionId);
-            break;
           default:
             logger.warn(`Unknown WS event: ${data.event}`);
         }
@@ -46,12 +49,15 @@ export function initializeWebSocket(server: HTTPServer) {
     });
 
     ws.on('close', () => {
-      logger.info(`WebSocket client disconnected: ${clientId}`);
       clients.delete(clientId);
     });
 
     ws.on('error', (error) => {
-      logger.error(`WebSocket error for ${clientId}:`, error);
+      logger.error(`WebSocket error for ${clientId}:`, {
+        error: error.message,
+        stack: error.stack,
+        origin: req.headers.origin || 'null',
+      });
       clients.delete(clientId);
     });
 
@@ -61,8 +67,35 @@ export function initializeWebSocket(server: HTTPServer) {
       data: { clientId },
     });
   });
+}
 
-  logger.info('WebSocket server initialized');
+/**
+ * Close all WebSocket connections gracefully
+ */
+export function closeWebSocketServer(): Promise<void> {
+  return new Promise((resolve) => {
+    if (!wss) {
+      resolve();
+      return;
+    }
+
+    // Close all client connections
+    clients.forEach((client) => {
+      try {
+        client.ws.close();
+      } catch (error) {
+        // Ignore errors when closing
+      }
+    });
+    clients.clear();
+
+    // Close WebSocket server
+    wss.close(() => {
+      wss = null;
+      logger.info('WebSocket server closed');
+      resolve();
+    });
+  });
 }
 
 
@@ -81,47 +114,10 @@ async function handleAuth(clientId: string, token: string) {
       event: WSEvent.AUTH,
       data: { success: true, username: payload.username },
     });
-    
-    logger.info(`Client ${clientId} authenticated as ${payload.username}`);
   } else {
     sendToClient(clientId, {
       event: WSEvent.AUTH,
       data: { success: false, error: 'Invalid token' },
-    });
-  }
-}
-
-async function handleDownloadClient(clientId: string, versionId: string) {
-  const client = clients.get(clientId);
-  if (!client || !client.userId) {
-    sendToClient(clientId, {
-      event: WSEvent.DOWNLOAD_CLIENT,
-      data: { success: false, error: 'Not authenticated' },
-    });
-    return;
-  }
-
-  try {
-    await ClientDownloadService.downloadClientVersion(
-      versionId,
-      client.userId,
-      (progress) => {
-        sendToClient(clientId, {
-          event: WSEvent.UPDATE_PROGRESS,
-          data: progress,
-        });
-      }
-    );
-
-    sendToClient(clientId, {
-      event: WSEvent.DOWNLOAD_CLIENT,
-      data: { success: true, versionId },
-    });
-  } catch (error: any) {
-    logger.error(`Download error for client ${clientId}:`, error);
-    sendToClient(clientId, {
-      event: WSEvent.DOWNLOAD_CLIENT,
-      data: { success: false, error: error.message },
     });
   }
 }

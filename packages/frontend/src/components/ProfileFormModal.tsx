@@ -5,7 +5,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Save, AlertCircle } from 'lucide-react';
-import { ClientProfile } from '@modern-launcher/shared';
+import { ClientProfile, EconomyLeaderboardConfig } from '@modern-launcher/shared';
 import { profilesAPI } from '../api/profiles';
 
 interface ProfileFormModalProps {
@@ -20,7 +20,7 @@ export default function ProfileFormModal({ isOpen, onClose, onSuccess, profile }
   const [error, setError] = useState<string | null>(null);
   
   // Form fields
-  const [formData, setFormData] = useState<Partial<ClientProfile>>({
+  const [formData, setFormData] = useState<Partial<ClientProfile & { enabled?: boolean }>>({
     version: '',
     title: '',
     description: '',
@@ -39,6 +39,18 @@ export default function ProfileFormModal({ isOpen, onClose, onSuccess, profile }
     updateExclusions: [],
     tags: [],
     enabled: true,
+  });
+
+  // Economy config state
+  const [economyConfig, setEconomyConfig] = useState<Partial<EconomyLeaderboardConfig>>({
+    enabled: false,
+    table: '',
+    usernameColumn: '',
+    balanceColumn: '',
+    order: 'desc',
+    limit: 10,
+    currencySymbol: '',
+    precision: 2,
   });
 
   useEffect(() => {
@@ -61,7 +73,20 @@ export default function ProfileFormModal({ isOpen, onClose, onSuccess, profile }
         updateVerify: profile.updateVerify || [],
         updateExclusions: profile.updateExclusions || [],
         tags: profile.tags || [],
-        enabled: profile.enabled !== undefined ? profile.enabled : true,
+        enabled: (profile as any).enabled !== undefined ? (profile as any).enabled : true,
+      });
+      
+      // Load economy config
+      const ec = (profile.economyConfig as any) || {};
+      setEconomyConfig({
+        enabled: ec.enabled !== undefined ? ec.enabled : false,
+        table: ec.table || '',
+        usernameColumn: ec.usernameColumn || '',
+        balanceColumn: ec.balanceColumn || '',
+        order: ec.order || 'desc',
+        limit: ec.limit || 10,
+        currencySymbol: ec.currencySymbol || '',
+        precision: ec.precision !== undefined ? ec.precision : 2,
       });
     } else {
       // Reset form for new profile
@@ -85,6 +110,18 @@ export default function ProfileFormModal({ isOpen, onClose, onSuccess, profile }
         tags: [],
         enabled: true,
       });
+      
+      // Reset economy config
+      setEconomyConfig({
+        enabled: false,
+        table: '',
+        usernameColumn: '',
+        balanceColumn: '',
+        order: 'desc',
+        limit: 10,
+        currencySymbol: '',
+        precision: 2,
+      });
     }
     setError(null);
   }, [profile, isOpen]);
@@ -95,9 +132,33 @@ export default function ProfileFormModal({ isOpen, onClose, onSuccess, profile }
     setLoading(true);
 
     try {
+      // Prepare economy config
+      const finalEconomyConfig: EconomyLeaderboardConfig | null = economyConfig.enabled && 
+        economyConfig.table && 
+        economyConfig.usernameColumn && 
+        economyConfig.balanceColumn
+        ? {
+            enabled: true,
+            table: economyConfig.table,
+            usernameColumn: economyConfig.usernameColumn,
+            balanceColumn: economyConfig.balanceColumn,
+            order: economyConfig.order || 'desc',
+            limit: economyConfig.limit || 10,
+            currencySymbol: economyConfig.currencySymbol || '',
+            precision: economyConfig.precision !== undefined ? economyConfig.precision : 2,
+          }
+        : economyConfig.enabled === false 
+          ? { enabled: false } as any
+          : null;
+
+      const profileData = {
+        ...formData,
+        economyConfig: finalEconomyConfig,
+      };
+
       if (profile) {
         // Update existing profile
-        const result = await profilesAPI.updateProfile(profile.id, formData);
+        const result = await profilesAPI.updateProfile(profile.id, profileData);
         if (result.success) {
           onSuccess();
           onClose();
@@ -106,7 +167,7 @@ export default function ProfileFormModal({ isOpen, onClose, onSuccess, profile }
         }
       } else {
         // Create new profile
-        const result = await profilesAPI.createProfile(formData);
+        const result = await profilesAPI.createProfile(profileData);
         if (result.success) {
           onSuccess();
           onClose();
@@ -121,7 +182,7 @@ export default function ProfileFormModal({ isOpen, onClose, onSuccess, profile }
     }
   };
 
-  const updateField = (field: keyof ClientProfile, value: any) => {
+  const updateField = (field: keyof (ClientProfile & { enabled?: boolean }), value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -373,6 +434,138 @@ export default function ProfileFormModal({ isOpen, onClose, onSuccess, profile }
                   placeholder="NEW&#10;TOP"
                 />
               </div>
+            </div>
+
+            {/* Economy Leaderboard Settings */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-white border-b border-white/10 pb-2">
+                Economy Leaderboard (Топ богачей)
+              </h3>
+              
+              <div className="flex items-center gap-2 mb-4">
+                <input
+                  type="checkbox"
+                  checked={economyConfig.enabled || false}
+                  onChange={(e) => setEconomyConfig(prev => ({ ...prev, enabled: e.target.checked }))}
+                  className="w-4 h-4 rounded bg-white/5 border-white/10 text-primary-500 focus:ring-primary-500"
+                />
+                <label className="text-sm text-gray-300 cursor-pointer">
+                  Enable Economy Leaderboard
+                </label>
+              </div>
+
+              {economyConfig.enabled && (
+                <div className="space-y-4 pl-6 border-l-2 border-white/10">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Table Name <span className="text-red-400">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={economyConfig.table || ''}
+                        onChange={(e) => setEconomyConfig(prev => ({ ...prev, table: e.target.value }))}
+                        className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        placeholder="economy_balances"
+                        required={economyConfig.enabled}
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Название таблицы в MySQL</p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Limit
+                      </label>
+                      <input
+                        type="number"
+                        value={economyConfig.limit || 10}
+                        onChange={(e) => setEconomyConfig(prev => ({ ...prev, limit: parseInt(e.target.value) || 10 }))}
+                        className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        min={1}
+                        max={20}
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Количество игроков в топе (1-20)</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Username Column <span className="text-red-400">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={economyConfig.usernameColumn || ''}
+                        onChange={(e) => setEconomyConfig(prev => ({ ...prev, usernameColumn: e.target.value }))}
+                        className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        placeholder="username"
+                        required={economyConfig.enabled}
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Колонка с именем игрока</p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Balance Column <span className="text-red-400">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={economyConfig.balanceColumn || ''}
+                        onChange={(e) => setEconomyConfig(prev => ({ ...prev, balanceColumn: e.target.value }))}
+                        className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        placeholder="balance"
+                        required={economyConfig.enabled}
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Колонка с балансом</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Order
+                      </label>
+                      <select
+                        value={economyConfig.order || 'desc'}
+                        onChange={(e) => setEconomyConfig(prev => ({ ...prev, order: e.target.value as 'asc' | 'desc' }))}
+                        className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      >
+                        <option value="desc">Descending (убывание)</option>
+                        <option value="asc">Ascending (возрастание)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Currency Symbol
+                      </label>
+                      <input
+                        type="text"
+                        value={economyConfig.currencySymbol || ''}
+                        onChange={(e) => setEconomyConfig(prev => ({ ...prev, currencySymbol: e.target.value }))}
+                        className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        placeholder="$"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Символ валюты (например: $, ₽, €)</p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        Precision
+                      </label>
+                      <input
+                        type="number"
+                        value={economyConfig.precision !== undefined ? economyConfig.precision : 2}
+                        onChange={(e) => setEconomyConfig(prev => ({ ...prev, precision: parseInt(e.target.value) || 2 }))}
+                        className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        min={0}
+                        max={10}
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Количество знаков после запятой</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Actions */}

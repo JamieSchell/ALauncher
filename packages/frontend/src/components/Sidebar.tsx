@@ -6,10 +6,22 @@ import { Link, useLocation } from 'react-router-dom';
 import { Home, Settings, User, LogOut, Shield, AlertTriangle, Users, BarChart3, LayoutDashboard } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { authAPI } from '../api/auth';
+import { useQuery } from '@tanstack/react-query';
+import { usersAPI } from '../api/users';
+import PlayerHead from './PlayerHead';
+import { useTranslation } from '../hooks/useTranslation';
 
 export default function Sidebar() {
   const location = useLocation();
   const { playerProfile, clearAuth, isAdmin } = useAuthStore();
+  const { t } = useTranslation();
+  
+  // Get user profile to access skinUrl
+  const { data: userProfile } = useQuery({
+    queryKey: ['userProfile'],
+    queryFn: usersAPI.getProfile,
+    enabled: !!playerProfile, // Only fetch if playerProfile exists
+  });
 
   const handleLogout = async () => {
     try {
@@ -22,33 +34,37 @@ export default function Sidebar() {
   };
 
   const navItems = [
-    { path: '/', icon: Home, label: 'Home' },
-    { path: '/profile', icon: User, label: 'Profile' },
-    { path: '/statistics', icon: BarChart3, label: 'Statistics' },
-    { path: '/settings', icon: Settings, label: 'Settings' },
+    { path: '/', icon: Home, label: t('nav.home') },
+    { path: '/profile', icon: User, label: t('nav.profile') },
+    { path: '/statistics', icon: BarChart3, label: t('nav.statistics') },
+    { path: '/settings', icon: Settings, label: t('nav.settings') },
     ...(isAdmin() ? [
-      { path: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-      { path: '/admin/profiles', icon: Shield, label: 'Manage Profiles' },
-      { path: '/admin/users', icon: Users, label: 'Manage Users' },
-      { path: '/admin/crashes', icon: AlertTriangle, label: 'Crashes & Issues' },
+      { path: '/admin/dashboard', icon: LayoutDashboard, label: t('nav.dashboard') },
+      { path: '/admin/profiles', icon: Shield, label: t('nav.manageProfiles') },
+      { path: '/admin/users', icon: Users, label: t('nav.manageUsers') },
+      { path: '/admin/crashes', icon: AlertTriangle, label: t('nav.crashes') },
     ] : []),
   ];
 
   return (
-    <aside className="w-64 bg-black/30 backdrop-blur-sm border-r border-white/10 flex flex-col">
+    <aside className="w-64 bg-[#2a2a2a]/80 backdrop-blur-sm border-r border-[#3d3d3d]/50 flex flex-col">
       <div className="p-6">
         <Link
           to="/profile"
-          className="flex items-center gap-3 p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+          className="flex items-center gap-3 p-3 bg-[#1f1f1f] rounded-lg hover:bg-[#2a2a2a] border border-[#3d3d3d]/50 hover:border-[#6b8e23]/30 transition-all cursor-pointer"
         >
-          <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-700 rounded-lg flex items-center justify-center">
-            <User size={20} className="text-white" />
-          </div>
+          <PlayerHead
+            skinUrl={userProfile?.skinUrl}
+            username={playerProfile?.username}
+            uuid={userProfile?.uuid || playerProfile?.uuid}
+            size={40}
+            className="flex-shrink-0"
+          />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-white truncate">
               {playerProfile?.username || 'Player'}
             </p>
-            <p className="text-xs text-gray-400">Click to view profile</p>
+            <p className="text-xs text-gray-500">{t('profile.clickToView')}</p>
           </div>
         </Link>
       </div>
@@ -62,10 +78,10 @@ export default function Sidebar() {
             <Link
               key={item.path}
               to={item.path}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-colors ${
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-2 transition-all ${
                 isActive
-                  ? 'bg-primary-600 text-white'
-                  : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                  ? 'bg-[#6b8e23] text-white border border-[#7a9f35]/30'
+                  : 'text-gray-400 hover:bg-[#1f1f1f] hover:text-white border border-transparent hover:border-[#3d3d3d]/30'
               }`}
             >
               <Icon size={20} />
@@ -78,10 +94,10 @@ export default function Sidebar() {
       <div className="p-4">
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 w-full px-4 py-3 rounded-lg text-gray-400 hover:bg-red-600/20 hover:text-red-400 transition-colors"
+          className="flex items-center gap-3 w-full px-4 py-3 rounded-lg text-gray-400 hover:bg-[#5a3d3d]/30 hover:text-[#cc6b6b] border border-transparent hover:border-[#8b4a4a]/30 transition-all"
         >
           <LogOut size={20} />
-          <span className="font-medium">Logout</span>
+          <span className="font-medium">{t('auth.logout')}</span>
         </button>
       </div>
     </aside>

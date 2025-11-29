@@ -32,7 +32,7 @@ export const launcherAPI = {
    * Get current launcher version
    */
   async getVersion(): Promise<LauncherVersionInfo> {
-    const response = await apiClient.get<ApiResponse<LauncherVersionInfo>>('/launcher/version');
+    const response = await apiClient.get('/launcher/version');
     return response.data.data!;
   },
 
@@ -40,7 +40,7 @@ export const launcherAPI = {
    * Check for launcher updates
    */
   async checkUpdate(currentVersion: string): Promise<LauncherUpdateCheck> {
-    const response = await apiClient.get<ApiResponse<LauncherUpdateCheck>>(
+    const response = await apiClient.get(
       `/launcher/check-update?currentVersion=${encodeURIComponent(currentVersion)}`
     );
     return response.data.data!;

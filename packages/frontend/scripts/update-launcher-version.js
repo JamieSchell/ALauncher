@@ -4,15 +4,53 @@
  */
 
 const mysql = require('mysql2/promise');
-const { v4: uuidv4 } = require('uuid');
+const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
+// Use built-in crypto.randomUUID() for Node.js 18+
+const uuidv4 = () => crypto.randomUUID();
+
+// Lock file to prevent double execution
+const lockFile = path.join(__dirname, '.update-version.lock');
+
 async function updateLauncherVersion() {
+  // Check if script is already running (prevent double execution)
+  if (fs.existsSync(lockFile)) {
+    const lockContent = fs.readFileSync(lockFile, 'utf-8');
+    const lockTime = parseInt(lockContent, 10);
+    const now = Date.now();
+    
+    // If lock is older than 30 seconds, remove it (stale lock)
+    if (now - lockTime > 30000) {
+      fs.unlinkSync(lockFile);
+    } else {
+      console.log('⚠️  Version update already in progress, skipping...');
+      return;
+    }
+  }
+  
+  // Create lock file
+  fs.writeFileSync(lockFile, Date.now().toString(), 'utf-8');
+  
+  // Cleanup lock file on exit
+  const cleanup = () => {
+    if (fs.existsSync(lockFile)) {
+      fs.unlinkSync(lockFile);
+    }
+  };
+  
+  process.on('exit', cleanup);
+  process.on('SIGINT', cleanup);
+  process.on('SIGTERM', cleanup);
   // Check if DB update should be skipped
   if (process.env.SKIP_DB_UPDATE === 'true' || process.env.SKIP_DB_UPDATE === '1') {
+    console.log('⚠️  Database update skipped (SKIP_DB_UPDATE is set)');
     return;
   }
+  
+  // This script should only run after successful build
+  // If called, it means build was successful
 
   let connection;
   try {
@@ -23,7 +61,7 @@ async function updateLauncherVersion() {
 
     // Only show message if not in silent mode
     if (process.env.VERBOSE_DB_ERRORS === 'true' || !process.env.SKIP_DB_UPDATE) {
-      console.log(`\n📦 Updating launcher version in database: ${version}\n`);
+      console.log(`📦 Updating launcher version in database: ${version}`);
     }
 
     // Load .env from backend
@@ -74,8 +112,45 @@ async function updateLauncherVersion() {
       )
     ]);
 
-    // Build download URL (API endpoint) - not used anymore but kept for database compatibility
-    let downloadUrl = null;
+    // Get API URL from backend .env or use default
+    let apiUrl = process.env.API_URL || 'http://5.188.119.206:7240';
+    if (fs.existsSync(backendEnvPath)) {
+      const envContent = fs.readFileSync(backendEnvPath, 'utf-8');
+      const apiMatch = envContent.match(/^API_URL\s*=\s*(.+)$/m) || envContent.match(/^VITE_API_URL\s*=\s*(.+)$/m);
+      if (apiMatch) {
+        apiUrl = apiMatch[1].trim().replace(/^["']|["']$/g, '');
+      }
+    }
+
+    // Build download URL (API endpoint for downloading launcher update)
+    let downloadUrl = `${apiUrl}/api/launcher/download/${version}`;
+    
+    // Try to find the actual file and calculate hash/size
+    let fileHash = null;
+    let fileSize = null;
+    const releaseDir = path.join(__dirname, '..', 'release');
+    const possibleFileNames = [
+      `Modern Launcher-${version}-portable.exe`,
+      `Modern-Launcher-${version}-portable.exe`,
+      `launcher-${version}-portable.exe`,
+      `Modern Launcher-${version}.exe`,
+      `Modern-Launcher-${version}.exe`,
+    ];
+
+    for (const fileName of possibleFileNames) {
+      const filePath = path.join(releaseDir, fileName);
+      if (fs.existsSync(filePath)) {
+        try {
+          // Calculate file hash
+          const fileContent = fs.readFileSync(filePath);
+          fileHash = crypto.createHash('sha256').update(fileContent).digest('hex');
+          fileSize = BigInt(fileContent.length);
+          break;
+        } catch (err) {
+          // File exists but can't read it, continue
+        }
+      }
+    }
 
     // Check if version already exists
     const [existing] = await connection.execute(
@@ -84,23 +159,36 @@ async function updateLauncherVersion() {
     );
 
     if (existing && existing.length > 0) {
-      // Update existing version with download URL
+      // Version already exists - update downloadUrl, fileHash, fileSize, and timestamp
       await connection.execute(
-        'UPDATE launcher_versions SET enabled = 1, downloadUrl = ?, updatedAt = NOW() WHERE version = ?',
-        [downloadUrl, version]
+        'UPDATE launcher_versions SET enabled = 1, downloadUrl = ?, fileHash = ?, fileSize = ?, updatedAt = NOW() WHERE version = ?',
+        [downloadUrl, fileHash, fileSize, version]
       );
-      console.log(`✅ Launcher version ${version} updated in database!\n`);
+      console.log(`✅ Launcher version ${version} updated in database!`);
+      if (fileHash) {
+        console.log(`   Download URL: ${downloadUrl}`);
+        console.log(`   File Hash: ${fileHash}`);
+        console.log(`   File Size: ${fileSize ? fileSize.toString() : 'N/A'} bytes`);
+      }
     } else {
-      // Insert new version with download URL
+      // Insert new version with download URL, hash, and size
       const id = uuidv4();
       await connection.execute(
-        'INSERT INTO launcher_versions (id, version, downloadUrl, releaseNotes, isRequired, enabled, createdAt) VALUES (?, ?, ?, NULL, 0, 1, NOW())',
-        [id, version, downloadUrl]
+        'INSERT INTO launcher_versions (id, version, downloadUrl, fileHash, fileSize, releaseNotes, isRequired, enabled, createdAt) VALUES (?, ?, ?, ?, ?, NULL, 0, 1, NOW())',
+        [id, version, downloadUrl, fileHash, fileSize]
       );
-      console.log(`✅ Launcher version ${version} added to database!\n`);
+      console.log(`✅ Launcher version ${version} added to database!`);
+      if (fileHash) {
+        console.log(`   Download URL: ${downloadUrl}`);
+        console.log(`   File Hash: ${fileHash}`);
+        console.log(`   File Size: ${fileSize ? fileSize.toString() : 'N/A'} bytes`);
+      }
     }
 
     await connection.end();
+    
+    // Remove lock file on success
+    cleanup();
   } catch (error) {
     // Check error type
     const isAccessDenied = error.message && (
@@ -139,15 +227,21 @@ async function updateLauncherVersion() {
       return;
     } else {
       // Only show unexpected errors
-      console.warn('⚠️  Error updating launcher version:');
-      console.warn(`   ${error.message}`);
-      console.warn('⚠️  Skipping database update. Build will continue.\n');
+      console.error('❌ Error updating launcher version:');
+      console.error(`   ${error.message}`);
+      console.error('⚠️  Build completed, but database update failed.');
+      console.error('⚠️  You may need to update version manually in database.\n');
     }
     
     if (connection) {
       await connection.end().catch(() => {});
     }
-    // Don't exit with error - build should continue even if DB update fails
+    
+    // Remove lock file on error
+    cleanup();
+    
+    // Don't exit with error - build was successful, DB update is optional
+    // But log the error so user knows about it
     return;
   }
 }

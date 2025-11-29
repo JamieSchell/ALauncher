@@ -3,15 +3,22 @@ import react from '@vitejs/plugin-react';
 import electron from 'vite-plugin-electron';
 import renderer from 'vite-plugin-electron-renderer';
 import path from 'path';
+import { cspReplace } from './vite-plugins/csp-replace';
 
 export default defineConfig({
   plugins: [
     react(),
+    cspReplace(),
     electron([
       {
         entry: 'electron/main.ts',
         onstart(options) {
+          // Only start Electron if DISPLAY is available (GUI environment)
+          if (process.env.DISPLAY) {
           options.startup();
+          } else {
+            console.log('Skipping Electron startup (no DISPLAY available)');
+          }
         },
         vite: {
           build: {
@@ -58,8 +65,78 @@ export default defineConfig({
       include: [/node_modules/, /shared/],
       transformMixedEsModules: true,
     },
+    chunkSizeWarningLimit: 1000, // Increase limit to 1MB to suppress warnings
+    rollupOptions: {
+      output: {
+        manualChunks: (id) => {
+          // Split vendor chunks for better code splitting
+          if (id.includes('node_modules')) {
+            // React core libraries
+            if (id.includes('react/') || id.includes('react-dom/') || id.includes('scheduler/')) {
+              return 'react-core';
+            }
+            // React Router
+            if (id.includes('react-router')) {
+              return 'react-router';
+            }
+            // React Query
+            if (id.includes('@tanstack/react-query')) {
+              return 'react-query';
+            }
+            // Framer Motion
+            if (id.includes('framer-motion')) {
+              return 'framer-motion';
+            }
+            // Axios
+            if (id.includes('axios')) {
+              return 'axios';
+            }
+            // Zustand
+            if (id.includes('zustand')) {
+              return 'zustand';
+            }
+            // Lucide icons
+            if (id.includes('lucide-react')) {
+              return 'lucide-icons';
+            }
+            // Large utility libraries
+            if (id.includes('recharts') || id.includes('d3-')) {
+              return 'charts';
+            }
+            // Split remaining vendor into smaller chunks by first letter
+            if (id.includes('node_modules')) {
+              const match = id.match(/node_modules\/(@?[^/]+)/);
+              if (match) {
+                const packageName = match[1];
+                // Group scoped packages together
+                if (packageName.startsWith('@')) {
+                  return 'vendor-scoped';
+                }
+                // Split by first letter to create smaller chunks
+                const firstLetter = packageName.charAt(0).toLowerCase();
+                if (firstLetter >= 'a' && firstLetter <= 'f') {
+                  return 'vendor-a-f';
+                } else if (firstLetter >= 'g' && firstLetter <= 'm') {
+                  return 'vendor-g-m';
+                } else if (firstLetter >= 'n' && firstLetter <= 's') {
+                  return 'vendor-n-s';
+                } else {
+                  return 'vendor-t-z';
+                }
+              }
+            }
+          }
+        },
+      },
+    },
   },
   server: {
     port: 5173,
+    host: '0.0.0.0', // Listen on all interfaces to allow access via IP
+    headers: {
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+    },
   },
 });

@@ -11,6 +11,8 @@ import { spawn, execSync, exec } from 'child_process';
 import https from 'https';
 import http from 'http';
 import os from 'os';
+import AdmZip from 'adm-zip';
+import { ELECTRON_CONFIG } from '../src/config/electron';
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
@@ -43,9 +45,12 @@ async function logErrorToBackend(error: Error, context?: { component?: string; a
       launcherVersion: app.getVersion(),
     });
     
+    // Extract hostname from API URL
+    const apiUrl = ELECTRON_CONFIG.apiUrl;
+    const url = new URL(apiUrl);
     const options = {
-      hostname: 'localhost',
-      port: 7240,
+      hostname: url.hostname,
+      port: parseInt(url.port) || 7240,
       path: '/api/crashes/launcher-errors',
       method: 'POST',
       headers: {
@@ -233,8 +238,17 @@ function getAppDir() {
     // In development, use process.cwd() which points to packages/frontend
     return process.cwd();
   } else {
-    // In production, use app.getAppPath()
-    return app.getAppPath();
+    // In production, use app.getAppPath() which correctly handles both asar and unpacked
+    // For portable (unpacked): returns path to resources/app
+    // For installed (asar): returns path to app.asar
+    const appPath = app.getAppPath();
+    
+    // Log for debugging
+    console.log('App path:', appPath);
+    console.log('__dirname:', __dirname);
+    console.log('process.resourcesPath:', process.resourcesPath);
+    
+    return appPath;
   }
 }
 
@@ -246,16 +260,18 @@ function createWindow() {
   if (isDevelopment) {
     preloadPath = path.join(appDir, 'dist-electron', 'preload.js');
   } else {
-    // In production, try multiple possible paths
+    // In production, try multiple possible paths for preload
     const possiblePreloadPaths = [
-      path.join(__dirname, 'preload.js'),
-      path.join(appDir, 'preload.js'),
-      path.join(process.resourcesPath, 'app', 'preload.js'),
-      path.join(process.resourcesPath, 'app.asar.unpacked', 'preload.js'),
+      path.join(__dirname, 'preload.js'), // Primary: dist-electron/preload.js
+      path.join(appDir, 'dist-electron', 'preload.js'), // Alternative 1
+      path.join(appDir, 'preload.js'), // Alternative 2
+      path.join(process.resourcesPath, 'app', 'dist-electron', 'preload.js'), // Alternative 3
+      path.join(process.resourcesPath, 'app.asar.unpacked', 'preload.js'), // Alternative 4
     ];
     
     preloadPath = possiblePreloadPaths.find(p => fs.existsSync(p)) || possiblePreloadPaths[0];
     console.log('Using preload path:', preloadPath);
+    console.log('Preload exists:', fs.existsSync(preloadPath));
   }
 
   mainWindow = new BrowserWindow({
@@ -271,7 +287,9 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false, // Required for preload scripts
-      webSecurity: true,
+      // Disable webSecurity in production to allow file:// protocol to make HTTP requests
+      // This is safe because we control the content and use contextIsolation
+      webSecurity: isDevelopment, // Only enable in development
     },
     show: false, // Don't show until ready
   });
@@ -282,60 +300,61 @@ function createWindow() {
   });
 
   if (isDevelopment) {
-    mainWindow.loadURL('http://localhost:5173');
+    const devServerUrl = ELECTRON_CONFIG.devServerUrl;
+    mainWindow.loadURL(devServerUrl);
     mainWindow.webContents.openDevTools();
   } else {
-    // In production, files are in app.asar
-    // app.getAppPath() returns path to app.asar in production
+    // In production, use app.getAppPath() which correctly handles both asar and unpacked
+    // app.getAppPath() returns path to app.asar in portable version
     const indexPath = path.join(appDir, 'dist', 'index.html');
     
-    console.log('Production mode - Loading index.html from:', indexPath);
-    console.log('app.getAppPath():', app.getAppPath());
-    console.log('__dirname:', __dirname);
-    console.log('process.resourcesPath:', process.resourcesPath);
+    console.log('Production mode - Loading index.html');
+    console.log('App dir:', appDir);
+    console.log('Index path:', indexPath);
+    console.log('File exists:', fs.existsSync(indexPath));
     
-    // Check if file exists
-    if (!fs.existsSync(indexPath)) {
-      console.error('index.html not found at:', indexPath);
-      // Try alternative paths
+    // Use loadFile which automatically handles app.asar paths
+    // loadFile correctly resolves paths inside asar archives
+    mainWindow.loadFile(indexPath).catch((error) => {
+      console.error('Failed to load index.html:', error);
+      console.error('Error details:', {
+        code: (error as any).code,
+        message: error.message,
+        stack: error.stack,
+      });
+      
+      // Try alternative paths as fallback
       const altPaths = [
         path.join(__dirname, '..', 'dist', 'index.html'),
         path.join(process.resourcesPath, 'app', 'dist', 'index.html'),
       ];
       
+      let fallbackLoaded = false;
       for (const altPath of altPaths) {
         if (fs.existsSync(altPath)) {
-          console.log('Found index.html at alternative path:', altPath);
-          mainWindow.loadFile(altPath);
+          console.log('Trying alternative path:', altPath);
+          mainWindow.loadFile(altPath).catch((altError) => {
+            console.error('Alternative path also failed:', altError);
+          });
+          fallbackLoaded = true;
           break;
         }
       }
-    } else {
-      // Use loadFile with proper path handling for Electron
-      // loadFile automatically handles app.asar and sets correct base URL
-      mainWindow.loadFile(indexPath, {
-        hash: '', // Start with empty hash to avoid routing issues
-      }).catch((error) => {
-        console.error('Failed to load index.html:', error);
-        console.error('Error details:', {
-          code: (error as any).code,
-          message: error.message,
-          stack: error.stack,
-        });
-        
-        // Try loading as URL with proper formatting
+      
+      // Last resort: try loading as URL
+      if (!fallbackLoaded) {
         const fileUrl = path.resolve(indexPath).replace(/\\/g, '/');
         const url = `file:///${fileUrl}`;
-        console.log('Trying alternative URL:', url);
+        console.log('Trying URL load:', url);
         mainWindow.loadURL(url).catch((urlError) => {
-          console.error('Failed to load via URL:', urlError);
-          mainWindow?.webContents.openDevTools();
+          console.error('URL load also failed:', urlError);
+          // Open DevTools for debugging if enabled
+          if (process.env.ELECTRON_OPEN_DEVTOOLS === '1') {
+            mainWindow?.webContents.openDevTools();
+          }
         });
-      });
-    }
-    
-    // Open DevTools in production for debugging (remove in final release)
-    mainWindow.webContents.openDevTools();
+      }
+    });
   }
 
   // Handle page load errors
@@ -344,7 +363,10 @@ function createWindow() {
     console.error('Error code:', errorCode);
     console.error('Error description:', errorDescription);
     console.error('Validated URL:', validatedURL);
-    mainWindow?.webContents.openDevTools();
+    // Only open DevTools in development or if explicitly enabled
+    if (isDevelopment || process.env.ELECTRON_OPEN_DEVTOOLS === '1') {
+      mainWindow?.webContents.openDevTools();
+    }
     mainWindow?.webContents.send('app:error', `Failed to load page: ${errorDescription}`);
   });
 
@@ -353,6 +375,10 @@ function createWindow() {
     console.log('✅ Page loaded successfully');
     const url = mainWindow?.webContents.getURL();
     console.log('Current URL:', url);
+    // Open DevTools in production for debugging
+    if (!isDevelopment) {
+      mainWindow?.webContents.openDevTools();
+    }
   });
 
   // Log when DOM is ready
@@ -362,9 +388,49 @@ function createWindow() {
 
   // Log console messages from renderer
   mainWindow.webContents.on('console-message', (event, level, message, line, sourceId) => {
-    console.log(`[Renderer ${level}]:`, message);
+    // Log all console messages for debugging
+    const levelNames = ['log', 'warn', 'info', 'error'];
+    const levelName = levelNames[level] || 'unknown';
+    console.log(`[Renderer ${levelName}]:`, message);
     if (level === 3) { // Error level
       console.error('Renderer error:', { message, line, sourceId });
+    }
+  });
+
+  // Log ALL network requests for debugging (not just /api/)
+  mainWindow.webContents.session.webRequest.onBeforeRequest((details, callback) => {
+    if (details.url.includes('/api/') || details.url.includes('5.188.119.206')) {
+      console.log('[Network Request]', {
+        method: details.method,
+        url: details.url,
+        resourceType: details.resourceType,
+        timestamp: new Date().toISOString(),
+      });
+    }
+    callback({});
+  });
+
+  // Log network response errors
+  mainWindow.webContents.session.webRequest.onErrorOccurred((details) => {
+    if (details.url.includes('/api/') || details.url.includes('5.188.119.206')) {
+      console.error('[Network Error]', {
+        url: details.url,
+        error: details.error,
+        resourceType: details.resourceType,
+        timestamp: new Date().toISOString(),
+      });
+    }
+  });
+
+  // Log successful responses
+  mainWindow.webContents.session.webRequest.onCompleted((details) => {
+    if (details.url.includes('/api/') || details.url.includes('5.188.119.206')) {
+      console.log('[Network Response]', {
+        method: details.method,
+        url: details.url,
+        statusCode: details.statusCode,
+        timestamp: new Date().toISOString(),
+      });
     }
   });
 
@@ -395,23 +461,102 @@ function createWindow() {
   });
 }
 
+// Override userData path to use "Modern-Launcher" instead of "Modern Launcher" (no spaces)
+// This must be called BEFORE app.whenReady() to ensure all paths use the custom name
+const defaultUserDataPath = app.getPath('userData');
+// Replace "Modern Launcher" with "Modern-Launcher" in the path
+const customUserDataPath = defaultUserDataPath.replace(/Modern Launcher/g, 'Modern-Launcher');
+if (customUserDataPath !== defaultUserDataPath) {
+  app.setPath('userData', customUserDataPath);
+  console.log(`[App] Set custom userData path: ${customUserDataPath} (original: ${defaultUserDataPath})`);
+}
+
 // Set Content Security Policy globally for all sessions
 // This must be done before app.whenReady()
 app.on('session-created', (session) => {
   session.webRequest.onHeadersReceived((details, callback) => {
+    // In production, don't override CSP from HTML meta tag
+    // The HTML meta tag CSP is already set by vite plugin based on .env
+    // Only add CSP headers if they're not already present
+    if (!isDevelopment) {
+      // Don't set CSP in production - let HTML meta tag handle it
+      callback({
+        responseHeaders: {
+          ...details.responseHeaders,
+        },
+      });
+      return;
+    }
+    
+    // In development, set permissive CSP
+    if (isDevelopment) {
+      // Get API and WebSocket URLs from config
+      const apiHost = (() => {
+      try {
+        const url = new URL(ELECTRON_CONFIG.apiUrl);
+        const host = url.host;
+        console.log('[CSP] Using API host:', host, 'from URL:', ELECTRON_CONFIG.apiUrl);
+        return host;
+      } catch (error) {
+        console.error('[CSP] Failed to parse API URL:', ELECTRON_CONFIG.apiUrl, error);
+        return '5.188.119.206:7240'; // Fallback to production server
+      }
+    })();
+    
+    // Get WebSocket URL host
+    const wsHost = (() => {
+      try {
+        const wsUrl = ELECTRON_CONFIG.wsUrl;
+        const url = new URL(wsUrl);
+        const host = url.host;
+        console.log('[CSP] Using WebSocket host:', host, 'from URL:', wsUrl);
+        return host;
+      } catch (error) {
+        console.error('[CSP] Failed to parse WebSocket URL:', ELECTRON_CONFIG.wsUrl, error);
+        // Derive from API host
+        const [hostname, port] = apiHost.split(':');
+        return port ? `${hostname}:${port}` : hostname;
+      }
+    })();
+    
+    // Extract hostname and port for better CSP support
+    const [hostname, port] = apiHost.split(':');
+    const hostPattern = port ? `${hostname}:${port}` : hostname;
+    
+    // Extract WebSocket hostname and port
+    const [wsHostname, wsPort] = wsHost.split(':');
+    const wsHostPattern = wsPort ? `${wsHostname}:${wsPort}` : wsHostname;
+    
+    // Very permissive CSP - allow connections to API and WebSocket servers
+    const connectSrc = `'self' http://localhost:* http://${hostPattern} http://${hostname}:* ws://localhost:* ws://${hostPattern} ws://${hostname}:* ws://${wsHostPattern} ws://${wsHostname}:* wss://localhost:* wss://${hostPattern} wss://${hostname}:* wss://${wsHostPattern} wss://${wsHostname}:*`;
+    const scriptSrc = `'self' 'unsafe-inline' 'unsafe-eval' http://localhost:* http://${hostPattern} http://${hostname}:*`;
+    const defaultSrc = `'self' 'unsafe-inline' 'unsafe-eval' data: blob: http://localhost:* http://${hostPattern} http://${hostname}:* ws://localhost:* ws://${hostPattern} ws://${hostname}:* ws://${wsHostPattern} ws://${wsHostname}:* wss://localhost:* wss://${hostPattern} wss://${hostname}:* wss://${wsHostPattern} wss://${wsHostname}:*`;
+    
+    // Log CSP for debugging (only first request to avoid spam)
+    if (!(session as any)._cspLogged) {
+      console.log('[CSP] Content Security Policy configured for development:', {
+        apiHost,
+        hostname,
+        port,
+        connectSrc,
+      });
+      (session as any)._cspLogged = true;
+    }
+    
     callback({
       responseHeaders: {
         ...details.responseHeaders,
         'Content-Security-Policy': [
-          "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: http://localhost:* ws://localhost:* wss://localhost:*; " +
-          "script-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:*; " +
+          'default-src ' + defaultSrc + '; ' +
+          'script-src ' + scriptSrc + '; ' +
           "style-src 'self' 'unsafe-inline'; " +
           "img-src 'self' data: blob: http: https:; " +
           "font-src 'self' data:; " +
-          "connect-src 'self' http://localhost:* ws://localhost:* wss://localhost:*;"
+          'connect-src ' + connectSrc + ';'
         ],
       },
     });
+    }
   });
 });
 
@@ -533,11 +678,204 @@ function findJarFiles(dir: string): string[] {
 }
 
 /**
+ * Определить платформу из имени JAR файла
+ */
+function getPlatformFromJarName(jarName: string): 'linux' | 'windows' | 'macos' | null {
+  const name = jarName.toLowerCase();
+  if (name.includes('natives-linux')) {
+    return 'linux';
+  } else if (name.includes('natives-windows') || name.includes('natives-win')) {
+    return 'windows';
+  } else if (name.includes('natives-macos') || name.includes('natives-osx') || name.includes('natives-mac')) {
+    return 'macos';
+  }
+  return null;
+}
+
+/**
+ * Extract native libraries from a JAR file (JAR is a ZIP archive)
+ */
+async function extractNativesFromJar(jarPath: string, outputDir: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    try {
+      const jarName = path.basename(jarPath);
+      const platform = getPlatformFromJarName(jarName);
+      
+      // Если платформа определена, извлекаем в подпапку платформы
+      const targetDir = platform 
+        ? path.join(outputDir, platform)
+        : outputDir;
+      
+      if (!fs.existsSync(targetDir)) {
+        fs.mkdirSync(targetDir, { recursive: true });
+      }
+      
+      const zip = new AdmZip(jarPath);
+      const entries = zip.getEntries();
+      
+      // Find all native library files (.dll, .so, .dylib)
+      const nativeFiles: Array<{ entry: any; name: string }> = [];
+      for (const entry of entries) {
+        if (!entry.isDirectory) {
+          const name = entry.entryName;
+          const ext = path.extname(name).toLowerCase();
+          if (ext === '.dll' || ext === '.so' || ext === '.dylib') {
+            nativeFiles.push({ entry, name: path.basename(name) });
+          }
+        }
+      }
+      
+      if (nativeFiles.length === 0) {
+        resolve();
+        return;
+      }
+      
+      // Extract native files
+      for (const { entry, name } of nativeFiles) {
+        const outputPath = path.join(targetDir, name);
+        try {
+          const data = entry.getData();
+          fs.writeFileSync(outputPath, data);
+        } catch (error: any) {
+          console.warn(`Failed to extract ${name} from ${jarPath}:`, error.message);
+        }
+      }
+      
+      resolve();
+    } catch (error: any) {
+      // If adm-zip is not available, try using unzip command
+      const jarName = path.basename(jarPath);
+      const platform = getPlatformFromJarName(jarName);
+      const targetDir = platform 
+        ? path.join(outputDir, platform)
+        : outputDir;
+      
+      if (!fs.existsSync(targetDir)) {
+        fs.mkdirSync(targetDir, { recursive: true });
+      }
+      
+      const isWindows = process.platform === 'win32';
+      const unzipCmd = isWindows ? 'jar xf' : 'unzip -o';
+      
+      exec(`${unzipCmd} "${jarPath}" -d "${targetDir}"`, (err: any) => {
+        if (err) {
+          console.warn(`Failed to extract natives from ${jarPath}:`, err.message);
+          resolve(); // Don't fail launch if extraction fails
+        } else {
+          resolve();
+        }
+      });
+    }
+  });
+}
+
+/**
+ * Extract native libraries from all natives JAR files
+ */
+async function extractAllNatives(librariesDir: string, clientDir: string): Promise<string> {
+  const nativesDir = path.join(librariesDir, '..', 'natives');
+  
+  // Check if natives are already extracted
+  if (fs.existsSync(nativesDir)) {
+    const files = fs.readdirSync(nativesDir);
+    if (files.length > 0) {
+      console.log(`Native libraries already extracted to: ${nativesDir}`);
+      return nativesDir;
+    }
+  }
+  
+  // Find all natives JAR files
+  const nativesJars: string[] = [];
+  function findNativesJars(dir: string) {
+    if (!fs.existsSync(dir)) return;
+    
+    try {
+      const entries = fs.readdirSync(dir, { withFileTypes: true });
+      for (const entry of entries) {
+        const fullPath = path.join(dir, entry.name);
+        if (entry.isFile() && entry.name.endsWith('.jar')) {
+          // Check if it's a natives JAR (contains "natives" in name)
+          if (entry.name.toLowerCase().includes('natives')) {
+            nativesJars.push(fullPath);
+          }
+        } else if (entry.isDirectory()) {
+          findNativesJars(fullPath);
+        }
+      }
+    } catch (error) {
+      // Skip directories we can't read
+    }
+  }
+  
+  findNativesJars(librariesDir);
+  
+  if (nativesJars.length === 0) {
+    console.warn(`No natives JAR files found in ${librariesDir}`);
+    return nativesDir;
+  }
+  
+  console.log(`Found ${nativesJars.length} natives JAR files, extracting...`);
+  
+  // Create natives directory
+  if (!fs.existsSync(nativesDir)) {
+    fs.mkdirSync(nativesDir, { recursive: true });
+  }
+  
+  // Extract from all natives JARs
+  for (const jarPath of nativesJars) {
+    try {
+      await extractNativesFromJar(jarPath, nativesDir);
+      console.log(`Extracted natives from: ${path.basename(jarPath)}`);
+    } catch (error: any) {
+      console.warn(`Failed to extract natives from ${jarPath}:`, error.message);
+    }
+  }
+  
+  return nativesDir;
+}
+
+/**
  * Find native library directories (natives folders) in libraries
  */
 function findNativeLibDirs(librariesDir: string): string[] {
   const nativeDirs: string[] = [];
   const visited = new Set<string>();
+  
+  // Определить текущую платформу
+  const currentPlatform = process.platform === 'win32' ? 'windows' 
+    : process.platform === 'darwin' ? 'macos'
+    : 'linux';
+  
+  // First, check for extracted natives directory (только для текущей платформы)
+  const extractedNativesDir = path.join(librariesDir, '..', 'natives');
+  if (fs.existsSync(extractedNativesDir)) {
+    // Проверить наличие подпапки для текущей платформы
+    const platformNativesDir = path.join(extractedNativesDir, currentPlatform);
+    if (fs.existsSync(platformNativesDir)) {
+      const files = fs.readdirSync(platformNativesDir);
+      if (files.length > 0) {
+        nativeDirs.push(platformNativesDir);
+        console.log(`Using platform-specific natives: ${platformNativesDir}`);
+      }
+    } else {
+      // Fallback: использовать корневую папку natives (для обратной совместимости)
+      const files = fs.readdirSync(extractedNativesDir);
+      if (files.length > 0) {
+        // Проверить, есть ли нативные файлы для текущей платформы
+        const hasPlatformFiles = files.some((file: string) => {
+          const ext = path.extname(file).toLowerCase();
+          const isPlatformFile = (currentPlatform === 'windows' && ext === '.dll') ||
+                                (currentPlatform === 'linux' && ext === '.so') ||
+                                (currentPlatform === 'macos' && ext === '.dylib');
+          return isPlatformFile;
+        });
+        if (hasPlatformFiles) {
+          nativeDirs.push(extractedNativesDir);
+          console.log(`Using legacy natives directory: ${extractedNativesDir}`);
+        }
+      }
+    }
+  }
   
   function searchDir(dir: string) {
     if (visited.has(dir) || !fs.existsSync(dir)) {
@@ -584,47 +922,71 @@ function findNativeLibDirs(librariesDir: string): string[] {
 
 /**
  * Find updates directory (where Minecraft files are stored)
- * Looks for updates/ in the project root
+ * Uses AppData/Roaming for production, project root for development
  */
 function findUpdatesDir(): string {
-  // In development, process.cwd() is usually the project root
-  // In production, we need to find it relative to app path
-  
-  // Strategy 1: Check process.cwd()/updates (works in dev mode)
-  const cwdUpdates = path.resolve(process.cwd(), 'updates');
-  if (fs.existsSync(cwdUpdates)) {
-    console.log('Found updates in process.cwd():', cwdUpdates);
-    return cwdUpdates;
-  }
-  
-  // Strategy 2: Check packages/backend/updates/ (where files might be from old script)
-  const backendUpdates = path.resolve(process.cwd(), 'packages', 'backend', 'updates');
-  if (fs.existsSync(backendUpdates)) {
-    console.log('Found updates in packages/backend/updates:', backendUpdates);
-    return backendUpdates;
-  }
-  
-  // Strategy 3: Go up from app directory to find project root
-  const appDir = getAppDir();
-  let currentDir = appDir;
-  const maxDepth = 10;
-  let depth = 0;
-  
-  while (depth < maxDepth && currentDir !== path.dirname(currentDir)) {
-    // Check if we're at project root (has packages/ directory)
-    const packagesDir = path.join(currentDir, 'packages');
-    const updatesPath = path.join(currentDir, 'updates');
-    
-    if (fs.existsSync(packagesDir) && fs.existsSync(updatesPath)) {
-      console.log('Found updates in project root:', updatesPath);
-      return path.resolve(updatesPath);
+  // In development, use project root
+  if (isDevelopment) {
+    // Strategy 1: Check process.cwd()/updates (works in dev mode)
+    const cwdUpdates = path.resolve(process.cwd(), 'updates');
+    if (fs.existsSync(cwdUpdates)) {
+      console.log('Found updates in process.cwd():', cwdUpdates);
+      return cwdUpdates;
     }
     
-    currentDir = path.dirname(currentDir);
-    depth++;
+    // Strategy 2: Check packages/backend/updates/ (where files might be from old script)
+    const backendUpdates = path.resolve(process.cwd(), 'packages', 'backend', 'updates');
+    if (fs.existsSync(backendUpdates)) {
+      console.log('Found updates in packages/backend/updates:', backendUpdates);
+      return backendUpdates;
+    }
+    
+    // Strategy 3: Go up from app directory to find project root
+    const appDir = getAppDir();
+    let currentDir = appDir;
+    const maxDepth = 10;
+    let depth = 0;
+    
+    while (depth < maxDepth && currentDir !== path.dirname(currentDir)) {
+      // Check if we're at project root (has packages/ directory)
+      const packagesDir = path.join(currentDir, 'packages');
+      const updatesPath = path.join(currentDir, 'updates');
+      
+      if (fs.existsSync(packagesDir) && fs.existsSync(updatesPath)) {
+        console.log('Found updates in project root:', updatesPath);
+        return path.resolve(updatesPath);
+      }
+      
+      currentDir = path.dirname(currentDir);
+      depth++;
+    }
   }
   
-  // Strategy 4: Try relative to app path (production)
+  // In production, use AppData/Roaming/Modern-Launcher/updates
+  // This ensures files persist and are not in Temp directory
+  try {
+    const appDataPath = app.getPath('appData'); // Returns Roaming on Windows
+    const launcherDataDir = path.join(appDataPath, 'Modern-Launcher');
+    const updatesDir = path.join(launcherDataDir, 'updates');
+    
+    // Create directory if it doesn't exist
+    if (!fs.existsSync(launcherDataDir)) {
+      fs.mkdirSync(launcherDataDir, { recursive: true });
+      console.log('Created launcher data directory:', launcherDataDir);
+    }
+    
+    if (!fs.existsSync(updatesDir)) {
+      fs.mkdirSync(updatesDir, { recursive: true });
+      console.log('Created updates directory:', updatesDir);
+    }
+    
+    console.log('Using updates directory in AppData/Roaming:', updatesDir);
+    return updatesDir;
+  } catch (error) {
+    console.warn('Could not create updates directory in AppData:', error);
+  }
+  
+  // Fallback: Try relative to app path (production)
   try {
     const appPath = app.getAppPath();
     // Go up from app path to find project root
@@ -641,7 +1003,7 @@ function findUpdatesDir(): string {
     console.warn('Could not get app path:', error);
   }
   
-  // Return default path (will be checked later, might not exist)
+  // Last resort: Return default path (will be checked later, might not exist)
   const defaultPath = path.resolve(process.cwd(), 'updates');
   console.log('Using default updates path:', defaultPath);
   return defaultPath;
@@ -919,12 +1281,16 @@ function checkJavaVersion(javaPath: string, requiredVersion: string): {
  * Launch Minecraft
  */
 ipcMain.handle('launcher:launch', async (event, args) => {
-  const { javaPath, jvmArgs, mainClass, classPath, gameArgs, workingDir, version, jvmVersion, profileId, serverAddress, serverPort, userId, username } = args;
+  const { javaPath, jvmArgs, mainClass, classPath, gameArgs, workingDir, version, clientDirectory, jvmVersion, profileId, serverAddress, serverPort, userId, username } = args;
 
   try {
     // Find updates directory (where files are downloaded)
     const updatesDir = findUpdatesDir();
     console.log('Updates directory:', updatesDir);
+    
+    // Use clientDirectory if provided, otherwise fallback to version
+    const clientDir = clientDirectory || version;
+    console.log(`Using client directory: ${clientDir} (version: ${version})`);
     
     // Resolve working directory to absolute path
     const resolvedWorkingDir = path.isAbsolute(workingDir) 
@@ -934,12 +1300,39 @@ ipcMain.handle('launcher:launch', async (event, args) => {
     // Resolve classPath entries to absolute paths
     const resolvedClassPath: string[] = [];
     
+    // Проверка на наличие modlauncher в classpath (требует Java 16+)
+    const hasModLauncher = classPath.some(cp => 
+      cp.includes('modlauncher') || cp.includes('ModLauncher') || cp.includes('bootstraplauncher')
+    );
+    
+    if (hasModLauncher && jvmVersion === '8') {
+      console.warn('[Launch] ⚠️  WARNING: ModLauncher detected in classpath, but Java 8 is required. ModLauncher requires Java 16+. This may cause UnsupportedClassVersionError.');
+      console.warn('[Launch] Consider using Java 16+ or check if the client uses the correct Forge version for Minecraft 1.12.2.');
+    }
+    
+    // Check if classPath contains 'libraries' entry
+    const hasLibrariesEntry = classPath.includes('libraries');
+    
+    // Find libraries directory first (will be used later)
+    let librariesDir = path.join(updatesDir, clientDir, 'libraries');
+    if (!fs.existsSync(librariesDir)) {
+      librariesDir = path.join(updatesDir, version, 'libraries');
+    }
+    
     for (const cp of classPath) {
       if (cp === 'client.jar') {
-        // First try updates directory (where files are downloaded)
-        let clientJar = path.join(updatesDir, version, 'client.jar');
+        // First try updates directory (where files are downloaded) - use clientDirectory
+        let clientJar = path.join(updatesDir, clientDir, 'client.jar');
         
         // If not found, try workingDir (for compatibility)
+        if (!fs.existsSync(clientJar)) {
+          clientJar = path.join(resolvedWorkingDir, clientDir, 'client.jar');
+        }
+        
+        // Fallback to version-based path for backward compatibility
+        if (!fs.existsSync(clientJar)) {
+          clientJar = path.join(updatesDir, version, 'client.jar');
+        }
         if (!fs.existsSync(clientJar)) {
           clientJar = path.join(resolvedWorkingDir, version, 'client.jar');
         }
@@ -947,22 +1340,51 @@ ipcMain.handle('launcher:launch', async (event, args) => {
         if (!fs.existsSync(clientJar)) {
           return { 
             success: false, 
-            error: `Client JAR not found. Searched in:\n- ${path.join(updatesDir, version, 'client.jar')}\n- ${path.join(resolvedWorkingDir, version, 'client.jar')}\n\nPlease download Minecraft files first using: npm run download-minecraft ${version}` 
+            error: `Client JAR not found. Searched in:\n- ${path.join(updatesDir, clientDir, 'client.jar')}\n- ${path.join(updatesDir, version, 'client.jar')}\n- ${path.join(resolvedWorkingDir, clientDir, 'client.jar')}\n- ${path.join(resolvedWorkingDir, version, 'client.jar')}\n\nPlease download Minecraft files first.` 
           };
         }
         resolvedClassPath.push(clientJar);
       } else if (cp === 'libraries') {
-        // First try updates directory
-        let librariesDir = path.join(updatesDir, version, 'libraries');
+        // First try updates directory - use clientDirectory
+        let librariesDir = path.join(updatesDir, clientDir, 'libraries');
         
         // If not found, try workingDir
+        if (!fs.existsSync(librariesDir)) {
+          librariesDir = path.join(resolvedWorkingDir, clientDir, 'libraries');
+        }
+        
+        // Fallback to version-based path
+        if (!fs.existsSync(librariesDir)) {
+          librariesDir = path.join(updatesDir, version, 'libraries');
+        }
         if (!fs.existsSync(librariesDir)) {
           librariesDir = path.join(resolvedWorkingDir, version, 'libraries');
         }
         
         const jarFiles = findJarFiles(librariesDir);
         if (jarFiles.length === 0) {
-          console.warn(`No JAR files found in ${librariesDir}`);
+          console.warn(`[Launch] ⚠️  No JAR files found in ${librariesDir}`);
+        } else {
+          console.log(`[Launch] Found ${jarFiles.length} JAR files in libraries directory`);
+          // Check for critical libraries
+          const fastutilJar = jarFiles.find(j => j.includes('fastutil'));
+          const launchwrapperJar = jarFiles.find(j => j.includes('launchwrapper'));
+          const forgeJar = jarFiles.find(j => j.includes('forge'));
+          if (!fastutilJar) {
+            console.warn(`[Launch] ⚠️  WARNING: fastutil JAR not found in libraries!`);
+          } else {
+            console.log(`[Launch] ✓ Found fastutil: ${path.basename(fastutilJar)}`);
+          }
+          if (!launchwrapperJar) {
+            console.warn(`[Launch] ⚠️  WARNING: launchwrapper JAR not found in libraries!`);
+          } else {
+            console.log(`[Launch] ✓ Found launchwrapper: ${path.basename(launchwrapperJar)}`);
+          }
+          if (!forgeJar) {
+            console.warn(`[Launch] ⚠️  WARNING: forge JAR not found in libraries!`);
+          } else {
+            console.log(`[Launch] ✓ Found forge: ${path.basename(forgeJar)}`);
+          }
         }
         resolvedClassPath.push(...jarFiles);
         
@@ -972,11 +1394,19 @@ ipcMain.handle('launcher:launch', async (event, args) => {
           console.log(`Found ${nativeDirs.length} native library directories`);
         }
       } else {
-        // Try updates directory first, then workingDir
+        // Try updates directory first - use clientDirectory
         let resolved = path.isAbsolute(cp) 
           ? cp 
-          : path.join(updatesDir, version, cp);
+          : path.join(updatesDir, clientDir, cp);
         
+        if (!fs.existsSync(resolved)) {
+          resolved = path.join(resolvedWorkingDir, clientDir, cp);
+        }
+        
+        // Fallback to version-based path
+        if (!fs.existsSync(resolved)) {
+          resolved = path.join(updatesDir, version, cp);
+        }
         if (!fs.existsSync(resolved)) {
           resolved = path.join(resolvedWorkingDir, version, cp);
         }
@@ -984,7 +1414,29 @@ ipcMain.handle('launcher:launch', async (event, args) => {
         if (fs.existsSync(resolved)) {
           resolvedClassPath.push(resolved);
         } else {
-          console.warn(`ClassPath entry not found: ${resolved}`);
+          console.warn(`[Launch] ⚠️  ClassPath entry not found: ${resolved}`);
+          console.warn(`[Launch]   Searched in:`);
+          console.warn(`[Launch]     - ${path.join(updatesDir, clientDir, cp)}`);
+          console.warn(`[Launch]     - ${path.join(resolvedWorkingDir, clientDir, cp)}`);
+          console.warn(`[Launch]     - ${path.join(updatesDir, version, cp)}`);
+          console.warn(`[Launch]     - ${path.join(resolvedWorkingDir, version, cp)}`);
+        }
+      }
+    }
+    
+    // If classPath didn't contain 'libraries' entry, but libraries directory exists,
+    // add all JAR files from libraries directory to ensure all dependencies are included
+    if (!hasLibrariesEntry && fs.existsSync(librariesDir)) {
+      console.log('[Launch] ⚠️  classPath does not contain "libraries" entry, but libraries directory exists.');
+      console.log('[Launch] Adding all JAR files from libraries directory to ensure all dependencies are included...');
+      const allJarFiles = findJarFiles(librariesDir);
+      if (allJarFiles.length > 0) {
+        console.log(`[Launch] Found ${allJarFiles.length} additional JAR files in libraries directory`);
+        // Add only files that are not already in classpath
+        for (const jarFile of allJarFiles) {
+          if (!resolvedClassPath.includes(jarFile)) {
+            resolvedClassPath.push(jarFile);
+          }
         }
       }
     }
@@ -996,17 +1448,82 @@ ipcMain.handle('launcher:launch', async (event, args) => {
       };
     }
 
+    // Log classpath for debugging
+    console.log(`[Launch] Resolved classpath (${resolvedClassPath.length} entries):`);
+    const clientJar = resolvedClassPath.find(cp => cp.includes('client.jar'));
+    const fastutilJar = resolvedClassPath.find(cp => cp.includes('fastutil'));
+    const launchwrapperJar = resolvedClassPath.find(cp => cp.includes('launchwrapper'));
+    const forgeJar = resolvedClassPath.find(cp => cp.includes('forge'));
+    
+    console.log(`[Launch]   - client.jar: ${clientJar || 'NOT FOUND'}`);
+    console.log(`[Launch]   - fastutil: ${fastutilJar || 'NOT FOUND'}`);
+    console.log(`[Launch]   - launchwrapper: ${launchwrapperJar || 'NOT FOUND'}`);
+    console.log(`[Launch]   - forge: ${forgeJar || 'NOT FOUND'}`);
+    console.log(`[Launch] Total JAR files in classpath: ${resolvedClassPath.length}`);
+    
+    // Check for fastutil (required for Minecraft 1.12.2)
+    if (!fastutilJar) {
+      console.error('[Launch] ❌ ERROR: fastutil library not found in classpath!');
+      console.error('[Launch] This is required for Minecraft 1.12.2.');
+      console.error('[Launch] Expected: libraries/it/unimi/dsi/fastutil/7.1.0/fastutil-7.1.0.jar');
+      console.error('[Launch] Full classpath:');
+      resolvedClassPath.forEach((cp, i) => {
+        const exists = fs.existsSync(cp);
+        console.error(`[Launch]   [${i + 1}] ${exists ? '✓' : '✗'} ${cp}`);
+      });
+      
+      return {
+        success: false,
+        error: `FastUtil library not found in classpath. This is required for Minecraft 1.12.2.\n\nExpected: libraries/it/unimi/dsi/fastutil/7.1.0/fastutil-7.1.0.jar\n\nPlease ensure all Minecraft libraries are downloaded. Check the libraries directory:\n${path.join(updatesDir, clientDir, 'libraries')}`
+      };
+    }
+    
+    console.log('[Launch] ✓ FastUtil library found in classpath');
+
+    // Check for launchwrapper in classpath (required for Forge 1.12.2)
+    if (mainClass === 'net.minecraft.launchwrapper.Launch') {
+      if (!launchwrapperJar) {
+        console.error('[Launch] ❌ ERROR: launchwrapper library not found in classpath!');
+        console.error('[Launch] This is required for Forge 1.12.2.');
+        console.error('[Launch] Expected: libraries/net/minecraft/launchwrapper/1.12/launchwrapper-1.12.jar');
+        console.error('[Launch] Full classpath:');
+        resolvedClassPath.forEach((cp, i) => {
+          const exists = fs.existsSync(cp);
+          console.error(`[Launch]   [${i + 1}] ${exists ? '✓' : '✗'} ${cp}`);
+        });
+        
+        return {
+          success: false,
+          error: `LaunchWrapper library not found in classpath. This is required for Forge 1.12.2.\n\nExpected: libraries/net/minecraft/launchwrapper/1.12/launchwrapper-1.12.jar\n\nPlease ensure all Minecraft libraries are downloaded. Check the libraries directory:\n${path.join(updatesDir, clientDir, 'libraries')}`
+        };
+      }
+      
+      console.log('[Launch] ✓ LaunchWrapper library found in classpath');
+    }
+
     // Ensure working directory exists
     if (!fs.existsSync(resolvedWorkingDir)) {
       console.log(`Creating working directory: ${resolvedWorkingDir}`);
       fs.mkdirSync(resolvedWorkingDir, { recursive: true });
     }
 
-    // Find all native library directories
-    const librariesDir = path.join(updatesDir, version, 'libraries');
-    const nativeLibDirs = fs.existsSync(librariesDir) 
-      ? findNativeLibDirs(librariesDir)
-      : [];
+    // Find all native library directories - use clientDirectory
+    // librariesDir is already defined above, reuse it
+    if (!fs.existsSync(librariesDir)) {
+      librariesDir = path.join(updatesDir, version, 'libraries');
+    }
+    
+    // Extract native libraries from JAR files if needed
+    let nativeLibDirs: string[] = [];
+    if (fs.existsSync(librariesDir)) {
+      try {
+        const extractedNativesDir = await extractAllNatives(librariesDir, clientDir);
+        nativeLibDirs = findNativeLibDirs(librariesDir);
+      } catch (error: any) {
+        console.warn(`Failed to extract native libraries:`, error.message);
+        nativeLibDirs = findNativeLibDirs(librariesDir);
+      }
+    }
 
     console.log(`Searching for native libraries in: ${librariesDir}`);
     console.log(`Found ${nativeLibDirs.length} native library directories:`);
@@ -1034,6 +1551,42 @@ ipcMain.handle('launcher:launch', async (event, args) => {
       ...gameArgs,
     );
 
+    // Log full command for debugging Forge issues
+    if (mainClass === 'net.minecraft.launchwrapper.Launch') {
+      console.log('[Launch] Forge LaunchWrapper - Full command:');
+      console.log(`[Launch] Java: ${javaPath}`);
+      console.log(`[Launch] Main Class: ${mainClass}`);
+      console.log(`[Launch] ClassPath entries: ${resolvedClassPath.length}`);
+      console.log(`[Launch] ClassPath (first 5): ${resolvedClassPath.slice(0, 5).join(', ')}`);
+      
+      // Check for launchwrapper in classpath
+      const hasLaunchWrapper = resolvedClassPath.some(cp => 
+        cp.includes('launchwrapper') || cp.includes('LaunchWrapper')
+      );
+      console.log(`[Launch] Has launchwrapper in classpath: ${hasLaunchWrapper}`);
+      if (!hasLaunchWrapper) {
+        console.error('[Launch] ❌ ERROR: launchwrapper library not found in classpath!');
+        console.error('[Launch] This is required for Forge 1.12.2. Please ensure libraries are downloaded.');
+        console.error('[Launch] Expected path: libraries/net/minecraft/launchwrapper/1.12/launchwrapper-1.12.jar');
+        console.error('[Launch] Full classpath:', resolvedClassPath.join('\n'));
+      }
+      
+      // Check for Forge library
+      const hasForge = resolvedClassPath.some(cp => 
+        cp.includes('forge') || cp.includes('Forge')
+      );
+      console.log(`[Launch] Has Forge library in classpath: ${hasForge}`);
+      
+      console.log(`[Launch] Game Args: ${gameArgs.join(' ')}`);
+      console.log(`[Launch] Has --tweakClass in gameArgs: ${gameArgs.includes('--tweakClass')}`);
+    }
+
+    // Финальная проверка версии Java перед запуском (только для логирования)
+    const finalJavaCheck = getJavaVersion(javaPath);
+    if (finalJavaCheck) {
+      console.log(`[Launch] Final Java check - Path: ${javaPath}, Version: ${finalJavaCheck.major} (${finalJavaCheck.full})`);
+    }
+    
     console.log('Launching Minecraft with:', {
       javaPath,
       workingDir: resolvedWorkingDir,
@@ -1041,6 +1594,7 @@ ipcMain.handle('launcher:launch', async (event, args) => {
       mainClass,
       jvmArgsCount: jvmArgs.length,
       gameArgsCount: gameArgs.length,
+      javaVersion: finalJavaCheck?.major || 'unknown',
     });
     console.log('Full command:', `${javaPath} ${fullArgs.join(' ')}`);
 
@@ -1062,6 +1616,28 @@ ipcMain.handle('launcher:launch', async (event, args) => {
       // Check Java version
       javaVersionCheck = checkJavaVersion(javaPath, requiredJavaVersion);
       
+      // For Java 8, require exactly Java 8 (not 9+), especially for Minecraft 1.12.2 with Forge
+      if (requiredJavaVersion === '8') {
+        const versionInfo = getJavaVersion(javaPath);
+        console.log(`[JavaCheck] Detected Java version: ${versionInfo?.major || 'unknown'} (${versionInfo?.full || 'unknown'})`);
+        
+        if (!versionInfo) {
+          return {
+            success: false,
+            error: `Failed to detect Java version. Please ensure Java 8 is installed and the path is correct.`
+          };
+        }
+        
+        if (versionInfo.major !== 8) {
+          return {
+            success: false,
+            error: `Java version mismatch. Minecraft 1.12.2 with Forge requires Java 8 exactly, but Java ${versionInfo.major} (${versionInfo.full}) is being used. Please install Java 8 or specify the correct path to Java 8 in settings.`
+          };
+        }
+        
+        console.log(`[JavaCheck] ✓ Java 8 confirmed: ${versionInfo.full}`);
+      }
+      
       if (!javaVersionCheck.valid) {
         return {
           success: false,
@@ -1069,7 +1645,7 @@ ipcMain.handle('launcher:launch', async (event, args) => {
         };
       }
       
-      console.log(`Java version check passed: ${javaVersionCheck.currentVersion} (required: ${requiredJavaVersion}+)`);
+      console.log(`[JavaCheck] ✓ Java version check passed: ${javaVersionCheck.currentVersion} (required: ${requiredJavaVersion}${requiredJavaVersion === '8' ? ' exactly' : '+'})`);
     } catch (error: any) {
       return {
         success: false,
@@ -1272,6 +1848,15 @@ ipcMain.handle('file:calculateHash', async (event, filePath: string, algorithm: 
   }
 });
 
+ipcMain.handle('file:readFile', async (event, filePath: string) => {
+  try {
+    const content = await fsPromises.readFile(filePath, 'utf-8');
+    return content;
+  } catch (error) {
+    throw new Error(`Failed to read file: ${(error as Error).message}`);
+  }
+});
+
 ipcMain.handle('file:exists', async (event, filePath: string) => {
   try {
     await fsPromises.access(filePath);
@@ -1279,6 +1864,124 @@ ipcMain.handle('file:exists', async (event, filePath: string) => {
   } catch {
     return false;
   }
+});
+
+/**
+ * HTTP Request handler - proxy requests through main process
+ * This bypasses file:// protocol restrictions in renderer process
+ */
+ipcMain.handle('http:request', async (event, options: {
+  method: string;
+  url: string;
+  headers?: Record<string, string>;
+  data?: any;
+  timeout?: number;
+}) => {
+  return new Promise((resolve, reject) => {
+    try {
+      const urlObj = new URL(options.url);
+      const client = urlObj.protocol === 'https:' ? https : http;
+      
+      const requestOptions: any = {
+        hostname: urlObj.hostname,
+        port: urlObj.port || (urlObj.protocol === 'https:' ? 443 : 80),
+        path: urlObj.pathname + urlObj.search,
+        method: options.method || 'GET',
+        headers: {
+          'User-Agent': 'Modern-Launcher/1.0',
+          'Accept': 'application/json',
+          ...options.headers,
+        },
+        timeout: options.timeout || 30000,
+      };
+
+      // Add body for POST/PUT/PATCH requests
+      let requestData: string | undefined;
+      if (options.data && ['POST', 'PUT', 'PATCH'].includes(requestOptions.method)) {
+        if (typeof options.data === 'string') {
+          requestData = options.data;
+        } else {
+          requestData = JSON.stringify(options.data);
+          requestOptions.headers['Content-Type'] = 'application/json';
+        }
+        requestOptions.headers['Content-Length'] = Buffer.byteLength(requestData);
+      }
+
+      console.log('[HTTP Request]', {
+        method: requestOptions.method,
+        url: options.url,
+        hostname: requestOptions.hostname,
+        port: requestOptions.port,
+        path: requestOptions.path,
+      });
+
+      const req = client.request(requestOptions, (res) => {
+        let responseData = '';
+        
+        res.on('data', (chunk) => {
+          responseData += chunk;
+        });
+        
+        res.on('end', () => {
+          console.log('[HTTP Response]', {
+            url: options.url,
+            statusCode: res.statusCode,
+            statusMessage: res.statusMessage,
+            headers: res.headers,
+          });
+
+          let parsedData: any = responseData;
+          try {
+            parsedData = JSON.parse(responseData);
+          } catch {
+            // Not JSON, keep as string
+          }
+
+          resolve({
+            status: res.statusCode,
+            statusText: res.statusMessage,
+            headers: res.headers,
+            data: parsedData,
+          });
+        });
+      });
+
+      req.on('error', (error) => {
+        console.error('[HTTP Error]', {
+          url: options.url,
+          error: error.message,
+          code: (error as any).code,
+        });
+        reject({
+          message: error.message,
+          code: (error as any).code,
+        });
+      });
+
+      req.on('timeout', () => {
+        req.destroy();
+        reject({
+          message: 'Request timeout',
+          code: 'ETIMEDOUT',
+        });
+      });
+
+      if (requestData) {
+        req.write(requestData);
+      }
+      
+      req.end();
+    } catch (error: any) {
+      console.error('[HTTP Request Error]', {
+        url: options.url,
+        error: error.message,
+      });
+      reject({
+        message: error.message,
+        code: error.code,
+      });
+    }
+  });
 });
 
 ipcMain.on('file:download', async (event, url: string, destPath: string, authToken?: string) => {
@@ -1306,22 +2009,30 @@ ipcMain.on('file:download', async (event, url: string, destPath: string, authTok
       }
 
       const totalBytes = parseInt(response.headers['content-length'] || '0', 10);
-      const writer = fs.createWriteStream(destPath);
+      // Стандартный размер буфера для стабильности
+      const writer = fs.createWriteStream(destPath, { highWaterMark: 64 * 1024 }); // 64KB буфер
       let downloadedBytes = 0;
 
       // Store download for potential cancellation
       activeDownloads.set(downloadId, { request, writer, destPath });
 
+      // Оптимизация: обновлять прогресс реже для больших файлов (каждые 1MB или каждые 5%)
+      let lastProgressUpdate = 0;
+      const progressUpdateInterval = Math.max(totalBytes * 0.05, 1024 * 1024); // 5% или 1MB
+
       response.on('data', (chunk: Buffer) => {
         downloadedBytes += chunk.length;
-        const progress = totalBytes > 0 ? (downloadedBytes / totalBytes) * 100 : 0;
-        event.reply('file:download:progress', progress);
+        // Обновлять прогресс только если прошло достаточно времени/данных
+        if (downloadedBytes - lastProgressUpdate >= progressUpdateInterval || downloadedBytes === totalBytes) {
+          const progress = totalBytes > 0 ? (downloadedBytes / totalBytes) * 100 : 0;
+          event.reply('file:download:progress', progress);
+          lastProgressUpdate = downloadedBytes;
+        }
       });
 
       response.on('end', () => {
-        activeDownloads.delete(downloadId);
+        // Не завершаем writer здесь, дождемся события 'finish'
         writer.end();
-        event.reply('file:download:complete');
       });
 
       response.on('error', (error) => {
@@ -1336,11 +2047,14 @@ ipcMain.on('file:download', async (event, url: string, destPath: string, authTok
       writer.on('error', (error) => {
         activeDownloads.delete(downloadId);
         response.destroy();
+        fs.unlink(destPath, () => {});
         event.reply('file:download:error', error.message);
       });
 
       writer.on('finish', () => {
+        // Файл полностью записан на диск
         activeDownloads.delete(downloadId);
+        event.reply('file:download:complete');
       });
     });
 
@@ -1356,8 +2070,27 @@ ipcMain.on('file:download', async (event, url: string, destPath: string, authTok
 
 /**
  * Get app version
+ * First tries to read from config file (if updated), otherwise uses package.json version
  */
-ipcMain.handle('app:version', () => {
+ipcMain.handle('app:version', async () => {
+  try {
+    const userDataPath = app.getPath('userData');
+    const versionConfigPath = path.join(userDataPath, 'launcher-version.json');
+    
+    // Попытаться прочитать версию из конфигурационного файла
+    if (fs.existsSync(versionConfigPath)) {
+      const configContent = await fsPromises.readFile(versionConfigPath, 'utf-8');
+      const config = JSON.parse(configContent);
+      if (config.version) {
+        console.log(`[LauncherUpdate] Using version from config file: ${config.version}`);
+        return config.version;
+      }
+    }
+  } catch (error) {
+    console.warn('[LauncherUpdate] Failed to read version from config file:', error);
+  }
+  
+  // Fallback to package.json version
   return app.getVersion();
 });
 
@@ -1530,7 +2263,7 @@ let updateDownloadId: string | null = null;
 /**
  * Check for launcher updates
  */
-ipcMain.handle('launcher:checkUpdate', async (event, currentVersion: string, apiUrl: string) => {
+ipcMain.handle('launcher:checkUpdate', async (event, currentVersion: string, apiUrl: string, authToken?: string) => {
   try {
     const url = `${apiUrl}/api/launcher/check-update?currentVersion=${encodeURIComponent(currentVersion)}`;
     console.log(`[LauncherUpdate] Checking for updates: ${url}`);
@@ -1539,7 +2272,18 @@ ipcMain.handle('launcher:checkUpdate', async (event, currentVersion: string, api
     return new Promise<{ success: boolean; hasUpdate?: boolean; updateInfo?: UpdateInfo; isRequired?: boolean; error?: string }>((resolve) => {
       const client = url.startsWith('https:') ? https : http;
       
-      const req = client.get(url, (res) => {
+      const headers: Record<string, string> = {
+        'User-Agent': 'Modern-Launcher/1.0',
+      };
+      
+      // Добавить токен авторизации, если он есть
+      if (authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`;
+      }
+      
+      const req = client.get(url, {
+        headers,
+      }, (res) => {
         let data = '';
         
         console.log(`[LauncherUpdate] Response status: ${res.statusCode}`);
@@ -1638,90 +2382,115 @@ ipcMain.on('launcher:downloadUpdate', async (event, updateInfo: UpdateInfo, apiU
     // Ensure directory exists
     await fsPromises.mkdir(path.dirname(destPath), { recursive: true });
 
-    const client = downloadUrl.startsWith('https:') ? https : http;
-    
-    const request = client.get(downloadUrl, (response) => {
-      if (response.statusCode !== 200) {
-        event.reply('launcher:update:error', `HTTP ${response.statusCode}`);
+    // Helper function to follow redirects
+    const downloadWithRedirects = (url: string, maxRedirects = 5): void => {
+      if (maxRedirects <= 0) {
+        event.reply('launcher:update:error', 'Too many redirects');
         return;
       }
 
-      const totalBytes = parseInt(response.headers['content-length'] || '0', 10);
-      const writer = fs.createWriteStream(destPath);
-      let downloadedBytes = 0;
-
-      response.on('data', (chunk: Buffer) => {
-        if (updateDownloadId !== downloadId) {
-          // Download was cancelled
-          response.destroy();
-          writer.destroy();
+      const urlClient = url.startsWith('https:') ? https : http;
+      const request = urlClient.get(url, (response) => {
+        // Handle redirects (301, 302, 307, 308)
+        if (response.statusCode === 301 || response.statusCode === 302 || 
+            response.statusCode === 307 || response.statusCode === 308) {
+          const location = response.headers.location;
+          if (!location) {
+            event.reply('launcher:update:error', `HTTP ${response.statusCode}: No redirect location`);
+            return;
+          }
+          // Follow redirect
+          const redirectUrl = location.startsWith('http') ? location : new URL(location, url).href;
+          console.log(`[LauncherUpdate] Following redirect to: ${redirectUrl}`);
+          downloadWithRedirects(redirectUrl, maxRedirects - 1);
           return;
         }
-        
-        downloadedBytes += chunk.length;
-        updateDownloadProgress = totalBytes > 0 ? (downloadedBytes / totalBytes) * 100 : 0;
-        event.reply('launcher:update:progress', updateDownloadProgress);
-      });
 
-      response.on('end', async () => {
-        if (updateDownloadId !== downloadId) {
-          // Download was cancelled
+        if (response.statusCode !== 200) {
+          event.reply('launcher:update:error', `HTTP ${response.statusCode}`);
+          return;
+        }
+
+        const totalBytes = parseInt(response.headers['content-length'] || '0', 10);
+        const writer = fs.createWriteStream(destPath);
+        let downloadedBytes = 0;
+
+        response.on('data', (chunk: Buffer) => {
+          if (updateDownloadId !== downloadId) {
+            // Download was cancelled
+            response.destroy();
+            writer.destroy();
+            return;
+          }
+          
+          downloadedBytes += chunk.length;
+          updateDownloadProgress = totalBytes > 0 ? (downloadedBytes / totalBytes) * 100 : 0;
+          event.reply('launcher:update:progress', updateDownloadProgress);
+        });
+
+        response.on('end', async () => {
+          if (updateDownloadId !== downloadId) {
+            // Download was cancelled
+            try {
+              await fsPromises.unlink(destPath);
+            } catch {}
+            return;
+          }
+
+          writer.end();
+          
+          // Verify file hash if provided
+          if (updateInfo.fileHash) {
+            try {
+              const fileContent = await fsPromises.readFile(destPath);
+              const hash = crypto.createHash('sha256').update(fileContent).digest('hex');
+              
+              if (hash.toLowerCase() !== updateInfo.fileHash.toLowerCase()) {
+                await fsPromises.unlink(destPath);
+                event.reply('launcher:update:error', 'File hash verification failed. File may be corrupted.');
+                return;
+              }
+            } catch (error) {
+              await fsPromises.unlink(destPath);
+              event.reply('launcher:update:error', `Hash verification error: ${(error as Error).message}`);
+              return;
+            }
+          }
+
+          event.reply('launcher:update:complete', destPath);
+        });
+
+        response.on('error', async (error) => {
+          writer.destroy();
           try {
             await fsPromises.unlink(destPath);
           } catch {}
-          return;
-        }
+          event.reply('launcher:update:error', error.message);
+        });
 
-        writer.end();
-        
-        // Verify file hash if provided
-        if (updateInfo.fileHash) {
+        response.pipe(writer);
+
+        writer.on('error', async (error) => {
+          response.destroy();
           try {
-            const fileContent = await fsPromises.readFile(destPath);
-            const hash = crypto.createHash('sha256').update(fileContent).digest('hex');
-            
-            if (hash.toLowerCase() !== updateInfo.fileHash.toLowerCase()) {
-              await fsPromises.unlink(destPath);
-              event.reply('launcher:update:error', 'File hash verification failed. File may be corrupted.');
-              return;
-            }
-          } catch (error) {
             await fsPromises.unlink(destPath);
-            event.reply('launcher:update:error', `Hash verification error: ${(error as Error).message}`);
-            return;
-          }
-        }
-
-        event.reply('launcher:update:complete', destPath);
+          } catch {}
+          event.reply('launcher:update:error', error.message);
+        });
       });
 
-      response.on('error', async (error) => {
-        writer.destroy();
-        try {
-          await fsPromises.unlink(destPath);
-        } catch {}
+      request.on('error', (error) => {
         event.reply('launcher:update:error', error.message);
       });
 
-      response.pipe(writer);
-
-      writer.on('error', async (error) => {
-        response.destroy();
-        try {
-          await fsPromises.unlink(destPath);
-        } catch {}
-        event.reply('launcher:update:error', error.message);
+      request.setTimeout(300000, () => {
+        request.destroy();
+        event.reply('launcher:update:error', 'Download timeout');
       });
-    });
+    };
 
-    request.on('error', (error) => {
-      event.reply('launcher:update:error', error.message);
-    });
-
-    request.setTimeout(300000, () => {
-      request.destroy();
-      event.reply('launcher:update:error', 'Download timeout');
-    });
+    // Start download with redirect handling
+    downloadWithRedirects(downloadUrl);
   } catch (error) {
     event.reply('launcher:update:error', (error as Error).message);
   }
@@ -1738,13 +2507,24 @@ ipcMain.on('launcher:cancelUpdate', () => {
 /**
  * Install launcher update
  */
-ipcMain.handle('launcher:installUpdate', async (event, installerPath: string) => {
+ipcMain.handle('launcher:installUpdate', async (event, installerPath: string, newVersion: string) => {
   try {
     if (!fs.existsSync(installerPath)) {
       return {
         success: false,
         error: 'Installer file not found',
       };
+    }
+
+    // Сохранить новую версию в конфигурационном файле перед установкой
+    const userDataPath = app.getPath('userData');
+    const versionConfigPath = path.join(userDataPath, 'launcher-version.json');
+    try {
+      await fsPromises.writeFile(versionConfigPath, JSON.stringify({ version: newVersion, updatedAt: new Date().toISOString() }), 'utf-8');
+      console.log(`[LauncherUpdate] Saved version ${newVersion} to config file`);
+    } catch (error) {
+      console.warn('[LauncherUpdate] Failed to save version to config file:', error);
+      // Не прерываем установку, если не удалось сохранить версию
     }
 
     const isWindows = process.platform === 'win32';

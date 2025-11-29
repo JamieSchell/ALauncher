@@ -42,7 +42,9 @@ router.get('/:profileId/:dirType', async (req, res, next) => {
     let dirPath: string;
     switch (dirType) {
       case 'client':
-        dirPath = path.join(config.paths.updates, profile.version);
+        // Use clientDirectory if set, otherwise fallback to version
+        const clientDir = profile.clientDirectory || profile.version;
+        dirPath = path.join(config.paths.updates, clientDir);
         break;
       case 'asset':
         dirPath = path.join(config.paths.updates, 'assets', profile.assetIndex);
@@ -110,7 +112,9 @@ router.get('/:profileId/:dirType/file/*', async (req, res, next) => {
     let basePath: string;
     switch (dirType) {
       case 'client':
-        basePath = path.join(config.paths.updates, profile.version);
+        // Use clientDirectory if set, otherwise fallback to version
+        const clientDir = profile.clientDirectory || profile.version;
+        basePath = path.join(config.paths.updates, clientDir);
         break;
       case 'asset':
         basePath = path.join(config.paths.updates, 'assets', profile.assetIndex);

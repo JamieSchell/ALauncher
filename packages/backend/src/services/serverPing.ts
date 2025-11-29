@@ -49,18 +49,12 @@ async function pingServerViaAPI(address: string, port: number): Promise<ServerSt
  * Uses minecraft-server-util library first, then falls back to external API
  */
 export async function pingServer(address: string, port: number = 25565): Promise<ServerStatus> {
-  console.log(`[Server Ping] Starting ping for ${address}:${port} using minecraft-server-util`);
-  
   // Try using minecraft-server-util library first
   try {
     const result = await status(address, port, {
       timeout: 5000,
       enableSRV: true, // Enable SRV record lookup
     });
-    
-    console.log(`[Server Ping] ✓ Successfully pinged ${address}:${port} using minecraft-server-util`);
-    console.log(`[Server Ping]   Players: ${result.players.online}/${result.players.max}`);
-    console.log(`[Server Ping]   Version: ${result.version.name}`);
     
     // Convert to our ServerStatus format
     return {
@@ -74,23 +68,20 @@ export async function pingServer(address: string, port: number = 25565): Promise
       ping: result.roundTripLatency || 0,
     };
   } catch (error: any) {
-    console.log(`[Server Ping] ✗ minecraft-server-util failed for ${address}:${port}: ${error.message || 'Unknown error'}`);
-    console.log(`[Server Ping]   Attempting fallback to external API...`);
+    // Fallback to external API if library fails (silent)
   }
   
   // Fallback to external API if library fails
   try {
     const externalStatus = await pingServerViaAPI(address, port);
     if (externalStatus.online) {
-      console.log(`[Server Ping] ✓ External API reports server ${address}:${port} is online`);
       return externalStatus;
     }
   } catch (error: any) {
-    console.log(`[Server Ping] External API fallback failed: ${error.message || 'Unknown error'}`);
+    // External API fallback failed (silent)
   }
   
   // If all methods failed, return offline status
-  console.log(`[Server Ping] ✗ All ping methods failed for ${address}:${port}`);
   return {
     online: false,
     players: { online: 0, max: 0 },

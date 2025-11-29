@@ -155,9 +155,16 @@ export class ClientVersionService {
 
     // Иначе вернуть локальный путь
     const version = file.version;
-    const basePath = version.downloadUrl 
-      ? path.join(config.paths.updates, version.version)
-      : path.join(config.paths.updates, version.version);
+    
+    // Попытаться найти профиль, использующий эту версию, чтобы получить clientDirectory
+    const profile = await prisma.clientProfile.findFirst({
+      where: { version: version.version },
+      select: { clientDirectory: true },
+    });
+    
+    // Использовать clientDirectory из профиля, если найден, иначе fallback на version
+    const clientDir = profile?.clientDirectory || version.version;
+    const basePath = path.join(config.paths.updates, clientDir);
 
     return path.join(basePath, filePath);
   }

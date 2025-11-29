@@ -10,7 +10,7 @@ export interface LauncherUpdateInfo {
   version: string;
   downloadUrl: string;
   fileHash?: string;
-  fileSize?: bigint;
+  fileSize?: bigint | number | string; // Can be bigint, number, or string for JSON serialization
   releaseNotes?: string;
   isRequired: boolean;
   createdAt: Date;
@@ -107,7 +107,7 @@ export async function checkForUpdates(currentVersion: string): Promise<UpdateChe
         version: latestVersion.version,
         downloadUrl: latestVersion.downloadUrl || '',
         fileHash: latestVersion.fileHash || undefined,
-        fileSize: latestVersion.fileSize || undefined,
+        fileSize: latestVersion.fileSize ? Number(latestVersion.fileSize) : undefined,
         releaseNotes: latestVersion.releaseNotes || undefined,
         isRequired: latestVersion.isRequired || isRequired,
         createdAt: latestVersion.createdAt,
@@ -156,7 +156,7 @@ export async function getVersionInfo(version: string): Promise<LauncherUpdateInf
       version: v.version,
       downloadUrl: v.downloadUrl || '',
       fileHash: v.fileHash || undefined,
-      fileSize: v.fileSize || undefined,
+      fileSize: v.fileSize ? Number(v.fileSize) : undefined,
       releaseNotes: v.releaseNotes || undefined,
       isRequired: v.isRequired,
       createdAt: v.createdAt,
@@ -197,7 +197,7 @@ export async function getAllVersions(): Promise<LauncherUpdateInfo[]> {
       version: v.version,
       downloadUrl: v.downloadUrl || '',
       fileHash: v.fileHash || undefined,
-      fileSize: v.fileSize || undefined,
+      fileSize: v.fileSize ? Number(v.fileSize) : undefined,
       releaseNotes: v.releaseNotes || undefined,
       isRequired: v.isRequired,
       createdAt: v.createdAt,

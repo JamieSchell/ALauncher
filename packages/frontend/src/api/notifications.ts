@@ -8,6 +8,7 @@ import { ApiResponse } from '@modern-launcher/shared';
 export type NotificationType = 
   | 'CLIENT_UPDATE_AVAILABLE'
   | 'SERVER_STATUS_CHANGE'
+  | 'LAUNCHER_UPDATE_AVAILABLE'
   | 'GAME_CRASH'
   | 'CONNECTION_ISSUE'
   | 'LAUNCHER_ERROR'
@@ -46,10 +47,7 @@ export const notificationsAPI = {
    * Get user notifications
    */
   async getNotifications(params?: GetNotificationsParams) {
-    const response = await apiClient.get<ApiResponse<Notification[]> & { 
-      pagination?: { total: number; limit: number; offset: number };
-      unreadCount?: number;
-    }>('/notifications', { params });
+    const response = await apiClient.get('/notifications', { params });
     return response.data;
   },
 
@@ -57,7 +55,7 @@ export const notificationsAPI = {
    * Create a notification (Admin only or for self)
    */
   async createNotification(data: CreateNotificationRequest): Promise<Notification> {
-    const response = await apiClient.post<ApiResponse<Notification>>('/notifications', data);
+    const response = await apiClient.post('/notifications', data);
     return response.data.data!;
   },
 
@@ -65,7 +63,7 @@ export const notificationsAPI = {
    * Mark notification as read
    */
   async markAsRead(notificationId: string): Promise<Notification> {
-    const response = await apiClient.patch<ApiResponse<Notification>>(
+    const response = await apiClient.patch(
       `/notifications/${notificationId}/read`
     );
     return response.data.data!;
@@ -96,7 +94,7 @@ export const notificationsAPI = {
    * Get unread notifications count
    */
   async getUnreadCount(): Promise<number> {
-    const response = await apiClient.get<ApiResponse<{ count: number }>>('/notifications/unread-count');
+    const response = await apiClient.get('/notifications/unread-count');
     return response.data.data!.count;
   },
 };

@@ -15,6 +15,7 @@ import AdminDashboardPage from './pages/AdminDashboardPage';
 import ErrorLoggerService from './services/errorLogger';
 import LauncherUpdateModal from './components/LauncherUpdateModal';
 import { useLauncherUpdate } from './hooks/useLauncherUpdate';
+import { API_CONFIG } from './config/api';
 
 function AdminRoute({ children }: { children: React.ReactNode }) {
   const { isAdmin } = useAuthStore();
@@ -71,8 +72,6 @@ function App() {
     }
   }, [updateCheckResult]);
 
-  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:7240';
-
   return (
     <>
       {/* Launcher Update Modal */}
@@ -86,7 +85,7 @@ function App() {
           }}
           updateInfo={updateCheckResult.updateInfo}
           isRequired={updateCheckResult.isRequired || false}
-          apiUrl={API_URL}
+          apiUrl={API_CONFIG.baseUrl}
           currentVersion={currentVersion || undefined}
         />
       )}

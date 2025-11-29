@@ -22,6 +22,7 @@ interface LauncherUpdateModalProps {
   updateInfo: UpdateInfo;
   isRequired: boolean;
   apiUrl: string;
+  currentVersion?: string;
 }
 
 export default function LauncherUpdateModal({
@@ -87,7 +88,7 @@ export default function LauncherUpdateModal({
   const handleInstall = async (path: string) => {
     try {
       setStatus('installing');
-      const result = await window.electronAPI.installLauncherUpdate(path);
+      const result = await window.electronAPI.installLauncherUpdate(path, updateInfo.version);
       
       if (result.success) {
         setStatus('complete');
@@ -114,9 +115,11 @@ export default function LauncherUpdateModal({
     }
   };
 
-  const formatFileSize = (bytes?: bigint): string => {
+  const formatFileSize = (bytes?: bigint | number | string): string => {
     if (!bytes) return 'Unknown size';
-    const mb = Number(bytes) / (1024 * 1024);
+    const numBytes = typeof bytes === 'string' ? parseInt(bytes, 10) : Number(bytes);
+    if (isNaN(numBytes)) return 'Unknown size';
+    const mb = numBytes / (1024 * 1024);
     return `${mb.toFixed(1)} MB`;
   };
 

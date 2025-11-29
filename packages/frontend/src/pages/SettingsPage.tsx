@@ -3,25 +3,27 @@
  */
 
 import { motion } from 'framer-motion';
-import { Save, Search, Loader2, FolderOpen, RotateCcw } from 'lucide-react';
+import { Save, Search, Loader2, FolderOpen, RotateCcw, SlidersHorizontal, Cpu, Bell, RefreshCw } from 'lucide-react';
 import { useSettingsStore } from '../stores/settingsStore';
 import UpdateCheckButton from '../components/UpdateCheckButton';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import { useTranslation } from '../hooks/useTranslation';
 
 export default function SettingsPage() {
   const settings = useSettingsStore();
+  const { t } = useTranslation();
   const [detectingJava, setDetectingJava] = useState(false);
   const [javaDetections, setJavaDetections] = useState<Array<{ path: string; version: string; major: number }>>([]);
   const [showJavaList, setShowJavaList] = useState(false);
+  const [activeTab, setActiveTab] = useState<'general' | 'java' | 'notifications' | 'updates'>('general');
 
   const handleSave = () => {
-    // Settings are auto-saved via zustand persist
-    alert('Settings saved successfully!');
+    alert(t('settings.saveSuccess'));
   };
 
   const handleAutoDetectJava = async () => {
     if (!window.electronAPI) {
-      alert('Electron API is not available');
+      alert(t('errors.unknownError'));
       return;
     }
 
@@ -33,10 +35,10 @@ export default function SettingsPage() {
         setJavaDetections(result.installations);
         setShowJavaList(true);
       } else {
-        alert('No Java installations found. Please install Java or specify the path manually.');
+        alert(t('settings.autoDetectNoJava'));
       }
     } catch (error: any) {
-      alert(`Failed to detect Java: ${error.message}`);
+      alert(`${t('settings.autoDetectFail')}: ${error.message}`);
     } finally {
       setDetectingJava(false);
     }
@@ -49,7 +51,7 @@ export default function SettingsPage() {
 
   const handleBrowseJava = async () => {
     if (!window.electronAPI) {
-      alert('Electron API is not available');
+      alert(t('errors.unknownError'));
       return;
     }
 
@@ -57,19 +59,19 @@ export default function SettingsPage() {
       const result = await window.electronAPI.selectJavaFile();
       if (result.success && result.path) {
         settings.updateSettings({ javaPath: result.path });
-        alert(`Java selected: ${result.path}\nVersion: ${result.version || 'unknown'}`);
+        alert(`${t('settings.javaPathLabel')}: ${result.path}\n${t('common.version') ?? 'Version'}: ${result.version || 'unknown'}`);
       } else if (!result.canceled) {
-        alert(result.error || 'Failed to select Java file');
+        alert(result.error || t('settings.browseFail'));
       }
     } catch (error: any) {
-      alert(`Failed to browse for Java: ${error.message}`);
+      alert(`${t('settings.browseFail')}: ${error.message}`);
     }
   };
 
   const handleResetSettings = () => {
-    if (confirm('Are you sure you want to reset all settings to default values? This action cannot be undone.')) {
+    if (confirm(t('settings.resetConfirm'))) {
       settings.resetSettings();
-      alert('Settings have been reset to default values.');
+      alert(t('settings.resetSuccess'));
     }
   };
 
@@ -95,25 +97,22 @@ export default function SettingsPage() {
     { label: '16 GB', value: 16384 },
   ];
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-4xl font-bold text-white mb-2">Settings</h1>
-        <p className="text-gray-400">Configure your launcher preferences</p>
-      </div>
+  const tabs = useMemo(() => [
+    { id: 'general', label: t('settings.tabs.general'), icon: SlidersHorizontal },
+    { id: 'java', label: t('settings.tabs.java'), icon: Cpu },
+    { id: 'notifications', label: t('settings.tabs.notifications'), icon: Bell },
+    { id: 'updates', label: t('settings.tabs.updates'), icon: RefreshCw },
+  ], [t]);
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="glass rounded-xl p-6 space-y-6"
-      >
-        <div>
-          <h2 className="text-xl font-bold text-white mb-4">Game Settings</h2>
+  const generalTab = (
+    <div className="space-y-8">
+      <section>
+        <h2 className="text-xl font-bold text-white mb-4">{t('settings.gameSettings')}</h2>
 
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                RAM Allocation (MB)
+                {t('settings.ramAllocation')}
               </label>
               <div className="space-y-3">
                 <input
@@ -158,12 +157,12 @@ export default function SettingsPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Window Resolution
+                {t('settings.windowResolution')}
               </label>
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs text-gray-400 mb-1">Width</label>
+                    <label className="block text-xs text-gray-400 mb-1">{t('settings.widthLabel')}</label>
                     <input
                       type="number"
                       value={settings.width}
@@ -174,7 +173,7 @@ export default function SettingsPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-400 mb-1">Height</label>
+                    <label className="block text-xs text-gray-400 mb-1">{t('settings.heightLabel')}</label>
                     <input
                       type="number"
                       value={settings.height}
@@ -186,7 +185,7 @@ export default function SettingsPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-400 mb-2">Quick Presets</label>
+                  <label className="block text-xs text-gray-400 mb-2">{t('settings.quickPresets')}</label>
                   <div className="flex flex-wrap gap-2">
                     {resolutionPresets.map((preset) => (
                       <button
@@ -215,7 +214,7 @@ export default function SettingsPage() {
                 className="w-5 h-5 rounded border-white/10 bg-white/5 text-primary-600 focus:ring-2 focus:ring-primary-500"
               />
               <label htmlFor="fullscreen" className="text-sm font-medium text-gray-300">
-                Launch in fullscreen
+                {t('settings.fullScreenLabel')}
               </label>
             </div>
 
@@ -228,19 +227,23 @@ export default function SettingsPage() {
                 className="w-5 h-5 rounded border-white/10 bg-white/5 text-primary-600 focus:ring-2 focus:ring-primary-500"
               />
               <label htmlFor="autoenter" className="text-sm font-medium text-gray-300">
-                Auto-connect to server
+                {t('settings.autoEnterLabel')}
               </label>
             </div>
           </div>
-        </div>
+      </section>
+    </div>
+  );
 
-        <div className="border-t border-white/10 pt-6">
-          <h2 className="text-xl font-bold text-white mb-4">Java Settings</h2>
+  const javaTab = (
+    <div className="space-y-8">
+      <section>
+        <h2 className="text-xl font-bold text-white mb-4">{t('settings.javaSettings')}</h2>
 
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Java Executable Path
+                {t('settings.javaPathLabel')}
               </label>
               <div className="flex gap-2">
                 <input
@@ -254,36 +257,36 @@ export default function SettingsPage() {
                   onClick={handleBrowseJava}
                   disabled={!window.electronAPI}
                   className="px-4 py-2 bg-gray-600 hover:bg-gray-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors flex items-center gap-2"
-                  title="Browse for Java executable"
+                  title={t('settings.browse')}
                 >
                   <FolderOpen size={18} />
-                  <span>Browse</span>
+                  <span>{t('settings.browse')}</span>
                 </button>
                 <button
                   onClick={handleAutoDetectJava}
                   disabled={detectingJava || !window.electronAPI}
                   className="px-4 py-2 bg-primary-600 hover:bg-primary-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors flex items-center gap-2"
-                  title="Auto-detect Java installations"
+                  title={t('settings.autoDetect')}
                 >
                   {detectingJava ? (
                     <>
                       <Loader2 size={18} className="animate-spin" />
-                      <span>Detecting...</span>
+                      <span>{t('settings.detecting')}</span>
                     </>
                   ) : (
                     <>
                       <Search size={18} />
-                      <span>Auto-detect</span>
+                      <span>{t('settings.autoDetect')}</span>
                     </>
                   )}
                 </button>
               </div>
-              <p className="text-xs text-gray-500 mt-1">Leave as 'java' to use system Java, or click "Auto-detect" to find installed Java versions</p>
+              <p className="text-xs text-gray-500 mt-1">{t('settings.leaveAsJava')}</p>
             </div>
 
             {showJavaList && javaDetections.length > 0 && (
               <div className="bg-white/5 border border-white/10 rounded-lg p-4">
-                <h3 className="text-sm font-medium text-gray-300 mb-3">Found Java Installations:</h3>
+                <h3 className="text-sm font-medium text-gray-300 mb-3">{t('settings.foundJava')}:</h3>
                 <div className="space-y-2 max-h-60 overflow-y-auto">
                   {javaDetections.map((java, index) => (
                     <button
@@ -297,7 +300,7 @@ export default function SettingsPage() {
                           <div className="text-xs text-gray-400">Java {java.version} (Major: {java.major})</div>
                         </div>
                         {settings.javaPath === java.path && (
-                          <span className="text-xs bg-primary-600 text-white px-2 py-1 rounded">Selected</span>
+                          <span className="text-xs bg-primary-600 text-white px-2 py-1 rounded">{t('settings.selectedLabel')}</span>
                         )}
                       </div>
                     </button>
@@ -306,16 +309,20 @@ export default function SettingsPage() {
               </div>
             )}
           </div>
-        </div>
+      </section>
+    </div>
+  );
 
-        <div className="border-t border-white/10 pt-6">
-          <h2 className="text-xl font-bold text-white mb-4">Notification Settings</h2>
+  const notificationsTab = (
+    <div className="space-y-8">
+      <section>
+        <h2 className="text-xl font-bold text-white mb-4">{t('settings.notificationSettings')}</h2>
 
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <label className="text-sm font-medium text-gray-300">Desktop Notifications</label>
-                <p className="text-xs text-gray-500 mt-1">Show desktop notifications for important events</p>
+                <label className="text-sm font-medium text-gray-300">{t('settings.desktopNotifications')}</label>
+                <p className="text-xs text-gray-500 mt-1">{t('settings.desktopDescription')}</p>
               </div>
               <input
                 type="checkbox"
@@ -331,16 +338,16 @@ export default function SettingsPage() {
             </div>
 
             <div className="space-y-3">
-              <label className="text-sm font-medium text-gray-300">Notification Types</label>
+              <label className="text-sm font-medium text-gray-300">{t('settings.notificationTypes')}</label>
               
               <div className="space-y-2">
                 {[
-                  { key: 'clientUpdates', label: 'Client Updates Available' },
-                  { key: 'serverStatus', label: 'Server Status Changes' },
-                  { key: 'gameCrashes', label: 'Game Crashes' },
-                  { key: 'connectionIssues', label: 'Connection Issues' },
-                  { key: 'launcherErrors', label: 'Launcher Errors' },
-                  { key: 'systemMessages', label: 'System Messages' },
+                  { key: 'clientUpdates', label: t('settings.typeClientUpdates') },
+                  { key: 'serverStatus', label: t('settings.typeServerStatus') },
+                  { key: 'gameCrashes', label: t('settings.typeGameCrashes') },
+                  { key: 'connectionIssues', label: t('settings.typeConnectionIssues') },
+                  { key: 'launcherErrors', label: t('settings.typeLauncherErrors') },
+                  { key: 'systemMessages', label: t('settings.typeSystemMessages') },
                 ].map((type) => (
                   <div key={type.key} className="flex items-center justify-between">
                     <label className="text-sm text-gray-400">{type.label}</label>
@@ -362,8 +369,8 @@ export default function SettingsPage() {
 
             <div className="flex items-center justify-between">
               <div>
-                <label className="text-sm font-medium text-gray-300">Notification Sound</label>
-                <p className="text-xs text-gray-500 mt-1">Play sound when receiving notifications</p>
+                <label className="text-sm font-medium text-gray-300">{t('settings.notificationSound')}</label>
+                <p className="text-xs text-gray-500 mt-1">{t('settings.soundDescription')}</p>
               </div>
               <input
                 type="checkbox"
@@ -378,37 +385,82 @@ export default function SettingsPage() {
               />
             </div>
           </div>
+      </section>
+    </div>
+  );
+
+  const updatesTab = (
+    <div className="space-y-8">
+      <section>
+        <h2 className="text-xl font-bold text-white mb-4">{t('settings.updatesTitle')}</h2>
+        <p className="text-xs text-gray-500 mb-4">{t('settings.updatesDescription')}</p>
+        <UpdateCheckButton />
+      </section>
+    </div>
+  );
+
+  const renderActiveTab = () => {
+    switch (activeTab) {
+      case 'java':
+        return javaTab;
+      case 'notifications':
+        return notificationsTab;
+      case 'updates':
+        return updatesTab;
+      default:
+        return generalTab;
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-4xl font-bold text-white mb-2">{t('settings.pageTitle')}</h1>
+        <p className="text-gray-400">{t('settings.pageDescription')}</p>
+      </div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="glass rounded-xl p-6 space-y-6"
+      >
+        <div className="flex flex-wrap gap-2 border-b border-white/10 pb-4">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = tab.id === activeTab;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as typeof activeTab)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  isActive
+                    ? 'bg-[#6b8e23] text-white border border-[#7a9f35]/40 shadow-lg shadow-[#6b8e23]/20'
+                    : 'bg-[#1f1f1f] border border-transparent text-gray-400 hover:text-white hover:border-[#3d3d3d]/50'
+                }`}
+              >
+                <Icon size={16} />
+                {tab.label}
+              </button>
+            );
+          })}
         </div>
 
-        <div>
-          <h2 className="text-xl font-bold text-white mb-4">Launcher Updates</h2>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Check for Updates
-              </label>
-              <p className="text-xs text-gray-500 mb-3">
-                The launcher automatically checks for updates on startup. You can also check manually here.
-              </p>
-              <UpdateCheckButton />
-            </div>
-          </div>
-        </div>
+        <div>{renderActiveTab()}</div>
 
-        <div className="flex justify-between pt-4">
+        <div className="flex justify-between pt-4 border-t border-white/10">
           <button
             onClick={handleResetSettings}
             className="px-6 py-3 bg-white/5 hover:bg-white/10 text-white font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all flex items-center gap-2"
           >
             <RotateCcw size={20} />
-            <span>Reset to Defaults</span>
+            <span>{t('settings.resetButton')}</span>
           </button>
           <button
             onClick={handleSave}
             className="px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-700 text-white font-medium rounded-lg hover:from-primary-700 hover:to-primary-800 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all flex items-center gap-2"
           >
             <Save size={20} />
-            <span>Save Settings</span>
+            <span>{t('settings.saveButton')}</span>
           </button>
         </div>
       </motion.div>

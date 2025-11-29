@@ -3,6 +3,8 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { API_CONFIG } from '../config/api';
+import { useAuthStore } from '../stores/authStore';
 
 interface UpdateInfo {
   version: string;
@@ -20,22 +22,31 @@ interface UpdateCheckResult {
   error?: string;
 }
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:7240';
-
 export function useLauncherUpdate() {
   const [updateCheckResult, setUpdateCheckResult] = useState<UpdateCheckResult | null>(null);
   const [isChecking, setIsChecking] = useState(false);
   const [currentVersion, setCurrentVersion] = useState<string | null>(null);
+  const { accessToken } = useAuthStore();
 
   // Get current version
   useEffect(() => {
     const getVersion = async () => {
+      // Check if running in Electron
+      if (!window.electronAPI) {
+        console.log('[LauncherUpdate] Running in browser mode, skipping version check');
+        // In browser mode, use package.json version or default
+        setCurrentVersion('1.0.143'); // Default version for browser
+        return;
+      }
+      
       try {
         const version = await window.electronAPI.getAppVersion();
         console.log('[LauncherUpdate] Current version:', version);
         setCurrentVersion(version);
       } catch (error) {
         console.error('[LauncherUpdate] Failed to get app version:', error);
+        // Fallback to default version
+        setCurrentVersion('1.0.143');
       }
     };
     getVersion();
@@ -52,10 +63,23 @@ export function useLauncherUpdate() {
       setIsChecking(true);
     }
 
-    console.log(`[LauncherUpdate] Checking for updates... (current: ${currentVersion}, API: ${API_URL})`);
+    console.log(`[LauncherUpdate] Checking for updates... (current: ${currentVersion}, API: ${API_CONFIG.baseUrl})`);
+
+    // In browser mode, skip update check (updates only work in Electron)
+    if (!window.electronAPI) {
+      console.log('[LauncherUpdate] Running in browser mode, skipping update check');
+      setUpdateCheckResult({
+        hasUpdate: false,
+        error: 'Update check only available in Electron app',
+      });
+      if (!silent) {
+        setIsChecking(false);
+      }
+      return;
+    }
 
     try {
-      const result = await window.electronAPI.checkLauncherUpdate(currentVersion, API_URL);
+      const result = await window.electronAPI.checkLauncherUpdate(currentVersion, API_CONFIG.baseUrl, accessToken || undefined);
       
       console.log('[LauncherUpdate] Update check result:', result);
       

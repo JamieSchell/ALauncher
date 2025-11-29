@@ -26,9 +26,22 @@ const storage = multer.diskStorage({
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    // Use original filename from frontend (which includes username)
+    // Frontend sends: skin-{username}-{timestamp}.png or cloak-{username}-{timestamp}.png
+    // If originalname doesn't have username, we'll rename it later in the route
     const ext = path.extname(file.originalname);
-    cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
+    const baseName = path.basename(file.originalname, ext);
+    
+    // If filename already includes username (from frontend), use it
+    // Otherwise, use temporary name and rename later
+    if (baseName.includes('-') && baseName.split('-').length >= 2) {
+      // Filename already has format: fieldname-username-timestamp
+      cb(null, file.originalname);
+    } else {
+      // Temporary name, will be renamed in route handler
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      cb(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
+    }
   },
 });
 
@@ -268,11 +281,38 @@ router.post(
         }
       }
 
+      // Get username from authenticated user
+      const user = await prisma.user.findUnique({
+        where: { id: req.user!.userId },
+        select: { username: true },
+      });
+
+      // Rename file to include username if not already included
+      const ext = path.extname(req.file.filename);
+      const baseName = path.basename(req.file.filename, ext);
+      let finalFilename = req.file.filename;
+      
+      if (!baseName.includes(user?.username || 'unknown')) {
+        // Filename doesn't include username, rename it
+        const sanitizedUsername = (user?.username || 'unknown').replace(/[^a-zA-Z0-9_-]/g, '_');
+        const timestamp = Date.now();
+        finalFilename = `skin-${sanitizedUsername}-${timestamp}${ext}`;
+        const oldPath = req.file.path;
+        const newPath = path.join(uploadDir, finalFilename);
+        
+        try {
+          fs.renameSync(oldPath, newPath);
+        } catch (error) {
+          console.error('Failed to rename skin file:', error);
+          // Continue with original filename if rename fails
+        }
+      }
+
       // Generate URL for the uploaded file
-      const fileUrl = `/uploads/textures/${req.file.filename}`;
+      const fileUrl = `/uploads/textures/${finalFilename}`;
 
       // Update user's skinUrl
-      const user = await prisma.user.update({
+      const updatedUser = await prisma.user.update({
         where: { id: req.user!.userId },
         data: { skinUrl: fileUrl },
         select: {
@@ -287,7 +327,7 @@ router.post(
 
       res.json({
         success: true,
-        data: user,
+        data: updatedUser,
         message: 'Skin uploaded successfully',
       });
     } catch (error: any) {
@@ -369,11 +409,38 @@ router.post(
         }
       }
 
+      // Get username from authenticated user
+      const user = await prisma.user.findUnique({
+        where: { id: req.user!.userId },
+        select: { username: true },
+      });
+
+      // Rename file to include username if not already included
+      const ext = path.extname(req.file.filename);
+      const baseName = path.basename(req.file.filename, ext);
+      let finalFilename = req.file.filename;
+      
+      if (!baseName.includes(user?.username || 'unknown')) {
+        // Filename doesn't include username, rename it
+        const sanitizedUsername = (user?.username || 'unknown').replace(/[^a-zA-Z0-9_-]/g, '_');
+        const timestamp = Date.now();
+        finalFilename = `cloak-${sanitizedUsername}-${timestamp}${ext}`;
+        const oldPath = req.file.path;
+        const newPath = path.join(uploadDir, finalFilename);
+        
+        try {
+          fs.renameSync(oldPath, newPath);
+        } catch (error) {
+          console.error('Failed to rename cloak file:', error);
+          // Continue with original filename if rename fails
+        }
+      }
+
       // Generate URL for the uploaded file
-      const fileUrl = `/uploads/textures/${req.file.filename}`;
+      const fileUrl = `/uploads/textures/${finalFilename}`;
 
       // Update user's cloakUrl
-      const user = await prisma.user.update({
+      const updatedUser = await prisma.user.update({
         where: { id: req.user!.userId },
         data: { cloakUrl: fileUrl },
         select: {
@@ -388,7 +455,7 @@ router.post(
 
       res.json({
         success: true,
-        data: user,
+        data: updatedUser,
         message: 'Cloak uploaded successfully',
       });
     } catch (error: any) {

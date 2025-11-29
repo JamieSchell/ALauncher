@@ -43,7 +43,7 @@ export const usersAPI = {
    * Get current user profile
    */
   async getProfile(): Promise<UserProfile> {
-    const response = await apiClient.get<ApiResponse<UserProfile>>('/users/me');
+    const response = await apiClient.get('/users/me');
     return response.data.data!;
   },
 
@@ -51,7 +51,7 @@ export const usersAPI = {
    * Update user profile (email)
    */
   async updateProfile(data: { email?: string }): Promise<ApiResponse<UserProfile>> {
-    const response = await apiClient.put<ApiResponse<UserProfile>>('/users/me', data);
+    const response = await apiClient.put('/users/me', data);
     return response.data;
   },
 
@@ -59,31 +59,53 @@ export const usersAPI = {
    * Change password
    */
   async changePassword(data: ChangePasswordRequest): Promise<ApiResponse> {
-    const response = await apiClient.patch<ApiResponse>('/users/me/password', data);
+    const response = await apiClient.patch('/users/me/password', data);
     return response.data;
   },
 
   /**
    * Upload skin
    */
-  async uploadSkin(file: File): Promise<ApiResponse<UserProfile>> {
+  async uploadSkin(file: File, username?: string): Promise<ApiResponse<UserProfile>> {
     const formData = new FormData();
-    formData.append('skin', file);
+    
+    // Rename file to include username if provided
+    if (username) {
+      const fileExtension = file.name.split('.').pop() || 'png';
+      const sanitizedUsername = username.replace(/[^a-zA-Z0-9_-]/g, '_');
+      const timestamp = Date.now();
+      const newFileName = `skin-${sanitizedUsername}-${timestamp}.${fileExtension}`;
+      const renamedFile = new File([file], newFileName, { type: file.type });
+      formData.append('skin', renamedFile);
+    } else {
+      formData.append('skin', file);
+    }
     
     // Don't set Content-Type header - browser will set it with boundary
-    const response = await apiClient.post<ApiResponse<UserProfile>>('/users/me/skin', formData);
+    const response = await apiClient.post('/users/me/skin', formData);
     return response.data;
   },
 
   /**
    * Upload cloak
    */
-  async uploadCloak(file: File): Promise<ApiResponse<UserProfile>> {
+  async uploadCloak(file: File, username?: string): Promise<ApiResponse<UserProfile>> {
     const formData = new FormData();
-    formData.append('cloak', file);
+    
+    // Rename file to include username if provided
+    if (username) {
+      const fileExtension = file.name.split('.').pop() || 'png';
+      const sanitizedUsername = username.replace(/[^a-zA-Z0-9_-]/g, '_');
+      const timestamp = Date.now();
+      const newFileName = `cloak-${sanitizedUsername}-${timestamp}.${fileExtension}`;
+      const renamedFile = new File([file], newFileName, { type: file.type });
+      formData.append('cloak', renamedFile);
+    } else {
+      formData.append('cloak', file);
+    }
     
     // Don't set Content-Type header - browser will set it with boundary
-    const response = await apiClient.post<ApiResponse<UserProfile>>('/users/me/cloak', formData);
+    const response = await apiClient.post('/users/me/cloak', formData);
     return response.data;
   },
 
@@ -91,7 +113,7 @@ export const usersAPI = {
    * Get list of all users (Admin only)
    */
   async getUsers(params?: { limit?: number; offset?: number; search?: string; role?: string; banned?: boolean }) {
-    const response = await apiClient.get<ApiResponse<UserListItem[]> & { pagination?: { total: number; limit: number; offset: number } }>('/users', { params });
+    const response = await apiClient.get('/users', { params });
     return response.data;
   },
 
@@ -99,7 +121,7 @@ export const usersAPI = {
    * Ban or unban a user (Admin only)
    */
   async banUser(userId: string, banned: boolean, banReason?: string): Promise<ApiResponse<UserListItem>> {
-    const response = await apiClient.patch<ApiResponse<UserListItem>>(`/users/${userId}/ban`, { banned, banReason });
+    const response = await apiClient.patch(`/users/${userId}/ban`, { banned, banReason });
     return response.data;
   },
 
@@ -107,7 +129,7 @@ export const usersAPI = {
    * Update user profile (Admin only)
    */
   async updateUser(userId: string, data: { email?: string; username?: string; role?: 'USER' | 'ADMIN' }): Promise<ApiResponse<UserListItem>> {
-    const response = await apiClient.patch<ApiResponse<UserListItem>>(`/users/${userId}`, data);
+    const response = await apiClient.patch(`/users/${userId}`, data);
     return response.data;
   },
 
@@ -115,7 +137,7 @@ export const usersAPI = {
    * Delete a user (Admin only)
    */
   async deleteUser(userId: string): Promise<ApiResponse> {
-    const response = await apiClient.delete<ApiResponse>(`/users/${userId}`);
+    const response = await apiClient.delete(`/users/${userId}`);
     return response.data;
   },
 };

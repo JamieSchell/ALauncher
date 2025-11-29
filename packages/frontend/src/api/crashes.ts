@@ -108,7 +108,7 @@ export const crashesAPI = {
    * Log a game crash
    */
   async logCrash(data: LogCrashRequest): Promise<GameCrash> {
-    const response = await apiClient.post<ApiResponse<GameCrash>>('/crashes', data);
+    const response = await apiClient.post('/crashes', data);
     return response.data.data!;
   },
 
@@ -116,7 +116,7 @@ export const crashesAPI = {
    * Log a server connection issue
    */
   async logConnectionIssue(data: LogConnectionIssueRequest): Promise<ServerConnectionIssue> {
-    const response = await apiClient.post<ApiResponse<ServerConnectionIssue>>('/crashes/connection-issues', data);
+    const response = await apiClient.post('/crashes/connection-issues', data);
     return response.data.data!;
   },
 
@@ -124,7 +124,7 @@ export const crashesAPI = {
    * Get crashes (requires authentication)
    */
   async getCrashes(params?: { limit?: number; offset?: number; profileId?: string; userId?: string }) {
-    const response = await apiClient.get<ApiResponse<GameCrash[]> & { pagination?: { total: number; limit: number; offset: number } }>('/crashes', { params });
+    const response = await apiClient.get('/crashes', { params });
     return response.data;
   },
 
@@ -132,7 +132,7 @@ export const crashesAPI = {
    * Get connection issues (requires authentication)
    */
   async getConnectionIssues(params?: { limit?: number; offset?: number; profileId?: string; serverAddress?: string; issueType?: string }) {
-    const response = await apiClient.get<ApiResponse<ServerConnectionIssue[]> & { pagination?: { total: number; limit: number; offset: number } }>('/crashes/connection-issues', { params });
+    const response = await apiClient.get('/crashes/connection-issues', { params });
     return response.data;
   },
 
@@ -140,7 +140,7 @@ export const crashesAPI = {
    * Log a launcher error
    */
   async logLauncherError(data: LogLauncherErrorRequest): Promise<LauncherError> {
-    const response = await apiClient.post<ApiResponse<LauncherError>>('/crashes/launcher-errors', data);
+    const response = await apiClient.post('/crashes/launcher-errors', data);
     return response.data.data!;
   },
 
@@ -148,7 +148,7 @@ export const crashesAPI = {
    * Get launcher errors (Admin only)
    */
   async getLauncherErrors(params?: { limit?: number; offset?: number; errorType?: string; component?: string }) {
-    const response = await apiClient.get<ApiResponse<LauncherError[]> & { pagination?: { total: number; limit: number; offset: number } }>('/crashes/launcher-errors', { params });
+    const response = await apiClient.get('/crashes/launcher-errors', { params });
     return response.data;
   },
 };

@@ -15,10 +15,12 @@
  */
 
 const mysql = require('mysql2/promise');
-const { v4: uuidv4 } = require('uuid');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+
+// Use built-in crypto.randomUUID() for Node.js 18+
+const uuidv4 = () => crypto.randomUUID();
 
 // Parse command line arguments
 function parseArgs() {

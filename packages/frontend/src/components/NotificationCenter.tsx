@@ -28,9 +28,10 @@ interface NotificationCenterProps {
   className?: string;
 }
 
-const notificationTypeIcons: Record<NotificationType, React.ComponentType<{ size?: number; className?: string }>> = {
+const notificationTypeIcons: Record<NotificationType, React.ComponentType<any>> = {
   CLIENT_UPDATE_AVAILABLE: Download,
   SERVER_STATUS_CHANGE: Wifi,
+  LAUNCHER_UPDATE_AVAILABLE: Download,
   GAME_CRASH: AlertTriangle,
   CONNECTION_ISSUE: WifiOff,
   LAUNCHER_ERROR: AlertCircle,
@@ -41,6 +42,7 @@ const notificationTypeIcons: Record<NotificationType, React.ComponentType<{ size
 const notificationTypeColors: Record<NotificationType, string> = {
   CLIENT_UPDATE_AVAILABLE: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
   SERVER_STATUS_CHANGE: 'bg-green-500/20 text-green-300 border-green-500/30',
+  LAUNCHER_UPDATE_AVAILABLE: 'bg-purple-500/20 text-purple-300 border-purple-500/30',
   GAME_CRASH: 'bg-red-500/20 text-red-300 border-red-500/30',
   CONNECTION_ISSUE: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
   LAUNCHER_ERROR: 'bg-orange-500/20 text-orange-300 border-orange-500/30',
@@ -55,11 +57,11 @@ export default function NotificationCenter({ className = '' }: NotificationCente
   const { isAdmin } = useAuthStore();
   const queryClient = useQueryClient();
 
-  // Fetch notifications
+  // Fetch notifications (максимум 10)
   const { data: notificationsData, isLoading } = useQuery({
     queryKey: ['notifications', showUnreadOnly],
     queryFn: () => notificationsAPI.getNotifications({ 
-      limit: 50, 
+      limit: 10, 
       unreadOnly: showUnreadOnly 
     }),
     refetchInterval: 10000, // Poll every 10 seconds

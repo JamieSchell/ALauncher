@@ -218,17 +218,24 @@ router.get('/connection-issues', authenticateToken, async (req: AuthRequest, res
 router.post(
   '/launcher-errors',
   [
-    body('errorType').isIn(Object.values(LauncherErrorType)).withMessage('Invalid error type'),
-    body('errorMessage').trim().notEmpty().withMessage('Error message is required'),
-    body('stackTrace').optional().isString(),
-    body('component').optional().isString(),
-    body('action').optional().isString(),
-    body('url').optional().isString(),
-    body('statusCode').optional().isInt(),
-    body('userAgent').optional().isString(),
-    body('os').optional().isString(),
-    body('osVersion').optional().isString(),
-    body('launcherVersion').optional().isString(),
+    body('errorType')
+      .isIn(Object.values(LauncherErrorType))
+      .withMessage('Invalid error type'),
+    body('errorMessage')
+      .trim()
+      .notEmpty()
+      .withMessage('Error message is required')
+      .isLength({ min: 1, max: 10000 })
+      .withMessage('Error message must be between 1 and 10000 characters'),
+    body('stackTrace').optional().isString().isLength({ max: 50000 }),
+    body('component').optional().isString().isLength({ max: 255 }),
+    body('action').optional().isString().isLength({ max: 255 }),
+    body('url').optional().isString().isLength({ max: 500 }),
+    body('statusCode').optional().isInt({ min: 100, max: 599 }),
+    body('userAgent').optional().isString().isLength({ max: 500 }),
+    body('os').optional().isString().isLength({ max: 50 }),
+    body('osVersion').optional().isString().isLength({ max: 100 }),
+    body('launcherVersion').optional().isString().isLength({ max: 50 }),
   ],
   async (req: AuthRequest, res, next) => {
     try {

@@ -21,16 +21,12 @@ export async function initializeKeys() {
     const privateKeyExists = await fileExists(config.rsa.privateKeyPath);
 
     if (publicKeyExists && privateKeyExists) {
-      logger.info('Loading existing RSA keys...');
       const publicKeyData = await fs.readFile(config.rsa.publicKeyPath, 'utf-8');
       const privateKeyData = await fs.readFile(config.rsa.privateKeyPath, 'utf-8');
 
       publicKey = new NodeRSA(publicKeyData);
       privateKey = new NodeRSA(privateKeyData);
-      
-      logger.info('RSA keys loaded successfully');
     } else {
-      logger.info('Generating new RSA keypair...');
       const key = new NodeRSA({ b: 2048 });
       
       publicKey = new NodeRSA();
@@ -42,13 +38,7 @@ export async function initializeKeys() {
       // Save keys to files
       await fs.writeFile(config.rsa.publicKeyPath, key.exportKey('public'));
       await fs.writeFile(config.rsa.privateKeyPath, key.exportKey('private'));
-      
-      logger.info('RSA keypair generated and saved');
     }
-
-    // Log key fingerprint
-    const modulus = privateKey.keyPair.n.toString(16);
-    logger.info(`Key modulus (first 32 chars): ${modulus.substring(0, 32)}...`);
   } catch (error) {
     logger.error('Failed to initialize RSA keys:', error);
     throw error;

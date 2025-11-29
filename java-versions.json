@@ -1,0 +1,5 @@
+{
+  "8": "/opt/java/jdk8u412-b08/bin/java",
+  "17": "/opt/java/jdk-17.0.12+7/bin/java",
+  "21": "/opt/java/jdk-21.0.5+11/bin/java"
+}

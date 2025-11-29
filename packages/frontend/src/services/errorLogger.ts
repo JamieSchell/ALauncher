@@ -143,7 +143,13 @@ class ErrorLoggerService {
       }
 
       const errorType = this.determineErrorType(error, context);
-      const errorMessage = error?.message || String(error);
+      let errorMessage = error?.message || String(error);
+      
+      // Ensure errorMessage is not empty (backend validation requires it)
+      if (!errorMessage || errorMessage.trim() === '') {
+        errorMessage = 'Unknown error occurred';
+      }
+      
       const stackTrace = error?.stack || null;
 
       // Get user info
@@ -152,20 +158,65 @@ class ErrorLoggerService {
       const userId = (playerProfile as any)?.id || playerProfile?.uuid || null;
       const username = playerProfile?.username || null;
 
-      // Prepare error data
-      const errorData = {
-        errorType,
-        errorMessage: errorMessage.substring(0, 10000), // Limit message length
-        stackTrace: stackTrace ? stackTrace.substring(0, 50000) : null, // Limit stack trace length
-        component: context?.component || null,
-        action: context?.action || null,
-        url: context?.url || null,
-        statusCode: context?.statusCode || null,
-        userAgent: context?.userAgent || navigator.userAgent,
-        os: context?.os || this.osInfo?.os || null,
-        osVersion: context?.osVersion || this.osInfo?.osVersion || null,
-        launcherVersion: context?.launcherVersion || this.launcherVersion || null,
+      // Validate errorType matches backend enum values
+      const validErrorTypes: LauncherErrorType[] = [
+        'PROFILE_LOAD_ERROR',
+        'FILE_DOWNLOAD_ERROR',
+        'API_ERROR',
+        'AUTHENTICATION_ERROR',
+        'VALIDATION_ERROR',
+        'FILE_SYSTEM_ERROR',
+        'NETWORK_ERROR',
+        'ELECTRON_ERROR',
+        'JAVA_DETECTION_ERROR',
+        'CLIENT_LAUNCH_ERROR',
+        'UNKNOWN_ERROR',
+      ];
+      
+      const validatedErrorType = validErrorTypes.includes(errorType) ? errorType : 'UNKNOWN_ERROR';
+
+      // Prepare error data - use undefined instead of null for optional fields (express-validator prefers undefined)
+      const errorData: any = {
+        errorType: validatedErrorType,
+        errorMessage: errorMessage.trim().substring(0, 10000), // Limit message length and ensure not empty
       };
+
+      // Add optional fields only if they have values (don't send null/undefined)
+      if (stackTrace) {
+        errorData.stackTrace = stackTrace.substring(0, 50000);
+      }
+      if (context?.component) {
+        errorData.component = context.component;
+      }
+      if (context?.action) {
+        errorData.action = context.action;
+      }
+      if (context?.url) {
+        errorData.url = context.url;
+      }
+      if (context?.statusCode !== undefined && context?.statusCode !== null) {
+        errorData.statusCode = context.statusCode;
+      }
+      if (context?.userAgent || navigator.userAgent) {
+        errorData.userAgent = context?.userAgent || navigator.userAgent;
+      }
+      if (context?.os || this.osInfo?.os) {
+        errorData.os = context?.os || this.osInfo?.os;
+      }
+      if (context?.osVersion || this.osInfo?.osVersion) {
+        errorData.osVersion = context?.osVersion || this.osInfo?.osVersion;
+      }
+      if (context?.launcherVersion || this.launcherVersion) {
+        errorData.launcherVersion = context?.launcherVersion || this.launcherVersion;
+      }
+
+      // Log data being sent for debugging
+      console.log('[ErrorLogger] Sending error data:', {
+        errorType: errorData.errorType,
+        errorMessageLength: errorData.errorMessage.length,
+        hasStackTrace: !!errorData.stackTrace,
+        component: errorData.component,
+      });
 
       // Only log if we have access token (user is authenticated)
       // For critical errors, we might want to log even without auth

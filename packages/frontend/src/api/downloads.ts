@@ -35,21 +35,21 @@ interface ClientVersionSummary {
 
 export const downloadsAPI = {
   async startDownload(version: string) {
-    const response = await apiClient.post<ApiResponse<{ version: string; message: string }>>(
+    const response = await apiClient.post(
       `/updates/download/${version}`
     );
     return response.data;
   },
   
   async getClientVersions() {
-    const response = await apiClient.get<ApiResponse<ClientVersionSummary[]>>(
+    const response = await apiClient.get(
       `/client-versions`
     );
     return response.data;
   },
   
   async getClientVersion(versionId: string) {
-    const response = await apiClient.get<ApiResponse<ClientVersionInfo>>(
+    const response = await apiClient.get(
       `/client-versions/${versionId}`
     );
     return response.data;
@@ -57,7 +57,7 @@ export const downloadsAPI = {
   
   async getClientVersionByVersion(version: string) {
     try {
-      const response = await apiClient.get<ApiResponse<ClientVersionInfo>>(
+      const response = await apiClient.get(
         `/client-versions/version/${version}`
       );
       return response.data;

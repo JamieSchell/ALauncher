@@ -55,7 +55,7 @@ export default function ServerBadge({ type, className = '' }: ServerBadgeProps) 
     <motion.span
       initial={{ scale: 0.8, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
-      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${style.bg} ${style.text} ${style.border || ''} shadow-lg ${className}`}
+      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${style.bg} ${style.text} ${(style as any).border || ''} shadow-lg ${className}`}
     >
       {type}
     </motion.span>

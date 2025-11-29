@@ -4,8 +4,9 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Minus, Square, X, ChevronDown } from 'lucide-react';
+import { Minus, Square, X, ChevronDown, Gamepad2 } from 'lucide-react';
 import NotificationCenter from './NotificationCenter';
+import LanguageSwitcher from './LanguageSwitcher';
 
 export default function TitleBar() {
   const [launcherVersion, setLauncherVersion] = useState<string | null>(null);
@@ -60,14 +61,14 @@ export default function TitleBar() {
   };
 
   return (
-    <div className="flex items-center justify-between h-10 bg-gradient-to-r from-black/60 to-black/40 backdrop-blur-sm window-drag px-4 border-b border-white/10 relative z-[100]">
+    <div className="flex items-center justify-between h-10 bg-[#2a2a2a]/90 backdrop-blur-sm window-drag px-4 border-b border-[#3d3d3d]/50 relative z-[100]">
       <div className="flex items-center gap-3">
-        <div className="w-6 h-6 bg-gradient-to-br from-primary-500 to-primary-700 rounded flex items-center justify-center">
-          <span className="text-xs font-bold text-white">M</span>
+        <div className="w-6 h-6 bg-gradient-to-br from-[#6b8e23] to-[#556b2f] rounded flex items-center justify-center border border-[#7a9f35]/30">
+          <Gamepad2 size={16} className="text-white" />
         </div>
         <span className="text-sm font-semibold text-white">Modern Launcher</span>
         {launcherVersion && (
-          <span className="text-xs text-gray-400 font-medium px-2 py-0.5 bg-white/5 rounded border border-white/10">
+          <span className="text-xs text-gray-500 font-medium px-2 py-0.5 bg-[#1f1f1f] rounded border border-[#3d3d3d]">
             v{launcherVersion}
           </span>
         )}
@@ -75,33 +76,34 @@ export default function TitleBar() {
 
       <div className="flex items-center gap-2 window-no-drag">
         <NotificationCenter />
+        <LanguageSwitcher />
         <button
           onClick={handleMinimize}
-          className="p-1.5 hover:bg-white/10 rounded transition-colors"
+          className="p-1.5 hover:bg-[#1f1f1f] rounded transition-colors"
           title="Minimize"
         >
-          <Minus size={16} className="text-white" />
+          <Minus size={16} className="text-gray-300" />
         </button>
         <button
           onClick={handleMinimizeToTray}
-          className="p-1.5 hover:bg-white/10 rounded transition-colors"
+          className="p-1.5 hover:bg-[#1f1f1f] rounded transition-colors"
           title="Minimize to Tray"
         >
-          <ChevronDown size={16} className="text-white" />
+          <ChevronDown size={16} className="text-gray-300" />
         </button>
         <button
           onClick={handleMaximize}
-          className="p-1.5 hover:bg-white/10 rounded transition-colors"
+          className="p-1.5 hover:bg-[#1f1f1f] rounded transition-colors"
           title="Maximize"
         >
-          <Square size={14} className="text-white" />
+          <Square size={14} className="text-gray-300" />
         </button>
         <button
           onClick={handleClose}
-          className="p-1.5 hover:bg-red-600/80 rounded transition-colors"
+          className="p-1.5 hover:bg-[#5a3d3d]/30 hover:text-[#cc6b6b] rounded transition-colors"
           title="Close"
         >
-          <X size={16} className="text-white" />
+          <X size={16} className="text-gray-300" />
         </button>
       </div>
     </div>

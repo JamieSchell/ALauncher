@@ -1,0 +1,4 @@
+
+> @modern-launcher/frontend@1.0.143 update-launcher
+> node scripts/update-launcher-full.js http://5.188.119.206/launcher/Modern%20Launcher-1.0.135-Setup.exe Версия 1.0.135: Исправлены баги, улучшена производительность
+

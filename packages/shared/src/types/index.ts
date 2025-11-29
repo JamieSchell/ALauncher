@@ -16,6 +16,40 @@ export interface PlayerProfile {
 }
 
 // ============= Client Profile =============
+export type EconomyFilterOperator = '=' | '!=' | '>' | '<' | '>=' | '<=' | 'LIKE';
+
+export interface EconomyLeaderboardFilter {
+  column: string;
+  operator?: EconomyFilterOperator;
+  value: string | number;
+}
+
+export interface EconomyLeaderboardConfig {
+  enabled?: boolean;
+  table: string;
+  usernameColumn: string;
+  balanceColumn: string;
+  order?: 'asc' | 'desc';
+  limit?: number;
+  currencySymbol?: string;
+  precision?: number;
+  filters?: EconomyLeaderboardFilter[];
+}
+
+export interface EconomyLeaderboardEntry {
+  username: string;
+  balance: number;
+  rank: number;
+}
+
+export interface EconomyLeaderboardPayload {
+  players: EconomyLeaderboardEntry[];
+  currencySymbol?: string;
+  precision: number;
+  limit: number;
+  lastUpdated: string;
+}
+
 export interface ClientProfile {
   id: string;
   version: string;
@@ -29,6 +63,7 @@ export interface ClientProfile {
   serverAddress: string;
   serverPort: number;
   jvmVersion?: string;
+  economyConfig?: EconomyLeaderboardConfig | null;
   
   // Updater
   updateFastCheck: boolean;
@@ -174,6 +209,7 @@ export enum WSEvent {
   SERVER_STATUS = 'server_status',
   DOWNLOAD_CLIENT = 'download_client',
   LAUNCHER_UPDATE_AVAILABLE = 'launcher_update_available',
+  CLIENT_FILES_UPDATED = 'client_files_updated',
 }
 
 export interface UpdateProgress {
@@ -189,4 +225,23 @@ export interface LaunchStatus {
   status: 'preparing' | 'launching' | 'running' | 'crashed' | 'closed';
   message?: string;
   error?: string;
+}
+
+export interface ClientFilesUpdate {
+  version: string;
+  versionId: string;
+  action: 'sync' | 'file_added' | 'file_updated' | 'file_deleted' | 'integrity_check';
+  files?: Array<{
+    filePath: string;
+    fileHash: string;
+    fileSize: string | number;
+    fileType: string;
+    verified?: boolean;
+    integrityCheckFailed?: boolean;
+  }>;
+  stats?: {
+    totalFiles: number;
+    verifiedFiles: number;
+    failedFiles: number;
+  };
 }

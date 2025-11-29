@@ -464,6 +464,8 @@ export default function CrashesManagementPage() {
       profileId: '',
       serverAddress: '',
       issueType: '',
+      errorType: '',
+      component: '',
       limit: 50,
     });
     // Clear notified sets when filters change

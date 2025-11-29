@@ -1,22 +1,24 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useAuthStore } from '../stores/authStore';
-import { WSEvent, UpdateProgress } from '@modern-launcher/shared';
-
-const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:7240/ws';
+import { WSEvent, UpdateProgress, ClientFilesUpdate } from '@modern-launcher/shared';
+import { API_CONFIG } from '../config/api';
+import { useQueryClient } from '@tanstack/react-query';
 
 export function useWebSocket() {
   const wsRef = useRef<WebSocket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const { accessToken } = useAuthStore();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (!accessToken) return;
 
-    const ws = new WebSocket(WS_URL);
+    console.log('[WebSocket] Connecting to:', API_CONFIG.wsUrl);
+    const ws = new WebSocket(API_CONFIG.wsUrl);
     wsRef.current = ws;
 
     ws.onopen = () => {
-      console.log('WebSocket connected');
+      console.log('[WebSocket] Connected successfully to:', API_CONFIG.wsUrl);
       setIsConnected(true);
       
       // Authenticate
@@ -24,23 +26,55 @@ export function useWebSocket() {
         event: WSEvent.AUTH,
         token: accessToken,
       }));
+      console.log('[WebSocket] Authentication message sent');
     };
 
-    ws.onclose = () => {
-      console.log('WebSocket disconnected');
+    ws.onclose = (event) => {
+      console.log('[WebSocket] Disconnected:', {
+        code: event.code,
+        reason: event.reason,
+        wasClean: event.wasClean,
+        url: API_CONFIG.wsUrl,
+      });
       setIsConnected(false);
     };
 
     ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
+      console.error('[WebSocket] Connection error:', {
+        error,
+        url: API_CONFIG.wsUrl,
+        readyState: ws.readyState,
+      });
     };
 
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        // Handle other WebSocket events here if needed
+        
+        // Обработка обновления файлов клиента
+        if (data.event === WSEvent.CLIENT_FILES_UPDATED) {
+          const update: ClientFilesUpdate = data.data;
+          console.log('[WebSocket] Client files updated:', update);
+          
+          // Инвалидировать кэш для версии клиента
+          queryClient.invalidateQueries({ 
+            queryKey: ['client-versions', 'version', update.version] 
+          });
+          queryClient.invalidateQueries({ 
+            queryKey: ['client-versions', update.versionId] 
+          });
+          queryClient.invalidateQueries({ 
+            queryKey: ['client-versions'] 
+          });
+          
+          // Также инвалидировать запросы, которые используют версию
+          queryClient.invalidateQueries({ 
+            queryKey: ['client-versions', 'version', update.version, 'files'] 
+          });
+        }
       } catch (error) {
         // Ignore parsing errors for other messages
+        console.error('[WebSocket] Error parsing message:', error);
       }
     };
 

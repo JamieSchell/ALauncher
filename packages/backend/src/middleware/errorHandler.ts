@@ -6,6 +6,7 @@ import { Request, Response, NextFunction } from 'express';
 import { logger } from '../utils/logger';
 import { prisma } from '../services/database';
 import { LauncherErrorType } from '@prisma/client';
+import os from 'os';
 
 export class AppError extends Error {
   constructor(
@@ -105,12 +106,12 @@ async function logErrorToDatabase(
         statusCode,
         userAgent: req.headers['user-agent'] || null,
         os: process.platform,
-        osVersion: process.platform === 'win32' ? process.getSystemVersion?.() || null : null,
+        osVersion: os.release() || null,
         launcherVersion,
       },
     });
     
-    logger.info(`[ErrorHandler] Error logged to database: ${errorType} - ${errorMessage.substring(0, 100)}`);
+    // Error logged to database (silent)
   } catch (dbError) {
     // Don't log database errors to prevent infinite loops
     logger.error('[ErrorHandler] Failed to log error to database:', dbError);
@@ -130,8 +131,8 @@ export function errorHandler(
   const isBlockmapError = errorMessage.includes('blockmap') && 
                           (errorMessage.includes('not found') || statusCode === 404);
   
-  // Log to console (but not for optional .blockmap files)
-  if (!isBlockmapError) {
+  // Log to console (only for non-4xx errors and not for optional .blockmap files)
+  if (!isBlockmapError && statusCode >= 500) {
     if (err instanceof AppError) {
       logger.error(`${statusCode} - ${err.message}`, {
         path: req.path,
@@ -140,9 +141,6 @@ export function errorHandler(
     } else {
       logger.error('Unexpected error:', err);
     }
-  } else {
-    // Just log as info for .blockmap files (they're optional)
-    logger.info(`[Launcher] Optional .blockmap file not found: ${req.path}`);
   }
 
   // Automatically log to database (async, don't wait) - but skip for .blockmap files

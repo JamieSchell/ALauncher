@@ -49,6 +49,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   ensureDir: (dirPath: string) => ipcRenderer.invoke('file:ensureDir', dirPath),
   writeFile: (filePath: string, data: Uint8Array) => ipcRenderer.invoke('file:writeFile', filePath, data),
   deleteFile: (filePath: string) => ipcRenderer.invoke('file:deleteFile', filePath),
+  readFile: (filePath: string) => ipcRenderer.invoke('file:readFile', filePath),
   calculateFileHash: (filePath: string, algorithm: 'sha256' | 'sha1') => ipcRenderer.invoke('file:calculateHash', filePath, algorithm),
       downloadFile: (url: string, destPath: string, onProgress?: (progress: number) => void, authToken?: string) => {
     return new Promise<void>((resolve, reject) => {
@@ -81,17 +82,26 @@ contextBridge.exposeInMainWorld('electronAPI', {
   showNotification: (title: string, body: string, options?: { icon?: string; sound?: boolean }) => 
     ipcRenderer.invoke('notification:show', title, body, options),
   
+  // HTTP requests (proxy through main process to bypass file:// restrictions)
+  httpRequest: (options: {
+    method: string;
+    url: string;
+    headers?: Record<string, string>;
+    data?: any;
+    timeout?: number;
+  }) => ipcRenderer.invoke('http:request', options),
+
   // Launcher updates
-  checkLauncherUpdate: (currentVersion: string, apiUrl: string) => 
-    ipcRenderer.invoke('launcher:checkUpdate', currentVersion, apiUrl),
+  checkLauncherUpdate: (currentVersion: string, apiUrl: string, authToken?: string) => 
+    ipcRenderer.invoke('launcher:checkUpdate', currentVersion, apiUrl, authToken),
   downloadLauncherUpdate: (updateInfo: any, apiUrl: string) => {
     ipcRenderer.send('launcher:downloadUpdate', updateInfo, apiUrl);
   },
   cancelLauncherUpdate: () => {
     ipcRenderer.send('launcher:cancelUpdate');
   },
-  installLauncherUpdate: (installerPath: string) => 
-    ipcRenderer.invoke('launcher:installUpdate', installerPath),
+  installLauncherUpdate: (installerPath: string, newVersion: string) => 
+    ipcRenderer.invoke('launcher:installUpdate', installerPath, newVersion),
   restartLauncher: () => {
     ipcRenderer.send('launcher:restart');
   },
@@ -130,6 +140,7 @@ declare global {
       ensureDir: (dirPath: string) => Promise<void>;
       writeFile: (filePath: string, data: Uint8Array) => Promise<void>;
       deleteFile: (filePath: string) => Promise<void>;
+      readFile: (filePath: string) => Promise<string>;
       calculateFileHash: (filePath: string, algorithm: 'sha256' | 'sha1') => Promise<string>;
       downloadFile: (url: string, destPath: string, onProgress?: (progress: number) => void, authToken?: string) => Promise<void>;
       fileExists: (filePath: string) => Promise<boolean>;
@@ -142,6 +153,18 @@ declare global {
       onLauncherUpdateProgress: (callback: (progress: number) => void) => void;
       onLauncherUpdateComplete: (callback: (installerPath: string) => void) => void;
       onLauncherUpdateError: (callback: (error: string) => void) => void;
+      httpRequest: (options: {
+        method: string;
+        url: string;
+        headers?: Record<string, string>;
+        data?: any;
+        timeout?: number;
+      }) => Promise<{
+        status: number;
+        statusText: string;
+        headers: Record<string, string | string[]>;
+        data: any;
+      }>;
     };
   }
 }

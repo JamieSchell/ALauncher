@@ -60,7 +60,6 @@ export async function saveServerStatistics(
           timestamp: timeSlot, // Используем timeSlot вместо now для правильного сопоставления
         },
       });
-      console.log(`[Server Statistics] Updated stats for ${serverAddress} at ${timeSlot.toISOString()}: online=${online}, avg=${newAverage}`);
     } else {
       // Создать новую запись
       await prisma.serverStatistics.create({
@@ -74,7 +73,6 @@ export async function saveServerStatistics(
           timestamp: timeSlot,
         },
       });
-      console.log(`[Server Statistics] Created new stats for ${serverAddress} at ${timeSlot.toISOString()}: online=${online}`);
     }
 
     // Удалить старые записи (старше 7 дней)
@@ -113,7 +111,6 @@ export async function getServerStatistics24h(serverAddress: string): Promise<Sta
     },
   });
 
-  console.log(`[Server Statistics] Found ${stats.length} records for ${serverAddress} in last 24h`);
 
   // Создать массив для всех 288 интервалов (24 часа * 12 интервалов по 5 минут)
   const result: StatisticsData[] = [];
@@ -166,9 +163,6 @@ export async function getServerStatistics24h(serverAddress: string): Promise<Sta
       result.push({ ...prevStat });
     }
   }
-
-  const intervalsWithData = result.filter(s => s.online > 0 || s.average > 0 || s.minimum > 0 || s.maximum > 0).length;
-  console.log(`[Server Statistics] Returning ${result.length} intervals, ${intervalsWithData} with data`);
 
   return result;
 }

@@ -92,7 +92,7 @@ export const statisticsAPI = {
    * Создать запись о запуске игры
    */
   async createGameLaunch(data: GameLaunchRequest): Promise<ApiResponse<{ launchId: string; sessionId: string }>> {
-    const response = await apiClient.post<ApiResponse<{ launchId: string; sessionId: string }>>('/statistics/launch', data);
+    const response = await apiClient.post('/statistics/launch', data);
     return response.data;
   },
 
@@ -100,7 +100,7 @@ export const statisticsAPI = {
    * Завершить сессию игры
    */
   async endGameSession(data: GameSessionEndRequest): Promise<ApiResponse> {
-    const response = await apiClient.post<ApiResponse>('/statistics/session/end', data);
+    const response = await apiClient.post('/statistics/session/end', data);
     return response.data;
   },
 
@@ -108,7 +108,7 @@ export const statisticsAPI = {
    * Получить статистику использования для текущего пользователя
    */
   async getUserStatistics(days: number = 30): Promise<ApiResponse<UserStatistics>> {
-    const response = await apiClient.get<ApiResponse<UserStatistics>>('/statistics/user', {
+    const response = await apiClient.get('/statistics/user', {
       params: { days },
     });
     return response.data;
@@ -118,7 +118,7 @@ export const statisticsAPI = {
    * Получить аналитику для администраторов
    */
   async getAdminAnalytics(days: number = 30): Promise<ApiResponse<AdminAnalytics>> {
-    const response = await apiClient.get<ApiResponse<AdminAnalytics>>('/statistics/admin/analytics', {
+    const response = await apiClient.get('/statistics/admin/analytics', {
       params: { days },
     });
     return response.data;
