@@ -61,3 +61,4 @@ config.local.json
 *.jar
 *.iml
 buildnumber
+build-scripts/hitech.zip
