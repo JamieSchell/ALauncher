@@ -1,1 +1,92 @@
-"use strict";const r=require("electron");r.contextBridge.exposeInMainWorld("electronAPI",{minimizeWindow:()=>r.ipcRenderer.send("window:minimize"),maximizeWindow:()=>r.ipcRenderer.send("window:maximize"),minimizeToTray:()=>r.ipcRenderer.send("window:minimizeToTray"),closeWindow:()=>r.ipcRenderer.send("window:close"),launchGame:e=>r.ipcRenderer.invoke("launcher:launch",e),getAppVersion:()=>r.ipcRenderer.invoke("app:version"),getAppPaths:()=>r.ipcRenderer.invoke("app:paths"),getUpdatesDir:()=>r.ipcRenderer.invoke("app:updatesDir"),findJavaInstallations:()=>r.ipcRenderer.invoke("java:findInstallations"),checkJavaVersion:(e,n)=>r.ipcRenderer.invoke("java:checkVersion",e,n),getJavaVersion:e=>r.ipcRenderer.invoke("java:getVersion",e),selectJavaFile:()=>r.ipcRenderer.invoke("dialog:selectJavaFile"),onGameLog:e=>{r.ipcRenderer.on("game:log",(n,i)=>e(i))},onGameError:e=>{r.ipcRenderer.on("game:error",(n,i)=>e(i))},onGameExit:e=>{r.ipcRenderer.on("game:exit",(n,i)=>e(i))},onGameCrash:e=>{r.ipcRenderer.on("game:crash",(n,i)=>e(i))},onGameConnectionIssue:e=>{r.ipcRenderer.on("game:connection-issue",(n,i)=>e(i))},ensureDir:e=>r.ipcRenderer.invoke("file:ensureDir",e),writeFile:(e,n)=>r.ipcRenderer.invoke("file:writeFile",e,n),deleteFile:e=>r.ipcRenderer.invoke("file:deleteFile",e),readFile:e=>r.ipcRenderer.invoke("file:readFile",e),calculateFileHash:(e,n)=>r.ipcRenderer.invoke("file:calculateHash",e,n),downloadFile:(e,n,i,p)=>new Promise((t,l)=>{const o=(s,c)=>{i&&i(c)},d=()=>{r.ipcRenderer.removeListener("file:download:progress",o),r.ipcRenderer.removeListener("file:download:complete",d),r.ipcRenderer.removeListener("file:download:error",a),t()},a=(s,c)=>{r.ipcRenderer.removeListener("file:download:progress",o),r.ipcRenderer.removeListener("file:download:complete",d),r.ipcRenderer.removeListener("file:download:error",a),l(new Error(c))};r.ipcRenderer.once("file:download:progress",o),r.ipcRenderer.once("file:download:complete",d),r.ipcRenderer.once("file:download:error",a),r.ipcRenderer.send("file:download",e,n,p)}),fileExists:e=>r.ipcRenderer.invoke("file:exists",e),showNotification:(e,n,i)=>r.ipcRenderer.invoke("notification:show",e,n,i),httpRequest:e=>r.ipcRenderer.invoke("http:request",e),checkLauncherUpdate:(e,n,i)=>r.ipcRenderer.invoke("launcher:checkUpdate",e,n,i),downloadLauncherUpdate:(e,n)=>{r.ipcRenderer.send("launcher:downloadUpdate",e,n)},cancelLauncherUpdate:()=>{r.ipcRenderer.send("launcher:cancelUpdate")},installLauncherUpdate:(e,n)=>r.ipcRenderer.invoke("launcher:installUpdate",e,n),restartLauncher:()=>{r.ipcRenderer.send("launcher:restart")},onLauncherUpdateProgress:e=>{r.ipcRenderer.on("launcher:update:progress",(n,i)=>e(i))},onLauncherUpdateComplete:e=>{r.ipcRenderer.on("launcher:update:complete",(n,i)=>e(i))},onLauncherUpdateError:e=>{r.ipcRenderer.on("launcher:update:error",(n,i)=>e(i))}});
+"use strict";
+const electron = require("electron");
+electron.contextBridge.exposeInMainWorld("electronAPI", {
+  // Window controls
+  minimizeWindow: () => electron.ipcRenderer.send("window:minimize"),
+  maximizeWindow: () => electron.ipcRenderer.send("window:maximize"),
+  minimizeToTray: () => electron.ipcRenderer.send("window:minimizeToTray"),
+  closeWindow: () => electron.ipcRenderer.send("window:close"),
+  // Launcher
+  launchGame: (args) => electron.ipcRenderer.invoke("launcher:launch", args),
+  // App info
+  getAppVersion: () => electron.ipcRenderer.invoke("app:version"),
+  getAppPaths: () => electron.ipcRenderer.invoke("app:paths"),
+  getUpdatesDir: () => electron.ipcRenderer.invoke("app:updatesDir"),
+  // Java operations
+  findJavaInstallations: () => electron.ipcRenderer.invoke("java:findInstallations"),
+  checkJavaVersion: (javaPath, requiredVersion) => electron.ipcRenderer.invoke("java:checkVersion", javaPath, requiredVersion),
+  getJavaVersion: (javaPath) => electron.ipcRenderer.invoke("java:getVersion", javaPath),
+  // Dialog operations
+  selectJavaFile: () => electron.ipcRenderer.invoke("dialog:selectJavaFile"),
+  // Listeners
+  onGameLog: (callback) => {
+    electron.ipcRenderer.on("game:log", (_, log) => callback(log));
+  },
+  onGameError: (callback) => {
+    electron.ipcRenderer.on("game:error", (_, error) => callback(error));
+  },
+  onGameExit: (callback) => {
+    electron.ipcRenderer.on("game:exit", (_, code) => callback(code));
+  },
+  onGameCrash: (callback) => {
+    electron.ipcRenderer.on("game:crash", (_, data) => callback(data));
+  },
+  onGameConnectionIssue: (callback) => {
+    electron.ipcRenderer.on("game:connection-issue", (_, data) => callback(data));
+  },
+  // File operations
+  ensureDir: (dirPath) => electron.ipcRenderer.invoke("file:ensureDir", dirPath),
+  writeFile: (filePath, data) => electron.ipcRenderer.invoke("file:writeFile", filePath, data),
+  deleteFile: (filePath) => electron.ipcRenderer.invoke("file:deleteFile", filePath),
+  readFile: (filePath) => electron.ipcRenderer.invoke("file:readFile", filePath),
+  calculateFileHash: (filePath, algorithm) => electron.ipcRenderer.invoke("file:calculateHash", filePath, algorithm),
+  downloadFile: (url, destPath, onProgress, authToken) => {
+    return new Promise((resolve, reject) => {
+      const progressListener = (_, progress) => {
+        if (onProgress) onProgress(progress);
+      };
+      const completeListener = () => {
+        electron.ipcRenderer.removeListener("file:download:progress", progressListener);
+        electron.ipcRenderer.removeListener("file:download:complete", completeListener);
+        electron.ipcRenderer.removeListener("file:download:error", errorListener);
+        resolve();
+      };
+      const errorListener = (_, error) => {
+        electron.ipcRenderer.removeListener("file:download:progress", progressListener);
+        electron.ipcRenderer.removeListener("file:download:complete", completeListener);
+        electron.ipcRenderer.removeListener("file:download:error", errorListener);
+        reject(new Error(error));
+      };
+      electron.ipcRenderer.once("file:download:progress", progressListener);
+      electron.ipcRenderer.once("file:download:complete", completeListener);
+      electron.ipcRenderer.once("file:download:error", errorListener);
+      electron.ipcRenderer.send("file:download", url, destPath, authToken);
+    });
+  },
+  fileExists: (filePath) => electron.ipcRenderer.invoke("file:exists", filePath),
+  // Notifications
+  showNotification: (title, body, options) => electron.ipcRenderer.invoke("notification:show", title, body, options),
+  // HTTP requests (proxy through main process to bypass file:// restrictions)
+  httpRequest: (options) => electron.ipcRenderer.invoke("http:request", options),
+  // Launcher updates
+  checkLauncherUpdate: (currentVersion, apiUrl, authToken) => electron.ipcRenderer.invoke("launcher:checkUpdate", currentVersion, apiUrl, authToken),
+  downloadLauncherUpdate: (updateInfo, apiUrl) => {
+    electron.ipcRenderer.send("launcher:downloadUpdate", updateInfo, apiUrl);
+  },
+  cancelLauncherUpdate: () => {
+    electron.ipcRenderer.send("launcher:cancelUpdate");
+  },
+  installLauncherUpdate: (installerPath, newVersion) => electron.ipcRenderer.invoke("launcher:installUpdate", installerPath, newVersion),
+  restartLauncher: () => {
+    electron.ipcRenderer.send("launcher:restart");
+  },
+  onLauncherUpdateProgress: (callback) => {
+    electron.ipcRenderer.on("launcher:update:progress", (_, progress) => callback(progress));
+  },
+  onLauncherUpdateComplete: (callback) => {
+    electron.ipcRenderer.on("launcher:update:complete", (_, path) => callback(path));
+  },
+  onLauncherUpdateError: (callback) => {
+    electron.ipcRenderer.on("launcher:update:error", (_, error) => callback(error));
+  }
+});

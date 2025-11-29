@@ -682,7 +682,7 @@ export default function ServerDetailsPage() {
             console.warn(`[Download] Error checking file ${file.filePath}, will try to download:`, error.message);
           }
 
-          const fileUrl = `${baseUrl}/api/client-versions/${versionId}/file/${file.filePath}`;
+          const fileUrl = `${baseUrl}/api/client-versions/${versionId}/file?path=${encodeURIComponent(file.filePath)}`;
           const fileName = file.filePath.split(/[/\\]/).pop() || file.filePath;
           
           setDownloadProgress(prev => prev ? {
@@ -805,7 +805,7 @@ export default function ServerDetailsPage() {
             if (!assetsExist) {
               // Скачать assets через API
               const baseUrl = API_CONFIG.baseUrlWithoutApi;
-              const assetsUrl = `${baseUrl}/api/updates/${profile.id}/asset/file/index.json`;
+              const assetsUrl = `${baseUrl}/api/updates/${profile.id}/asset/file?path=index.json`;
               
               // Создать директорию для assets
               await window.electronAPI.ensureDir(assetsDir).catch(() => {});
@@ -839,7 +839,7 @@ export default function ServerDetailsPage() {
                 const assetExists = await window.electronAPI.fileExists(assetFilePath);
                 if (!assetExists) {
                   // Скачать asset
-                  const assetFileUrl = `${baseUrl}/api/updates/${profile.id}/asset/file/objects/${hashPrefix}/${hash}`;
+                  const assetFileUrl = `${baseUrl}/api/updates/${profile.id}/asset/file?path=objects/${hashPrefix}/${hash}`;
                   const assetDir = assetFilePath.substring(0, Math.max(assetFilePath.lastIndexOf('/'), assetFilePath.lastIndexOf('\\')));
                   await window.electronAPI.ensureDir(assetDir).catch(() => {});
                   await window.electronAPI.downloadFile(assetFileUrl, assetFilePath, () => {}, accessToken);
