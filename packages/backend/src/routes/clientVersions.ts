@@ -103,13 +103,19 @@ router.get('/:versionId', async (req, res, next) => {
 });
 
 /**
- * GET /api/client-versions/:versionId/file/:filePath(*)
+ * GET /api/client-versions/:versionId/file
  * Скачать конкретный файл версии
+ * Note: Express 5.x compatible - using query parameter for file path
  */
-router.get('/:versionId/file/*', async (req, res, next) => {
+router.get('/:versionId/file', async (req, res, next) => {
   try {
     const { versionId } = req.params;
-    const filePath = req.params[0]; // Everything after /file/
+    // Get file path from query parameter (Express 5.x compatible)
+    const filePath = (req.query.path as string) || '';
+
+    if (!filePath) {
+      throw new AppError(400, 'File path is required');
+    }
     
     // Проверка авторизации
     const authHeader = req.headers.authorization;

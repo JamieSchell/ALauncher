@@ -86,13 +86,20 @@ router.get('/:profileId/:dirType', async (req, res, next) => {
 });
 
 /**
- * GET /api/updates/:profileId/:dirType/file/*
+ * GET /api/updates/:profileId/:dirType/file
  * Download a specific file
+ * Note: Express 5.x doesn't support wildcard routes the same way
+ * Using query parameter for file path instead
  */
-router.get('/:profileId/:dirType/file/*', async (req, res, next) => {
+router.get('/:profileId/:dirType/file', async (req, res, next) => {
   try {
     const { profileId, dirType } = req.params;
-    const filePath = req.params[0]; // Everything after /file/
+    // Get file path from query parameter (Express 5.x compatible)
+    const filePath = (req.query.path as string) || '';
+
+    if (!filePath) {
+      throw new AppError(400, 'File path is required');
+    }
 
     // Validate dirType
     if (!['client', 'asset', 'jvm'].includes(dirType)) {
