@@ -559,10 +559,12 @@ export async function initializeFileWatcher(): Promise<void> {
   const updatesDir = config.paths.updates;
   
   // Динамический импорт chokidar (ES модуль)
-  const chokidar = await import('chokidar');
+  // Используем eval для обхода компиляции TypeScript в require()
+  const chokidarModule = await (eval('import("chokidar")') as Promise<typeof import('chokidar')>);
+  const chokidar = chokidarModule.default || chokidarModule;
   
   // Создать watcher для папки updates
-  const watcher = chokidar.default.watch(updatesDir, {
+  const watcher = chokidar.watch(updatesDir, {
     ignored: /(^|[\/\\])\../, // Игнорировать скрытые файлы
     persistent: true,
     ignoreInitial: false, // Обработать существующие файлы при запуске
