@@ -6,16 +6,46 @@ import { Request, Response, NextFunction } from 'express';
 import { logger } from '../utils/logger';
 import { prisma } from '../services/database';
 import { LauncherErrorType } from '@prisma/client';
+import { ErrorCodeV1 } from '@modern-launcher/shared';
 import os from 'os';
 
 export class AppError extends Error {
   constructor(
     public statusCode: number,
     public message: string,
+    /**
+     * Optional machine-readable error code; если не указан,
+     * будет выведен из statusCode в errorHandler.
+     */
+    public code?: ErrorCodeV1,
     public isOperational = true
   ) {
     super(message);
     Object.setPrototypeOf(this, AppError.prototype);
+  }
+}
+
+/**
+ * Map HTTP status codes to generic error codes (v1).
+ */
+function mapStatusToErrorCode(statusCode: number): ErrorCodeV1 {
+  if (statusCode >= 500) {
+    return ErrorCodeV1.INTERNAL_ERROR;
+  }
+
+  switch (statusCode) {
+    case 400:
+      return ErrorCodeV1.VALIDATION_FAILED;
+    case 401:
+      return ErrorCodeV1.AUTH_REQUIRED;
+    case 403:
+      return ErrorCodeV1.FORBIDDEN;
+    case 404:
+      return ErrorCodeV1.NOT_FOUND;
+    case 429:
+      return ErrorCodeV1.RATE_LIMITED;
+    default:
+      return ErrorCodeV1.UNKNOWN;
   }
 }
 
@@ -126,6 +156,8 @@ export function errorHandler(
 ) {
   const statusCode = err instanceof AppError ? err.statusCode : 500;
   const errorMessage = err.message || String(err);
+  const errorCode =
+    err instanceof AppError && err.code ? err.code : mapStatusToErrorCode(statusCode);
   
   // Skip logging for optional .blockmap files (they're not errors)
   const isBlockmapError = errorMessage.includes('blockmap') && 
@@ -155,6 +187,7 @@ export function errorHandler(
     return res.status(statusCode).json({
       success: false,
       error: err.message,
+      errorCode,
     });
   }
 
@@ -162,5 +195,6 @@ export function errorHandler(
   return res.status(500).json({
     success: false,
     error: 'Internal server error',
+    errorCode: ErrorCodeV1.INTERNAL_ERROR,
   });
 }

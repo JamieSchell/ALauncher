@@ -7,6 +7,7 @@
 import axios from 'axios';
 import { useAuthStore } from '../stores/authStore';
 import { API_CONFIG } from '../config/api';
+import ErrorLoggerService from '../services/errorLogger';
 
 // Check if we're in Electron
 const isElectron = typeof window !== 'undefined' && window.electronAPI !== undefined;
@@ -66,6 +67,19 @@ const createIpcClient = () => {
         axiosError.code = error.code || 'ERR_NETWORK';
         axiosError.config = config;
         axiosError.response = error.response || { status: 0 };
+        axiosError.url = fullURL;
+
+        // Log API error to backend (async, don't wait)
+        const statusCode = error.response?.status;
+        if (statusCode !== 401 && statusCode !== 404) {
+          ErrorLoggerService.logApiError(axiosError, {
+            component: 'API_Client_IPC',
+            action: config.method?.toUpperCase() || 'REQUEST',
+          }).catch(() => {
+            // Silently fail to prevent infinite loops
+          });
+        }
+
         throw axiosError;
       }
     },
@@ -136,7 +150,7 @@ axiosInstance.interceptors.request.use(
 // Response interceptor for error handling (only for axios)
 axiosInstance.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
     // Log error for debugging (always log in production for troubleshooting)
     console.error('[API Error]', {
       message: error.message,
@@ -157,7 +171,19 @@ axiosInstance.interceptors.response.use(
       });
     }
     
-    if (error.response?.status === 401) {
+    // Log API error to backend (async, don't wait)
+    // Skip logging for 401 (authentication) and 404 (not found) errors to avoid spam
+    const statusCode = error.response?.status;
+    if (statusCode !== 401 && statusCode !== 404) {
+      ErrorLoggerService.logApiError(error, {
+        component: 'API_Client',
+        action: error.config?.method?.toUpperCase() || 'REQUEST',
+      }).catch(() => {
+        // Silently fail to prevent infinite loops
+      });
+    }
+    
+    if (statusCode === 401) {
       // Clear auth and redirect to login
       useAuthStore.getState().clearAuth();
       window.location.href = '/login';

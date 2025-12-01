@@ -14,6 +14,10 @@ import { broadcastToAll } from '../websocket';
 import { WSEvent } from '@modern-launcher/shared';
 import { prisma } from './database';
 
+// Store watcher instance for graceful shutdown
+let fileWatcher: FSWatcher | null = null;
+let syncTimeouts: Map<string, NodeJS.Timeout> | null = null;
+
 interface FileInfo {
   filePath: string;
   fullPath: string;
@@ -524,8 +528,11 @@ export async function initializeFileWatcher(): Promise<void> {
     depth: 10, // Глубина сканирования
   });
   
+  // Store watcher instance for graceful shutdown
+  fileWatcher = watcher;
+  
   // Debounce для группировки изменений (отдельный таймер для каждой директории)
-  const syncTimeouts: Map<string, NodeJS.Timeout> = new Map();
+  syncTimeouts = new Map<string, NodeJS.Timeout>();
   const SYNC_DELAY = 2000; // 2 секунды задержки
   
   const scheduleSync = async (directoryName: string) => {
@@ -760,6 +767,43 @@ export async function initializeFileWatcher(): Promise<void> {
       logger.error('[FileSync] Error during initial sync:', error);
     }
   });
+}
+
+/**
+ * Stop file watcher gracefully
+ * 
+ * Closes the file watcher and clears all pending sync timeouts.
+ * Should be called during application shutdown.
+ * 
+ * @returns Promise that resolves when watcher is closed
+ * 
+ * @example
+ * ```ts
+ * await stopFileWatcher();
+ * // File watcher is now closed
+ * ```
+ */
+export async function stopFileWatcher(): Promise<void> {
+  try {
+    // Clear all pending sync timeouts
+    if (syncTimeouts) {
+      for (const timeout of syncTimeouts.values()) {
+        clearTimeout(timeout);
+      }
+      syncTimeouts.clear();
+      syncTimeouts = null;
+    }
+    
+    // Close watcher if it exists
+    if (fileWatcher) {
+      await fileWatcher.close();
+      fileWatcher = null;
+      logger.info('[FileSync] File watcher stopped');
+    }
+  } catch (error) {
+    logger.error('[FileSync] Error stopping file watcher:', error);
+    throw error;
+  }
 }
 
 /**

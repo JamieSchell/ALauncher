@@ -50,7 +50,8 @@ async function bootstrap() {
     logger.warn('⚠️  No CORS origins configured! Set CORS_ORIGIN in .env file for production.');
   }
   const uniqueOrigins = Array.from(new Set(mergedOrigins));
-  const allowAllOrigins = uniqueOrigins.includes('*');
+  // In production мы игнорируем wildcard '*', чтобы не было глобального CORS без явного контроля
+  const allowAllOrigins = config.env !== 'production' && uniqueOrigins.includes('*');
 
   // CORS middleware with support for Electron file:// protocol
   app.use(cors({
@@ -94,12 +95,22 @@ async function bootstrap() {
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
   
-  // Serve uploaded files with explicit CORS headers
+  // Serve uploaded files (skins/cloaks) with explicit security headers
   app.use('/uploads', (req, res, next) => {
-    // Set CORS headers explicitly
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    const origin = req.headers.origin as string | undefined;
+
+    // CORS for uploads:
+    // - In development: allow all origins for easier debugging
+    // - In production: only allow explicitly configured origins (same policy as main CORS)
+    if (config.env !== 'production') {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+    } else if (origin && uniqueOrigins.includes(origin)) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+    }
+
     res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    // Allow Electron/other renderers to load textures cross-origin, но запрещаем им читать тело ответа
     res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
     
     if (req.method === 'OPTIONS') {
@@ -127,9 +138,11 @@ async function bootstrap() {
   await initializeKeys();
 
   // Initialize file sync service (auto-sync files from updates directory)
+  let fileWatcherInitialized = false;
   if (config.env === 'production' || process.env.ENABLE_FILE_SYNC !== 'false') {
     const { initializeFileWatcher } = await import('./services/fileSyncService');
     await initializeFileWatcher();
+    fileWatcherInitialized = true;
   }
 
   // CLI is now started separately via "npm run cli" command
@@ -219,35 +232,95 @@ async function bootstrap() {
 
   // Graceful shutdown handler
   const gracefulShutdown = async (signal: string) => {
-    console.log(`\n⚠️  ${signal} received, shutting down gracefully...`);
+    logger.info(`\n⚠️  ${signal} received, shutting down gracefully...`);
     
-    // Set timeout for forced shutdown (10 seconds)
+    // Set timeout for forced shutdown (15 seconds)
     const forceShutdown = setTimeout(() => {
-      console.error('⚠️  Forced shutdown after timeout');
+      logger.error('⚠️  Forced shutdown after timeout - some resources may not have closed cleanly');
       process.exit(1);
-    }, 10000);
+    }, 15000);
+
+    const shutdownErrors: Array<{ component: string; error: Error }> = [];
 
     try {
-      // Close WebSocket server
-      await closeWebSocketServer();
-      
-      // Close HTTP server
-      server.close(() => {
-        console.log('✓ HTTP server closed');
+      // Step 1: Stop accepting new connections
+      logger.info('[Shutdown] Stopping HTTP server...');
+      await new Promise<void>((resolve, reject) => {
+        server.close((err) => {
+          if (err) {
+            shutdownErrors.push({ component: 'HTTP server', error: err });
+            logger.error('[Shutdown] Error closing HTTP server:', err);
+            reject(err);
+          } else {
+            logger.info('[Shutdown] ✓ HTTP server closed');
+            resolve();
+          }
+        });
       });
-
-      // Close database connection
-      await disconnectDatabase();
-      
-      // Clear timeout
-      clearTimeout(forceShutdown);
-      
-      console.log('✓ Shutdown complete');
-      process.exit(0);
     } catch (error) {
-      console.error('Error during shutdown:', error);
-      clearTimeout(forceShutdown);
+      shutdownErrors.push({ 
+        component: 'HTTP server', 
+        error: error instanceof Error ? error : new Error(String(error))
+      });
+      logger.error('[Shutdown] Error during HTTP server shutdown:', error);
+    }
+
+    try {
+      // Step 2: Close WebSocket server and all connections
+      logger.info('[Shutdown] Closing WebSocket server...');
+      await closeWebSocketServer();
+      logger.info('[Shutdown] ✓ WebSocket server closed');
+    } catch (error) {
+      shutdownErrors.push({ 
+        component: 'WebSocket server', 
+        error: error instanceof Error ? error : new Error(String(error))
+      });
+      logger.error('[Shutdown] Error closing WebSocket server:', error);
+    }
+
+    try {
+      // Step 3: Stop file watcher
+      if (fileWatcherInitialized) {
+        logger.info('[Shutdown] Stopping file watcher...');
+        const { stopFileWatcher } = await import('./services/fileSyncService');
+        await stopFileWatcher();
+        logger.info('[Shutdown] ✓ File watcher stopped');
+      }
+    } catch (error) {
+      shutdownErrors.push({ 
+        component: 'File watcher', 
+        error: error instanceof Error ? error : new Error(String(error))
+      });
+      logger.error('[Shutdown] Error stopping file watcher:', error);
+    }
+
+    try {
+      // Step 4: Close database connection
+      logger.info('[Shutdown] Closing database connection...');
+      await disconnectDatabase();
+      logger.info('[Shutdown] ✓ Database connection closed');
+    } catch (error) {
+      shutdownErrors.push({ 
+        component: 'Database', 
+        error: error instanceof Error ? error : new Error(String(error))
+      });
+      logger.error('[Shutdown] Error closing database connection:', error);
+    }
+
+    // Clear timeout
+    clearTimeout(forceShutdown);
+    
+    // Log summary
+    if (shutdownErrors.length > 0) {
+      logger.warn(`[Shutdown] Completed with ${shutdownErrors.length} error(s):`);
+      shutdownErrors.forEach(({ component, error }) => {
+        logger.warn(`[Shutdown]   - ${component}: ${error.message}`);
+      });
+      logger.info('[Shutdown] ⚠️  Shutdown completed with errors');
       process.exit(1);
+    } else {
+      logger.info('[Shutdown] ✓ Shutdown complete - all resources closed successfully');
+      process.exit(0);
     }
   };
 

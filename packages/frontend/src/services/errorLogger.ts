@@ -264,6 +264,71 @@ class ErrorLoggerService {
 
     await this.logError(error, context);
   }
+
+  /**
+   * Log API error - unified method for API errors
+   * @param error - Axios error or similar
+   * @param context - Additional context (component, action, etc.)
+   */
+  static async logApiError(
+    error: any,
+    context?: Partial<ErrorContext>
+  ): Promise<void> {
+    const apiContext: ErrorContext = {
+      ...context,
+      url: error?.config?.url || error?.url || context?.url,
+      statusCode: error?.response?.status || error?.statusCode || context?.statusCode,
+      action: context?.action || 'api_request',
+      component: context?.component || 'API',
+      userAgent: navigator.userAgent,
+    };
+
+    // Enhance error message with API-specific info
+    let errorMessage = error?.message || String(error);
+    if (error?.response?.data?.error) {
+      errorMessage = `${errorMessage} - ${error.response.data.error}`;
+    }
+    if (apiContext.statusCode) {
+      errorMessage = `[${apiContext.statusCode}] ${errorMessage}`;
+    }
+
+    const enhancedError = {
+      ...error,
+      message: errorMessage,
+    };
+
+    await this.logError(enhancedError, apiContext);
+  }
+
+  /**
+   * Log UI error - unified method for React/UI errors
+   * @param error - Error object
+   * @param errorInfo - React error info (from Error Boundary)
+   * @param context - Additional context
+   */
+  static async logUIError(
+    error: Error,
+    errorInfo?: { componentStack?: string },
+    context?: Partial<ErrorContext>
+  ): Promise<void> {
+    const uiContext: ErrorContext = {
+      ...context,
+      action: context?.action || 'ui_render',
+      component: context?.component || 'UnknownComponent',
+      userAgent: navigator.userAgent,
+    };
+
+    // Enhance error with React component stack if available
+    let enhancedError = error;
+    if (errorInfo?.componentStack) {
+      enhancedError = {
+        ...error,
+        stack: `${error.stack}\n\nComponent Stack:\n${errorInfo.componentStack}`,
+      } as Error;
+    }
+
+    await this.logError(enhancedError, uiContext);
+  }
 }
 
 // Initialize on module load

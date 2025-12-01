@@ -3,9 +3,8 @@
  * Сервис для работы со статистикой использования лаунчера
  */
 
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from './database';
+import { AppError } from '../middleware/errorHandler';
 
 export interface GameLaunchData {
   userId?: string;
@@ -92,7 +91,7 @@ export async function endGameSession(sessionId: string, exitCode?: number, crash
   });
 
   if (!session) {
-    throw new Error('Session not found');
+    throw new AppError(404, 'Session not found');
   }
 
   const endedAt = new Date();

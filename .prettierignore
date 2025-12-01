@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Build outputs
+dist/
+dist-electron/
+build/
+release/
+*.min.js
+*.bundle.js
+
+# Generated files
+*.d.ts.map
+coverage/
+
+# Config files that shouldn't be formatted
+package-lock.json
+tsconfig*.json
+
+# Other
+.DS_Store
+*.log
+.env
+.env.local
+

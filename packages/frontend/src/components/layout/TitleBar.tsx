@@ -1,14 +1,40 @@
 /**
- * Custom window title bar - Modern Design 2025
- * Senior UX/UI Designer Implementation
+ * Custom Window Title Bar Component
+ * 
+ * Кастомная панель заголовка окна для Electron приложения.
+ * Включает:
+ * - Кнопки управления окном (минимизация, максимизация, закрытие)
+ * - Версию лаунчера
+ * - Центр уведомлений
+ * - Переключатель языка
+ * 
+ * @component
+ * @example
+ * ```tsx
+ * import { TitleBar } from '@/components/layout';
+ * 
+ * function App() {
+ *   return (
+ *     <>
+ *       <TitleBar />
+ *       <div>Rest of app content</div>
+ *     </>
+ *   );
+ * }
+ * ```
  */
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Minus, Square, X, ChevronDown, Gamepad2 } from 'lucide-react';
-import NotificationCenter from './NotificationCenter';
-import LanguageSwitcher from './LanguageSwitcher';
+import NotificationCenter from '../NotificationCenter';
+import LanguageSwitcher from '../LanguageSwitcher';
 
+/**
+ * Custom Window Title Bar Component
+ * 
+ * @returns Title bar with window controls, notifications, and language switcher
+ */
 export default function TitleBar() {
   const [launcherVersion, setLauncherVersion] = useState<string | null>(null);
 

@@ -130,55 +130,6 @@ export interface UpdateListResponse {
   profiles: ClientProfile[];
 }
 
-// ============= Server Config =============
-export interface ServerConfig {
-  server: {
-    port: number;
-    host: string;
-    bindAddress?: string;
-  };
-  auth: {
-    provider: 'database' | 'json' | 'mojang' | 'custom';
-    jwtSecret: string;
-    sessionExpiry: string;
-    limiter?: {
-      enabled: boolean;
-      maxAttempts: number;
-      windowMs: number;
-    };
-  };
-  database?: {
-    type: 'postgresql' | 'mysql' | 'sqlite';
-    host: string;
-    port: number;
-    database: string;
-    username: string;
-    password: string;
-  };
-  texture: {
-    provider: 'mojang' | 'ely.by' | 'custom';
-    cacheEnabled: boolean;
-  };
-  updates: {
-    compression: boolean;
-    checkInterval: number;
-  };
-}
-
-// ============= Launch Params =============
-export interface LaunchParams {
-  profileId: string;
-  playerProfile: PlayerProfile;
-  accessToken: string;
-  ram: number;
-  width: number;
-  height: number;
-  fullScreen: boolean;
-  autoEnter: boolean;
-  clientDir: string;
-  assetDir: string;
-}
-
 // ============= Server Status =============
 export interface ServerStatus {
   online: boolean;
@@ -191,12 +142,41 @@ export interface ServerStatus {
   ping: number;
 }
 
-// ============= API Response =============
+// ============= API v1 =============
+export enum ErrorCodeV1 {
+  UNKNOWN = 'UNKNOWN',
+  VALIDATION_FAILED = 'VALIDATION_FAILED',
+  AUTH_REQUIRED = 'AUTH_REQUIRED',
+  FORBIDDEN = 'FORBIDDEN',
+  NOT_FOUND = 'NOT_FOUND',
+  RATE_LIMITED = 'RATE_LIMITED',
+  INTERNAL_ERROR = 'INTERNAL_ERROR',
+}
+
+export interface ApiErrorV1 {
+  code: ErrorCodeV1;
+  message: string;
+  details?: unknown;
+}
+
+export interface ApiResponseV1<T = any> {
+  success: boolean;
+  data?: T;
+  error?: ApiErrorV1;
+  message?: string;
+}
+
+// Backwards-compatible generic API response
 export interface ApiResponse<T = any> {
   success: boolean;
   data?: T;
   error?: string;
   message?: string;
+  /**
+   * Optional machine-readable error code (v1 format) for clients
+   * Prefer использовать его вместо парсинга текстового сообщения.
+   */
+  errorCode?: ErrorCodeV1;
 }
 
 // ============= WebSocket Events =============
@@ -245,3 +225,44 @@ export interface ClientFilesUpdate {
     failedFiles: number;
   };
 }
+
+// ============= Notifications =============
+export type NotificationTypeDTO =
+  | 'CLIENT_UPDATE_AVAILABLE'
+  | 'SERVER_STATUS_CHANGE'
+  | 'LAUNCHER_UPDATE_AVAILABLE'
+  | 'GAME_CRASH'
+  | 'CONNECTION_ISSUE'
+  | 'LAUNCHER_ERROR'
+  | 'SYSTEM_MESSAGE'
+  | 'ADMIN_ALERT';
+
+export interface NotificationDTO {
+  id: string;
+  userId: string;
+  type: NotificationTypeDTO;
+  title: string;
+  message: string;
+  data?: any;
+  read: boolean;
+  readAt?: string;
+  createdAt: string;
+}
+
+export interface GetNotificationsParamsDTO {
+  limit?: number;
+  offset?: number;
+  unreadOnly?: boolean;
+  type?: NotificationTypeDTO;
+}
+
+export interface CreateNotificationRequestDTO {
+  type: NotificationTypeDTO;
+  title: string;
+  message: string;
+  userId?: string;
+  data?: any;
+}
+
+// ============= Electron IPC =============
+export * from './electron';

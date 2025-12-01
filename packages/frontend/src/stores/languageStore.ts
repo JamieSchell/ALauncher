@@ -1,12 +1,29 @@
 /**
- * Language store for i18n
+ * Language Store
+ *
+ * Управляет языком интерфейса (i18n):
+ * - Текущий выбранный язык
+ * - Сохранение выбора в localStorage
+ *
+ * Использует Zustand для управления состоянием.
+ * Бизнес-логика локализации находится в i18n модуле.
+ *
+ * @module stores/languageStore
  */
 
 import { create } from 'zustand';
 import { Language } from '../i18n';
 
+/**
+ * Состояние языка интерфейса
+ */
 interface LanguageStore {
+  /** Текущий выбранный язык */
   language: Language;
+  /**
+   * Установить язык интерфейса
+   * @param lang - Код языка ('ru' | 'en')
+   */
   setLanguage: (lang: Language) => void;
 }
 

@@ -7,6 +7,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { config } from '../config';
 import { logger } from '../utils/logger';
+import { fileExists } from '../utils/file';
 
 let publicKey: NodeRSA;
 let privateKey: NodeRSA;
@@ -45,14 +46,6 @@ export async function initializeKeys() {
   }
 }
 
-async function fileExists(filePath: string): Promise<boolean> {
-  try {
-    await fs.access(filePath);
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 export function getPublicKey(): NodeRSA {
   if (!publicKey) {

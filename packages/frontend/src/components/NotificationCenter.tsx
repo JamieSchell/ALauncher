@@ -4,7 +4,6 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Bell, 
@@ -21,10 +20,18 @@ import {
   Filter,
   Loader2
 } from 'lucide-react';
-import { notificationsAPI, Notification, NotificationType } from '../api/notifications';
+import { Notification, NotificationType } from '../api/notifications';
 import { useAuthStore } from '../stores/authStore';
 import { useTranslation } from '../hooks/useTranslation';
 import { useOptimizedAnimation } from '../hooks/useOptimizedAnimation';
+import { useFormatDate } from '../hooks/useFormatDate';
+import {
+  useNotifications,
+  useMarkNotificationAsRead,
+  useMarkAllNotificationsAsRead,
+  useDeleteNotification,
+  useDeleteAllNotifications,
+} from '../hooks/api';
 
 interface NotificationCenterProps {
   className?: string;
@@ -58,53 +65,22 @@ export default function NotificationCenter({ className = '' }: NotificationCente
   const [showUnreadOnly, setShowUnreadOnly] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { isAdmin } = useAuthStore();
-  const queryClient = useQueryClient();
   const { shouldAnimate, getAnimationProps } = useOptimizedAnimation();
 
   // Fetch notifications (максимум 10)
-  const { data: notificationsData, isLoading } = useQuery({
-    queryKey: ['notifications', showUnreadOnly],
-    queryFn: () => notificationsAPI.getNotifications({ 
-      limit: 10, 
-      unreadOnly: showUnreadOnly 
-    }),
-    refetchInterval: 10000, // Poll every 10 seconds
-  });
+  const { data: notificationsData, isLoading } = useNotifications(
+    { limit: 10, unreadOnly: showUnreadOnly },
+    { refetchInterval: 10000 } // Poll every 10 seconds
+  );
 
   const notifications = notificationsData?.data || [];
   const unreadCount = notificationsData?.unreadCount || 0;
 
-  // Mark as read mutation
-  const markAsReadMutation = useMutation({
-    mutationFn: (id: string) => notificationsAPI.markAsRead(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
-    },
-  });
-
-  // Mark all as read mutation
-  const markAllAsReadMutation = useMutation({
-    mutationFn: () => notificationsAPI.markAllAsRead(),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
-    },
-  });
-
-  // Delete mutation
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => notificationsAPI.deleteNotification(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
-    },
-  });
-
-  // Delete all mutation
-  const deleteAllMutation = useMutation({
-    mutationFn: () => notificationsAPI.deleteAllNotifications({ readOnly: false }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
-    },
-  });
+  // Mutations
+  const markAsReadMutation = useMarkNotificationAsRead();
+  const markAllAsReadMutation = useMarkAllNotificationsAsRead();
+  const deleteMutation = useDeleteNotification();
+  const deleteAllMutation = useDeleteAllNotifications();
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -142,20 +118,7 @@ export default function NotificationCenter({ className = '' }: NotificationCente
     deleteMutation.mutate(id);
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
-    return date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
-  };
+  const { formatRelativeTime, formatDate: formatDateLocalized } = useFormatDate();
 
   return (
     <div className={`relative ${className}`} ref={dropdownRef}>
@@ -366,7 +329,7 @@ export default function NotificationCenter({ className = '' }: NotificationCente
                             </p>
                             <div className="flex items-center justify-between">
                               <span className="text-xs text-body-dim font-medium">
-                                {formatDate(notification.createdAt)}
+                                {formatRelativeTime(notification.createdAt)}
                               </span>
                               <div className="flex items-center gap-1">
                                 {!notification.read && (

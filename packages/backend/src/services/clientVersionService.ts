@@ -36,7 +36,18 @@ export interface ClientVersionInfo {
 
 export class ClientVersionService {
   /**
-   * Получить все доступные версии клиентов
+   * Get all enabled client versions
+   * 
+   * Pure query: reads from database, no side effects.
+   * Returns only versions where `enabled = true`, ordered by creation date (newest first).
+   * 
+   * @returns Array of client version information with associated files
+   * 
+   * @example
+   * ```ts
+   * const versions = await ClientVersionService.getAvailableVersions();
+   * // versions[0] is the newest enabled version
+   * ```
    */
   static async getAvailableVersions(): Promise<ClientVersionInfo[]> {
     const versions = await prisma.clientVersion.findMany({
@@ -67,7 +78,20 @@ export class ClientVersionService {
   }
 
   /**
-   * Получить информацию о версии по ID
+   * Get client version information by version ID
+   * 
+   * Pure query: reads from database, no side effects.
+   * 
+   * @param versionId - Unique version identifier (UUID)
+   * @returns Version information if found, `null` if not found
+   * 
+   * @example
+   * ```ts
+   * const version = await ClientVersionService.getVersionById('version-uuid');
+   * if (version) {
+   *   // Use version.clientJarPath, version.mainClass, etc.
+   * }
+   * ```
    */
   static async getVersionById(versionId: string): Promise<ClientVersionInfo | null> {
     const version = await prisma.clientVersion.findUnique({
@@ -99,7 +123,18 @@ export class ClientVersionService {
   }
 
   /**
-   * Получить информацию о версии по номеру версии
+   * Get client version information by version string (e.g., "1.20.1")
+   * 
+   * Pure query: reads from database, no side effects.
+   * 
+   * @param version - Version string (e.g., "1.20.1", "1.19.2")
+   * @param clientDirectory - Optional client directory filter
+   * @returns Version information if found, `null` if not found
+   * 
+   * @example
+   * ```ts
+   * const version = await ClientVersionService.getVersionByVersion('1.20.1');
+   * ```
    */
   static async getVersionByVersion(version: string, clientDirectory?: string): Promise<ClientVersionInfo | null> {
     const clientVersion = await prisma.clientVersion.findUnique({

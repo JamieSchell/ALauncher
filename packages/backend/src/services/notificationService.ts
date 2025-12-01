@@ -18,8 +18,24 @@ export interface CreateNotificationData {
 
 export class NotificationService {
   /**
-   * Создать уведомление для пользователя
-   * Автоматически ограничивает количество уведомлений до 10 (удаляет старые)
+   * Create notification for a user
+   * 
+   * Side effects:
+   * - Creates notification record in database
+   * - Automatically limits notifications to 10 per user (deletes oldest if exceeded)
+   * 
+   * @param data - Notification data (userId, type, title, message, optional data payload)
+   * @throws {Error} If database operation fails
+   * 
+   * @example
+   * ```ts
+   * await NotificationService.createNotification({
+   *   userId: 'user-id',
+   *   type: NotificationType.INFO,
+   *   title: 'Update available',
+   *   message: 'New launcher version is ready',
+   * });
+   * ```
    */
   static async createNotification(data: CreateNotificationData): Promise<void> {
     try {
@@ -67,7 +83,26 @@ export class NotificationService {
   }
 
   /**
-   * Создать уведомление для всех пользователей
+   * Create notification for all users in the system
+   * 
+   * Side effects:
+   * - Creates notification for each user (executed in parallel)
+   * - Each user's notification count is limited to 10 (via createNotification)
+   * 
+   * @param type - Notification type (INFO, WARNING, ERROR, etc.)
+   * @param title - Notification title
+   * @param message - Notification message
+   * @param data - Optional additional data payload
+   * @throws {Error} If database operation fails
+   * 
+   * @example
+   * ```ts
+   * await NotificationService.createNotificationForAllUsers(
+   *   NotificationType.INFO,
+   *   'Maintenance',
+   *   'Server will be down for maintenance tomorrow'
+   * );
+   * ```
    */
   static async createNotificationForAllUsers(
     type: NotificationType,

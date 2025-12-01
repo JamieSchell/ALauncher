@@ -1,20 +1,45 @@
 /**
- * Sidebar navigation - Modern Design 2025
- * Senior UX/UI Designer Implementation
+ * Sidebar Navigation Component
+ * 
+ * Боковая панель навигации приложения.
+ * Включает:
+ * - Навигационные ссылки (Home, Settings, Profile, Statistics, Admin)
+ * - Информацию о пользователе (аватар, имя)
+ * - Кнопку выхода
+ * - Адаптивное поведение (сворачивание на мобильных устройствах)
+ * 
+ * @component
+ * @example
+ * ```tsx
+ * import { Sidebar } from '@/components/layout';
+ * 
+ * function App() {
+ *   return (
+ *     <>
+ *       <Sidebar />
+ *       <div>Rest of app content</div>
+ *     </>
+ *   );
+ * }
+ * ```
  */
 
 import { Link, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Home, Settings, User, LogOut, Shield, AlertTriangle, Users, BarChart3, LayoutDashboard, Menu, X } from 'lucide-react';
-import { useAuthStore } from '../stores/authStore';
-import { authAPI } from '../api/auth';
-import { useQuery } from '@tanstack/react-query';
-import { usersAPI } from '../api/users';
-import PlayerHead from './PlayerHead';
-import { useTranslation } from '../hooks/useTranslation';
-import { useOptimizedAnimation } from '../hooks/useOptimizedAnimation';
+import { useAuthStore } from '../../stores/authStore';
+import { authAPI } from '../../api/auth';
+import { useUserProfile } from '../../hooks/api';
+import PlayerHead from '../PlayerHead';
+import { useTranslation } from '../../hooks/useTranslation';
+import { useOptimizedAnimation } from '../../hooks/useOptimizedAnimation';
 
+/**
+ * Sidebar Navigation Component
+ * 
+ * @returns Sidebar with navigation links, user info, and logout button
+ */
 export default function Sidebar() {
   const location = useLocation();
   const { playerProfile, clearAuth, isAdmin } = useAuthStore();
@@ -24,9 +49,7 @@ export default function Sidebar() {
   const { shouldAnimate, getAnimationProps } = useOptimizedAnimation();
   
   // Get user profile to access skinUrl
-  const { data: userProfile } = useQuery({
-    queryKey: ['userProfile'],
-    queryFn: usersAPI.getProfile,
+  const { data: userProfile } = useUserProfile({
     enabled: !!playerProfile,
   });
 

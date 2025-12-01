@@ -1,8 +1,17 @@
 /**
  * Electron Main Process
+ * 
+ * Security Configuration:
+ * - contextIsolation: true (isolates preload script from web content)
+ * - nodeIntegration: false (prevents renderer from accessing Node.js APIs)
+ * - sandbox: false (required for preload scripts, but contextIsolation provides security)
+ * - webSecurity: enabled in development, disabled in production (for file:// protocol)
+ * 
+ * All IPC communication is typed using @modern-launcher/shared types
  */
 
 import { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, dialog, Notification } from 'electron';
+import type { LaunchGameArgs, LaunchGameResponse, GameCrashData, GameConnectionIssueData, UpdateInfo, CheckLauncherUpdateResponse, InstallLauncherUpdateResponse } from '@modern-launcher/shared';
 import path from 'path';
 import fs from 'fs';
 import fsPromises from 'fs/promises';
@@ -284,9 +293,12 @@ function createWindow() {
     backgroundColor: '#0a0a0a', // Dark background to avoid white flash
     webPreferences: {
       preload: preloadPath,
+      // Security: Isolate preload script from web content
       contextIsolation: true,
+      // Security: Prevent renderer from accessing Node.js APIs directly
       nodeIntegration: false,
-      sandbox: false, // Required for preload scripts
+      // Required for preload scripts to work, but contextIsolation provides security
+      sandbox: false,
       // Disable webSecurity in production to allow file:// protocol to make HTTP requests
       // This is safe because we control the content and use contextIsolation
       webSecurity: isDevelopment, // Only enable in development
@@ -1280,7 +1292,7 @@ function checkJavaVersion(javaPath: string, requiredVersion: string): {
 /**
  * Launch Minecraft
  */
-ipcMain.handle('launcher:launch', async (event, args) => {
+ipcMain.handle('launcher:launch', async (event, args: LaunchGameArgs): Promise<LaunchGameResponse> => {
   const { javaPath, jvmArgs, mainClass, classPath, gameArgs, workingDir, version, clientDirectory, jvmVersion, profileId, serverAddress, serverPort, userId, username } = args;
 
   try {
@@ -1699,10 +1711,11 @@ ipcMain.handle('launcher:launch', async (event, args) => {
       // Check for connection issues in stderr
       for (const pattern of connectionIssuePatterns) {
         if (pattern.test(message)) {
-          mainWindow?.webContents.send('game:connection-issue', {
+          const connectionIssueData: GameConnectionIssueData = {
             message,
             type: detectConnectionIssueType(message),
-          });
+          };
+          mainWindow?.webContents.send('game:connection-issue', connectionIssueData);
           break;
         }
       }
@@ -1724,10 +1737,11 @@ ipcMain.handle('launcher:launch', async (event, args) => {
       // Check for connection issues in stdout
       for (const pattern of connectionIssuePatterns) {
         if (pattern.test(message)) {
-          mainWindow?.webContents.send('game:connection-issue', {
+          const connectionIssueData: GameConnectionIssueData = {
             message,
             type: detectConnectionIssueType(message),
-          });
+          };
+          mainWindow?.webContents.send('game:connection-issue', connectionIssueData);
           break;
         }
       }
@@ -1746,7 +1760,7 @@ ipcMain.handle('launcher:launch', async (event, args) => {
         mainWindow?.webContents.send('game:error', errorMsg);
         
         // Send crash data for logging
-        mainWindow?.webContents.send('game:crash', {
+        const crashData: GameCrashData = {
           exitCode: code,
           errorMessage: errorMsg.substring(0, 5000), // Limit length
           stderrOutput: stderrBuffer.substring(0, 10000), // Limit length
@@ -1761,7 +1775,8 @@ ipcMain.handle('launcher:launch', async (event, args) => {
           osVersion: os.release(),
           userId,
           username,
-        });
+        };
+        mainWindow?.webContents.send('game:crash', crashData);
       }
     });
 
@@ -2248,15 +2263,7 @@ ipcMain.handle('notification:show', async (event, title: string, body: string, o
 });
 
 // ============= Launcher Update System =============
-
-interface UpdateInfo {
-  version: string;
-  downloadUrl: string;
-  fileHash?: string;
-  fileSize?: bigint;
-  releaseNotes?: string;
-  isRequired: boolean;
-}
+// UpdateInfo type is imported from @modern-launcher/shared
 
 let updateDownloadProgress = 0;
 let updateDownloadId: string | null = null;
@@ -2264,13 +2271,13 @@ let updateDownloadId: string | null = null;
 /**
  * Check for launcher updates
  */
-ipcMain.handle('launcher:checkUpdate', async (event, currentVersion: string, apiUrl: string, authToken?: string) => {
+ipcMain.handle('launcher:checkUpdate', async (event, currentVersion: string, apiUrl: string, authToken?: string): Promise<CheckLauncherUpdateResponse> => {
   try {
     const url = `${apiUrl}/api/launcher/check-update?currentVersion=${encodeURIComponent(currentVersion)}`;
     console.log(`[LauncherUpdate] Checking for updates: ${url}`);
     console.log(`[LauncherUpdate] Current version: ${currentVersion}`);
     
-    return new Promise<{ success: boolean; hasUpdate?: boolean; updateInfo?: UpdateInfo; isRequired?: boolean; error?: string }>((resolve) => {
+    return new Promise<CheckLauncherUpdateResponse>((resolve) => {
       const client = url.startsWith('https:') ? https : http;
       
       const headers: Record<string, string> = {
@@ -2360,7 +2367,7 @@ ipcMain.handle('launcher:checkUpdate', async (event, currentVersion: string, api
 /**
  * Download launcher update
  */
-ipcMain.on('launcher:downloadUpdate', async (event, updateInfo: UpdateInfo, apiUrl: string) => {
+ipcMain.on('launcher:downloadUpdate', async (event, updateInfo: UpdateInfo, apiUrl: string): Promise<void> => {
   try {
     const downloadUrl = updateInfo.downloadUrl;
     if (!downloadUrl) {
@@ -2508,7 +2515,7 @@ ipcMain.on('launcher:cancelUpdate', () => {
 /**
  * Install launcher update
  */
-ipcMain.handle('launcher:installUpdate', async (event, installerPath: string, newVersion: string) => {
+ipcMain.handle('launcher:installUpdate', async (event, installerPath: string, newVersion: string): Promise<InstallLauncherUpdateResponse> => {
   try {
     if (!fs.existsSync(installerPath)) {
       return {

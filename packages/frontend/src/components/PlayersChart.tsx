@@ -1,8 +1,15 @@
 /**
  * Players Chart Component
  * Красивый график для отображения статистики игроков онлайн
+ *
+ * Оптимизирован для производительности:
+ * - Мемоизация вычислений
+ * - Адаптивный дизайн
+ *
+ * @module components/PlayersChart
  */
 
+import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 
 interface PlayersChartProps {
@@ -12,10 +19,19 @@ interface PlayersChartProps {
 }
 
 export default function PlayersChart({ online, max, className = '' }: PlayersChartProps) {
-  const percentage = max > 0 ? (online / max) * 100 : 0;
-  const radius = 60;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (percentage / 100) * circumference;
+  // Мемоизируем вычисления для оптимизации производительности
+  const { percentage, radius, circumference, offset } = useMemo(() => {
+    const pct = max > 0 ? (online / max) * 100 : 0;
+    const r = 60;
+    const circ = 2 * Math.PI * r;
+    const off = circ - (pct / 100) * circ;
+    return {
+      percentage: pct,
+      radius: r,
+      circumference: circ,
+      offset: off,
+    };
+  }, [online, max]);
 
   return (
     <div className={`relative ${className}`}>

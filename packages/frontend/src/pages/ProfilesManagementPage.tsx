@@ -3,23 +3,21 @@
  */
 
 import React, { useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { Plus, Edit, Trash2, AlertCircle, Loader2, RefreshCw } from 'lucide-react';
-import { profilesAPI } from '../api/profiles';
 import { ClientProfile } from '@modern-launcher/shared';
 import ProfileFormModal from '../components/ProfileFormModal';
+import { useProfiles, useCreateProfile, useUpdateProfile, useDeleteProfile } from '../hooks/api';
 
 export default function ProfilesManagementPage() {
-  const queryClient = useQueryClient();
   const [showFormModal, setShowFormModal] = useState(false);
   const [editingProfile, setEditingProfile] = useState<ClientProfile | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const { data: profiles, isLoading, refetch } = useQuery({
-    queryKey: ['profiles'],
-    queryFn: profilesAPI.getProfiles,
-  });
+  const { data: profiles, isLoading, refetch } = useProfiles();
+  const createProfileMutation = useCreateProfile();
+  const updateProfileMutation = useUpdateProfile();
+  const deleteProfileMutation = useDeleteProfile();
 
   const handleCreate = () => {
     setEditingProfile(null);
@@ -38,10 +36,8 @@ export default function ProfilesManagementPage() {
 
     setDeletingId(id);
     try {
-      const result = await profilesAPI.deleteProfile(id);
+      const result = await deleteProfileMutation.mutateAsync(id);
       if (result.success) {
-        // Invalidate and refetch profiles
-        await queryClient.invalidateQueries({ queryKey: ['profiles'] });
         await refetch();
       } else {
         alert(result.error || 'Failed to delete profile');
@@ -54,7 +50,6 @@ export default function ProfilesManagementPage() {
   };
 
   const handleFormSuccess = async () => {
-    await queryClient.invalidateQueries({ queryKey: ['profiles'] });
     await refetch();
   };
 

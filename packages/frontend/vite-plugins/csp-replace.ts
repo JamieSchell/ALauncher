@@ -88,14 +88,22 @@ export function cspReplace(): Plugin {
         ? `'self' http://localhost:* http://${hostPattern} http://${hostname}:* ws://localhost:* ws://${hostPattern} ws://${hostname}:* ws://${wsHostPattern} ws://${wsHostname}:* ws://${wsHostname}:* wss://localhost:* wss://${hostPattern} wss://${hostname}:* wss://${wsHostPattern} wss://${wsHostname}:* wss://${wsHostname}:*`
         : `'self' http://${hostPattern} http://${hostname}:* ws://${hostPattern} ws://${hostname}:* ws://${wsHostPattern} ws://${wsHostname}:* ws://${wsHostname}:* wss://${hostPattern} wss://${hostname}:* wss://${wsHostPattern} wss://${wsHostname}:* wss://${wsHostname}:*`;
       
+      // Script source: in production, remove unsafe-eval (only needed for dev HMR)
+      // unsafe-inline may be needed for some inline scripts, but we try to minimize it
+      // In production, Vite bundles all scripts, so we can use 'self' only
       const scriptSrc = isDev
         ? `'self' 'unsafe-inline' 'unsafe-eval' http://localhost:* http://${hostPattern} http://${hostname}:*`
-        : `'self' 'unsafe-inline' 'unsafe-eval' http://${hostPattern} http://${hostname}:*`;
+        : `'self'`;
       
+      // Default source: in production, remove unsafe-eval (only needed for dev HMR)
+      // unsafe-inline kept for style-src (inline styles may be needed)
+      // data: and blob: needed for images and file downloads
       const defaultSrc = isDev
         ? `'self' 'unsafe-inline' 'unsafe-eval' data: blob: http://localhost:* http://${hostPattern} http://${hostname}:* ws://localhost:* ws://${hostPattern} ws://${hostname}:* ws://${wsHostPattern} ws://${wsHostname}:* ws://${wsHostname}:* wss://localhost:* wss://${hostPattern} wss://${hostname}:* wss://${wsHostPattern} wss://${wsHostname}:* wss://${wsHostname}:*`
-        : `'self' 'unsafe-inline' 'unsafe-eval' data: blob: http://${hostPattern} http://${hostname}:* ws://${hostPattern} ws://${hostname}:* ws://${wsHostPattern} ws://${wsHostname}:* ws://${wsHostname}:* wss://${hostPattern} wss://${hostname}:* wss://${wsHostPattern} wss://${wsHostname}:* wss://${wsHostname}:*`;
+        : `'self' data: blob: http://${hostPattern} http://${hostname}:* ws://${hostPattern} ws://${hostname}:* ws://${wsHostPattern} ws://${wsHostname}:* ws://${wsHostname}:* wss://${hostPattern} wss://${hostname}:* wss://${wsHostPattern} wss://${wsHostname}:* wss://${wsHostname}:*`;
       
+      // Style source: unsafe-inline is acceptable for inline styles (common in React apps)
+      // This is a reasonable trade-off between security and functionality
       const csp = `default-src ${defaultSrc}; script-src ${scriptSrc}; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: http: https:; font-src 'self' data:; connect-src ${connectSrc};`;
       
       // Always log for debugging in production
