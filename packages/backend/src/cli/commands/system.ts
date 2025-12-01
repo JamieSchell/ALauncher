@@ -10,7 +10,13 @@ import { logger } from '../../utils/logger';
 
 export class SystemCommands extends BaseCommand {
   getNames(): string[] {
-    return ['help', 'status', 'clear', 'cls'];
+    // Поддерживаем как короткие команды, так и пространство имён "system"
+    // Примеры:
+    //   help profile       -> детальная справка по profile
+    //   system status      -> статус системы
+    //   system dashboard   -> дашборд
+    //   clear / cls        -> очистка консоли
+    return ['system', 'help', 'status', 'clear', 'cls'];
   }
 
   getDescription(): string {
@@ -20,6 +26,7 @@ export class SystemCommands extends BaseCommand {
   getUsage(): string {
     return `help [command] - Show help for all commands or specific command
 status - Show system status
+dashboard - Show system dashboard
 clear/cls - Clear console`;
   }
 
@@ -28,62 +35,192 @@ clear/cls - Clear console`;
   }
 
   async execute(args: string[], rl: readline.Interface): Promise<void> {
-    const command = args[0]?.toLowerCase();
+    const sub = args[0]?.toLowerCase();
 
-    switch (command) {
-      case 'help':
-        await this.handleHelp(args.slice(1), rl);
-        break;
-      case 'status':
-        await this.handleStatus();
-        break;
-      case 'clear':
-      case 'cls':
-        process.stdout.write('\x1b[2J\x1b[0f');
-        break;
-      default:
-        if (!command) {
-          await this.handleHelp([], rl);
-        } else {
-          this.printError(`Unknown system command: ${command}`);
-        }
+    // Нет аргументов: показать общий help
+    if (!sub) {
+      await this.handleHelp([], rl);
+      return;
     }
+
+    // Системные подкоманды, когда вызываем как "system <sub>"
+    if (sub === 'status') {
+      await this.handleStatus();
+      return;
+    }
+    if (sub === 'dashboard') {
+      await this.handleDashboard();
+      return;
+    }
+    if (sub === 'clear' || sub === 'cls') {
+      process.stdout.write('\x1b[2J\x1b[0f');
+      return;
+    }
+
+    // Во всех остальных случаях трактуем как "help <command>"
+    await this.handleHelp(args, rl);
   }
 
   private async handleHelp(args: string[], rl: readline.Interface): Promise<void> {
     if (args.length > 0) {
-      // Show help for specific command
       const commandName = args[0].toLowerCase();
-      // This will be handled by the registry
-      this.printInfo(`Help for command: ${commandName}`);
-      this.print('Use "help" without arguments to see all commands');
-    } else {
-      // Show all commands
-      this.print('\x1b[1mAvailable Commands:\x1b[0m\n');
-      
-      const categories = [
-        { name: 'System', commands: ['help', 'status', 'clear'] },
-        { name: 'Users', commands: ['user list', 'user create', 'user delete', 'user ban', 'user unban', 'user role'] },
-        { name: 'Profiles', commands: ['profile list', 'profile create', 'profile delete', 'profile enable', 'profile disable'] },
-        { name: 'Client Download', commands: ['client download', 'client list'] },
-        { name: 'Client Versions', commands: ['version list', 'version sync', 'version verify', 'version stats'] },
-        { name: 'Files', commands: ['file sync', 'file verify', 'file stats', 'file list', 'file delete', 'file delete-all'] },
-        { name: 'Assets', commands: ['assets download', 'assets list', 'assets check'] },
-        { name: 'Launcher', commands: ['launcher list', 'launcher create', 'launcher enable', 'launcher disable'] },
-        { name: 'Notifications', commands: ['notify send', 'notify list', 'notify clear'] },
-        { name: 'Statistics', commands: ['stats users', 'stats launches', 'stats crashes'] },
-      ];
 
-      categories.forEach((category) => {
-        console.log(`\x1b[36m${category.name}:\x1b[0m`);
-        category.commands.forEach((cmd) => {
-          console.log(`  ${cmd}`);
-        });
-        console.log('');
+      // Ручной подробный help для ключевых команд (profile, client, assets, file)
+      switch (commandName) {
+        case 'profile':
+          console.log('\x1b[1mCommand:\x1b[0m profile');
+          console.log('\x1b[1mDescription:\x1b[0m Client profile management commands');
+          console.log('\x1b[1mUsage:\x1b[0m');
+          console.log('  profile list [--all] - List all profiles (--all includes disabled)');
+          console.log('  profile info <id> - Show profile information');
+          console.log('  profile add <title> <loader> <version> [serverAddress] [serverPort] - Create new profile');
+          console.log('  profile sync <id> - Sync client files for profile from updates directory');
+          console.log('  profile set-jvm <id> <version> - Set Java version for profile (e.g., 8, 16, 17, 21)');
+          console.log('  profile enable <id> - Enable profile');
+          console.log('  profile disable <id> - Disable profile');
+          console.log('  profile delete <id> - Delete profile');
+          console.log('\x1b[1mExamples:\x1b[0m');
+          console.log('  profile list');
+          console.log('  profile list --all');
+          console.log('  profile info <profile-id>');
+          console.log('  profile add "HiTech" Forge 1.12.2');
+          console.log('  profile add "My Server" Fabric 1.20.1 192.168.1.100 25565');
+          console.log('  profile set-jvm <profile-id> 16');
+          console.log('  profile sync <profile-id>');
+          return;
+        case 'client':
+          console.log('\x1b[1mCommand:\x1b[0m client');
+          console.log('\x1b[1mDescription:\x1b[0m Client download and management commands');
+          console.log('\x1b[1mUsage:\x1b[0m');
+          console.log('  client download <title> <loader> <version> [serverAddress] [serverPort]');
+          console.log('  client list');
+          console.log('\x1b[1mExamples:\x1b[0m');
+          console.log('  client download "My Vanilla" Vanilla 1.21.0');
+          console.log('  client download "Forge Server" Forge 1.12.2');
+          console.log('  client download "Fabric Client" Fabric 1.20.1');
+          console.log('  client download "My Server" Vanilla 1.20.4 192.168.1.100 25565');
+          console.log('  client list');
+          return;
+        case 'assets':
+          console.log('\x1b[1mCommand:\x1b[0m assets');
+          console.log('\x1b[1mDescription:\x1b[0m Minecraft assets management commands');
+          console.log('\x1b[1mUsage:\x1b[0m');
+          console.log('  assets download <version> - Download assets for a specific Minecraft version');
+          console.log('  assets list - List all downloaded asset indexes');
+          console.log('  assets check <version> - Check if assets are downloaded for a version');
+          console.log('\x1b[1mExamples:\x1b[0m');
+          console.log('  assets download 1.12.2');
+          console.log('  assets download 1.20.4');
+          console.log('  assets list');
+          console.log('  assets check 1.12.2');
+          return;
+        case 'file':
+          console.log('\x1b[1mCommand:\x1b[0m file');
+          console.log('\x1b[1mDescription:\x1b[0m File management and synchronization commands');
+          console.log('\x1b[1mUsage:\x1b[0m');
+          console.log('  file sync <version|clientDirectory> - Sync files for version or specific client');
+          console.log('  file verify <version> - Verify integrity of all files for version');
+          console.log('  file stats <version> - Show sync statistics for version');
+          console.log('  file list <version> - List all files for version');
+          console.log('  file delete <version> <filePath> - Delete file from database');
+          console.log('  file delete-all <version> - Delete all files for version from database');
+          console.log('\x1b[1mExamples:\x1b[0m');
+          console.log('  file sync 1.12.2');
+          console.log('  file sync hitech');
+          console.log('  file verify 1.12.2');
+          console.log('  file stats 1.12.2');
+          console.log('  file list 1.12.2');
+          console.log('  file delete 1.12.2 libraries/.../forge-1.12.2-14.23.5.2860.jar');
+          console.log('  file delete-all 1.12.2');
+          return;
+        default:
+          this.printError(`Unknown command: ${commandName}`);
+          this.printInfo('Use "help" without arguments to see all commands');
+          return;
+      }
+    }
+
+    // Общий список команд по категориям
+    this.print('\x1b[1mAvailable Commands:\x1b[0m\n');
+
+    const categories = [
+      { name: 'System', commands: ['help', 'status', 'dashboard', 'clear'] },
+      { name: 'Users', commands: ['user list', 'user create', 'user delete', 'user ban', 'user unban', 'user role'] },
+      { name: 'Profiles', commands: ['profile list', 'profile info', 'profile add', 'profile sync', 'profile set-jvm', 'profile enable', 'profile disable', 'profile delete'] },
+      { name: 'Client Download', commands: ['client download', 'client list'] },
+      { name: 'Client Versions', commands: ['version list', 'version sync', 'version verify', 'version stats'] },
+      { name: 'Files', commands: ['file sync', 'file verify', 'file stats', 'file list', 'file delete', 'file delete-all'] },
+      { name: 'Assets', commands: ['assets download', 'assets list', 'assets check'] },
+      { name: 'Launcher', commands: ['launcher list', 'launcher create', 'launcher enable', 'launcher disable'] },
+      { name: 'Notifications', commands: ['notify send', 'notify list', 'notify clear'] },
+      { name: 'Statistics', commands: ['stats users', 'stats launches', 'stats crashes'] },
+    ];
+
+    categories.forEach((category) => {
+      console.log(`\x1b[36m${category.name}:\x1b[0m`);
+      category.commands.forEach((cmd) => {
+        console.log(`  ${cmd}`);
       });
+      console.log('');
+    });
 
-      this.print('\x1b[33mTip:\x1b[0m Type "help <command>" for detailed help on a specific command');
-      this.print('Type "exit" or "quit" to close the CLI\n');
+    this.print('\x1b[33mTip:\x1b[0m Type "help <command>" for detailed help on a specific command');
+    this.print('Type "exit" or "quit" to close the CLI\n');
+  }
+
+  private async handleDashboard(): Promise<void> {
+    try {
+      this.print('\x1b[1mSystem Dashboard:\x1b[0m\n');
+
+      const [
+        userCount,
+        profileCount,
+        versionCount,
+        launcherVersionCount,
+        crashCount,
+        launchCount,
+        recentProfiles,
+      ] = await Promise.all([
+        prisma.user.count(),
+        prisma.clientProfile.count(),
+        prisma.clientVersion.count(),
+        prisma.launcherVersion.count({ where: { enabled: true } }),
+        prisma.gameCrash.count(),
+        prisma.gameLaunch.count(),
+        prisma.clientProfile.findMany({
+          orderBy: { createdAt: 'desc' },
+          take: 5,
+          select: { id: true, title: true, version: true, clientDirectory: true, enabled: true },
+        }),
+      ]);
+
+      console.log('\x1b[36mOverview:\x1b[0m');
+      console.log(`  Users:             ${userCount}`);
+      console.log(`  Profiles:          ${profileCount}`);
+      console.log(`  Client Versions:   ${versionCount}`);
+      console.log(`  Launcher Versions: ${launcherVersionCount}`);
+      console.log(`  Total Launches:    ${launchCount}`);
+      console.log(`  Total Crashes:     ${crashCount}\n`);
+
+      console.log('\x1b[36mRecent Profiles:\x1b[0m');
+      if (recentProfiles.length === 0) {
+        console.log('  No profiles found');
+      } else {
+        recentProfiles.forEach((p) => {
+          const statusLabel = p.enabled ? '\x1b[32mENABLED\x1b[0m' : '\x1b[31mDISABLED\x1b[0m';
+          const dir = p.clientDirectory || p.version;
+          console.log(`  [${statusLabel}] ${p.title} (v${p.version}, dir: ${dir})`);
+        });
+      }
+
+      console.log('\n\x1b[36mShortcuts:\x1b[0m');
+      console.log('  profile list      - list all profiles');
+      console.log('  client list       - list auto-downloaded clients');
+      console.log('  stats launches    - detailed launch statistics');
+      console.log('  stats crashes     - detailed crash statistics');
+    } catch (error: any) {
+      this.printError(`Failed to show dashboard: ${error.message}`);
+      logger.error('Dashboard command error:', error);
     }
   }
 

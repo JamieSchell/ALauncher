@@ -182,14 +182,20 @@ CREATE TABLE IF NOT EXISTS `client_versions` (
 CREATE TABLE IF NOT EXISTS `client_files` (
   `id` VARCHAR(36) NOT NULL PRIMARY KEY,
   `versionId` VARCHAR(36) NOT NULL,
+  `clientDirectory` VARCHAR(191) NULL,
   `filePath` VARCHAR(500) NOT NULL,
   `fileHash` VARCHAR(64) NOT NULL,
   `fileSize` BIGINT NOT NULL,
   `fileType` VARCHAR(50) NOT NULL,
   `downloadUrl` VARCHAR(500) NULL,
-  UNIQUE KEY `unique_version_path` (`versionId`, `filePath`),
+  `verified` BOOLEAN NOT NULL DEFAULT 0,
+  `lastVerified` DATETIME(3) NULL,
+  `integrityCheckFailed` BOOLEAN NOT NULL DEFAULT 0,
+  -- Один и тот же относительный путь может существовать в разных директориях клиентов
+  UNIQUE KEY `unique_version_client_path` (`versionId`, `clientDirectory`, `filePath`),
   INDEX `idx_versionId` (`versionId`),
   INDEX `idx_fileType` (`fileType`),
+  INDEX `idx_clientDirectory` (`clientDirectory`),
   FOREIGN KEY (`versionId`) REFERENCES `client_versions`(`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

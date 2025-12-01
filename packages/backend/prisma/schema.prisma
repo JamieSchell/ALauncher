@@ -221,6 +221,7 @@ model ClientVersion {
 model ClientFile {
   id            String   @id @default(uuid())
   versionId     String   // ID версии клиента
+  clientDirectory String @default("") // Директория клиента (например, "hitech", "sandbox"); пустая строка для общих файлов версии
   filePath      String   // Относительный путь к файлу
   fileHash      String   // SHA-256 хеш
   fileSize      BigInt   // Размер в байтах
@@ -232,9 +233,12 @@ model ClientFile {
   
   version       ClientVersion @relation(fields: [versionId], references: [id], onDelete: Cascade)
   
-  @@unique([versionId, filePath])
+  // Уникальность файла теперь учитывает директорию клиента:
+  // один и тот же относительный путь может существовать в разных clientDirectory
+  @@unique([versionId, clientDirectory, filePath])
   @@index([versionId])
   @@index([fileType])
+  @@index([clientDirectory])
   @@index([verified])
   @@index([integrityCheckFailed])
   @@map("client_files")

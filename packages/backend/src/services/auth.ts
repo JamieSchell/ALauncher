@@ -6,6 +6,8 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import axios from 'axios';
 import crypto from 'crypto';
+import fs from 'fs/promises';
+import path from 'path';
 import { prisma } from './database';
 import { config } from '../config';
 import { PlayerProfile } from '@modern-launcher/shared';
@@ -19,6 +21,14 @@ const SALT_ROUNDS = 10;
  */
 async function calculateTextureDigest(url: string): Promise<string> {
   try {
+    // If texture is stored locally (uploaded skin/cloak), read it directly from disk
+    if (url.startsWith('/uploads/textures/')) {
+      const relativePath = url.replace(/^\//, ''); // remove leading slash
+      const filePath = path.join(process.cwd(), relativePath);
+      const buffer = await fs.readFile(filePath);
+      return crypto.createHash('sha256').update(buffer).digest('hex');
+    }
+
     // If URL is relative (starts with /), convert to absolute URL
     let absoluteUrl = url;
     if (url.startsWith('/')) {

@@ -1,7 +1,12 @@
 /**
  * Asset Download Service
- * Автоматическая загрузка assets (ресурсов) Minecraft с официального сайта
- * Assets хранятся в общей папке updates/assets/{assetIndex}/ для всех профилей
+ * Автоматическая загрузка assets (ресурсов) Minecraft с официального сайта.
+ *
+ * Каноничная структура хранения (как в оригинальном лаунчере):
+ *   updates/assets/indexes/<assetIndex>.json
+ *   updates/assets/objects/<hashPrefix>/<hash>
+ *
+ * Один набор assets шарится между всеми профилями, у которых совпадает assetIndex.
  */
 
 import axios from 'axios';
@@ -108,13 +113,16 @@ async function areAssetsDownloaded(assetIndex: string, version?: string): Promis
     }
   }
   
-  const assetsDir = path.join(config.paths.updates, 'assets', actualAssetIndex);
-  const indexPath = path.join(assetsDir, 'index.json');
+  // Каноничная структура Minecraft:
+  // assets_root/indexes/<assetIndex>.json
+  // assets_root/objects/<hashPrefix>/<hash>
+  const assetsRoot = path.join(config.paths.updates, 'assets');
+  const indexPath = path.join(assetsRoot, 'indexes', `${actualAssetIndex}.json`);
   
   try {
     await fs.access(indexPath);
     // Проверить наличие папки objects
-    const objectsDir = path.join(assetsDir, 'objects');
+    const objectsDir = path.join(assetsRoot, 'objects');
     try {
       const stats = await fs.stat(objectsDir);
       if (stats.isDirectory()) {
@@ -192,12 +200,16 @@ export async function downloadAssets(
       logger.info(`Using assetIndex ${actualAssetIndex} from version manifest (requested: ${assetIndex})`);
     }
     
-    const assetsDir = path.join(config.paths.updates, 'assets', actualAssetIndex);
-    await fs.mkdir(assetsDir, { recursive: true });
-
+    const assetsRoot = path.join(config.paths.updates, 'assets');
+    const indexesDir = path.join(assetsRoot, 'indexes');
+    const objectsRootDir = path.join(assetsRoot, 'objects');
+    
+    await fs.mkdir(indexesDir, { recursive: true });
+    await fs.mkdir(objectsRootDir, { recursive: true });
+    
     // Загрузить asset index
     logger.info(`Downloading asset index for ${actualAssetIndex}...`);
-    const assetIndexPath = path.join(assetsDir, 'index.json');
+    const assetIndexPath = path.join(indexesDir, `${actualAssetIndex}.json`);
     await downloadFile(
       versionInfo.assetIndex.url,
       assetIndexPath,
@@ -223,7 +235,7 @@ export async function downloadAssets(
       const hash = assetInfo.hash;
       const hashPrefix = hash.substring(0, 2);
       const assetUrl = `${RESOURCES_BASE_URL}/${hashPrefix}/${hash}`;
-      const assetFilePath = path.join(assetsDir, 'objects', hashPrefix, hash);
+      const assetFilePath = path.join(objectsRootDir, hashPrefix, hash);
 
       try {
         // Проверить, существует ли файл

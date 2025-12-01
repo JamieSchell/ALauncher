@@ -1985,6 +1985,7 @@ ipcMain.handle('http:request', async (event, options: {
 });
 
 ipcMain.on('file:download', async (event, url: string, destPath: string, authToken?: string) => {
+  // Уникальный идентификатор загрузки, чтобы отличать параллельные загрузки
   const downloadId = `${url}-${destPath}`;
   
   try {
@@ -2004,7 +2005,7 @@ ipcMain.on('file:download', async (event, url: string, destPath: string, authTok
     const request = client.get(url, requestOptions, (response) => {
       if (response.statusCode !== 200) {
         activeDownloads.delete(downloadId);
-        event.reply('file:download:error', `HTTP ${response.statusCode}`);
+        event.reply('file:download:error', downloadId, `HTTP ${response.statusCode}`);
         return;
       }
 
@@ -2025,7 +2026,7 @@ ipcMain.on('file:download', async (event, url: string, destPath: string, authTok
         // Обновлять прогресс только если прошло достаточно времени/данных
         if (downloadedBytes - lastProgressUpdate >= progressUpdateInterval || downloadedBytes === totalBytes) {
           const progress = totalBytes > 0 ? (downloadedBytes / totalBytes) * 100 : 0;
-          event.reply('file:download:progress', progress);
+          event.reply('file:download:progress', downloadId, progress);
           lastProgressUpdate = downloadedBytes;
         }
       });
@@ -2039,7 +2040,7 @@ ipcMain.on('file:download', async (event, url: string, destPath: string, authTok
         activeDownloads.delete(downloadId);
         writer.destroy();
         fs.unlink(destPath, () => {});
-        event.reply('file:download:error', error.message);
+        event.reply('file:download:error', downloadId, error.message);
       });
 
       response.pipe(writer);
@@ -2048,23 +2049,23 @@ ipcMain.on('file:download', async (event, url: string, destPath: string, authTok
         activeDownloads.delete(downloadId);
         response.destroy();
         fs.unlink(destPath, () => {});
-        event.reply('file:download:error', error.message);
+        event.reply('file:download:error', downloadId, error.message);
       });
 
       writer.on('finish', () => {
         // Файл полностью записан на диск
         activeDownloads.delete(downloadId);
-        event.reply('file:download:complete');
+        event.reply('file:download:complete', downloadId);
       });
     });
 
     request.on('error', (error) => {
       activeDownloads.delete(downloadId);
-      event.reply('file:download:error', error.message);
+      event.reply('file:download:error', downloadId, error.message);
     });
   } catch (error) {
     activeDownloads.delete(downloadId);
-    event.reply('file:download:error', (error as Error).message);
+    event.reply('file:download:error', downloadId, (error as Error).message);
   }
 });
 

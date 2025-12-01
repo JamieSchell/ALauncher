@@ -189,7 +189,7 @@ export default function ServerDetailsPage() {
       // Получить правильный путь к updates директории
       const updatesDirBase = await window.electronAPI.getUpdatesDir();
       const clientFilesDir = `${updatesDirBase}/${clientDir}`;
-      const assetsDir = `${updatesDirBase}/assets/${assetIndex}`;
+      const assetsRoot = `${updatesDirBase}/assets`;
 
       // Проверить client.jar
       const clientJarPath = `${clientFilesDir}/client.jar`;
@@ -204,7 +204,7 @@ export default function ServerDetailsPage() {
 
       // Проверить assets - должны быть скачаны
       if (assetIndex) {
-        const assetIndexFile = `${assetsDir}/index.json`;
+        const assetIndexFile = `${assetsRoot}/indexes/${assetIndex}.json`;
         let assetsReady = false;
         
         const assetIndexExists = await window.electronAPI.fileExists(assetIndexFile);
@@ -222,7 +222,7 @@ export default function ServerDetailsPage() {
                 const [assetPath, assetInfo]: [string, any] = assetEntries[i] as [string, any];
                 const hash = assetInfo.hash;
                 const hashPrefix = hash.substring(0, 2);
-                const assetFilePath = `${assetsDir}/objects/${hashPrefix}/${hash}`;
+                const assetFilePath = `${assetsRoot}/objects/${hashPrefix}/${hash}`;
                 if (await window.electronAPI.fileExists(assetFilePath)) {
                   foundAssets++;
                 }
@@ -251,7 +251,7 @@ export default function ServerDetailsPage() {
       // Пытаемся получить информацию с сервера для проверки всех файлов
       let versionInfo;
       try {
-        versionInfo = await downloadsAPI.getClientVersionByVersion(version);
+        versionInfo = await downloadsAPI.getClientVersionByVersion(version, profileData?.profile?.clientDirectory || undefined);
       } catch (error: any) {
         // Если версии нет в БД (404), это нормально - проверяем только client.jar
         if (error.response?.status === 404) {
@@ -293,10 +293,10 @@ export default function ServerDetailsPage() {
         
         if (missingFiles.length > 0) {
           console.log(`[ClientCheck] ⚠️ Missing ${missingFiles.length} files (showing first 5):`, missingFiles.slice(0, 5));
-          // Если есть отсутствующие файлы, но client.jar есть, всё равно считаем клиент готовым
-          // (файлы могут быть загружены позже или не критичны для запуска)
-          console.log(`[ClientCheck] ⚠️ Some files missing, but client.jar exists - considering ready`);
-          return true;
+          // Если есть отсутствующие файлы (например, новые моды), считаем клиент НЕ готовым,
+          // чтобы запустить процесс догрузки недостающих файлов перед запуском игры.
+          console.log(`[ClientCheck] ⚠️ Some files missing, client is NOT ready - download required`);
+          return false;
         }
         
         console.log(`[ClientCheck] ✓ All ${checkedFiles} files checked and found`);
@@ -625,7 +625,7 @@ export default function ServerDetailsPage() {
     setCheckingFiles(false);
     
     if (!filesReady) {
-      // Файлы не найдены - запустить загрузку
+      // Файлы отсутствуют или не полные — запускаем загрузку с сервера
       setDownloadingVersion(profile.version);
       setShowDownloadModal(true);
       setDownloadProgress({
@@ -638,42 +638,10 @@ export default function ServerDetailsPage() {
       });
 
       try {
-        // Сначала проверяем, есть ли локальные файлы
-        // Используем clientDirectory из профиля, если он есть, иначе fallback на version
-        const clientDir = profile.clientDirectory || profile.version;
-        const updatesDirBase = await window.electronAPI.getUpdatesDir();
-        const updatesDir = `${updatesDirBase}/${clientDir}`;
-        const clientJarPath = `${updatesDir}/client.jar`;
-        const hasLocalFiles = await window.electronAPI.fileExists(clientJarPath);
-
-        if (hasLocalFiles) {
-          // Локальные файлы найдены - используем их без загрузки
-          console.log(`[Download] Found local files for version ${profile.version}, skipping download`);
-          setDownloadProgress(prev => prev ? {
-            ...prev,
-            stage: 'complete',
-            progress: 100,
-            currentFile: 'Local files found, ready to launch!',
-            totalFiles: 1,
-            downloadedFiles: 1,
-          } : null);
-          
-          setClientReady(true);
-          
-          setTimeout(async () => {
-            setShowDownloadModal(false);
-            setDownloadProgress(null);
-            setDownloadingVersion(null);
-            await launchGame();
-          }, 1000);
-          
-          return;
-        }
-
-        // Локальных файлов нет - пытаемся загрузить с сервера
+        // Всегда загружаем недостающие/обновлённые файлы с сервера для этого профиля
         let versionId: string;
         try {
-          const versionInfo = await downloadsAPI.getClientVersionByVersion(profile.version);
+          const versionInfo = await downloadsAPI.getClientVersionByVersion(profile.version, profile.clientDirectory || undefined);
           if (!versionInfo.data) {
             throw new Error('Version not found on server');
           }
@@ -691,7 +659,7 @@ export default function ServerDetailsPage() {
           return;
         }
 
-        const versionInfo = await downloadsAPI.getClientVersionByVersion(profile.version);
+        const versionInfo = await downloadsAPI.getClientVersionByVersion(profile.version, profile.clientDirectory || undefined);
         if (!versionInfo.data) {
           throw new Error('Version info not found');
         }
@@ -706,6 +674,11 @@ export default function ServerDetailsPage() {
         // Параллельная загрузка файлов с ограничением количества одновременных загрузок
         const MAX_CONCURRENT_DOWNLOADS = 2; // Консервативное значение для стабильности
         const baseUrl = API_CONFIG.baseUrlWithoutApi;
+        const clientDirForDownload = profile.clientDirectory || undefined;
+        // Базовая директория для файлов клиента на диске пользователя
+        const updatesDirBase = await window.electronAPI.getUpdatesDir();
+        const clientDirOnDisk = profile.clientDirectory || profile.version;
+        const updatesDir = `${updatesDirBase}/${clientDirOnDisk}`;
         
         // Функция для загрузки одного файла
         const downloadSingleFile = async (file: any, index: number): Promise<void> => {
@@ -741,7 +714,9 @@ export default function ServerDetailsPage() {
             console.warn(`[Download] Error checking file ${file.filePath}, will try to download:`, error.message);
           }
 
-          const fileUrl = `${baseUrl}/api/client-versions/${versionId}/file?path=${encodeURIComponent(file.filePath)}`;
+          const fileUrl = `${baseUrl}/api/client-versions/${versionId}/file?path=${encodeURIComponent(file.filePath)}${
+            clientDirForDownload ? `&clientDirectory=${encodeURIComponent(clientDirForDownload)}` : ''
+          }`;
           const fileName = file.filePath.split(/[/\\]/).pop() || file.filePath;
           
           setDownloadProgress(prev => prev ? {
@@ -855,6 +830,9 @@ export default function ServerDetailsPage() {
           } : null);
           
           try {
+            // Корневая директория assets соответствует новой схеме:
+            // <updatesDirBase>/assets/indexes/<assetIndex>.json
+            // <updatesDirBase>/assets/objects/<hashPrefix>/<hash>
             const assetsDir = `${updatesDirBase}/assets/${profile.assetIndex}`;
             const assetsIndexPath = `${assetsDir}/index.json`;
             
@@ -997,7 +975,7 @@ export default function ServerDetailsPage() {
       // If not set in profile, try to get from ClientVersion
       if (!profile.jvmVersion) {
         try {
-          const versionInfo = await downloadsAPI.getClientVersionByVersion(profile.version);
+          const versionInfo = await downloadsAPI.getClientVersionByVersion(profile.version, profile.clientDirectory || undefined);
           if (versionInfo.data?.jvmVersion) {
             jvmVersion = versionInfo.data.jvmVersion;
           }
@@ -1029,8 +1007,15 @@ export default function ServerDetailsPage() {
       // Get updates directory for variable replacement
       const updatesDirBase = await window.electronAPI.getUpdatesDir();
       const clientDir = profile.clientDirectory || profile.version;
+      // Рабочая директория игры = директория клиента в updates,
+      // чтобы все файлы (config, saves, logs) создавались именно там
       const gameDir = joinPath(updatesDirBase, clientDir);
-      const assetsDir = joinPath(updatesDirBase, 'assets', profile.assetIndex);
+      // Каноничная структура assets, идентичная HomePage:
+      // assets_root = <updatesDirBase>/assets
+      // index: assets_root/indexes/<assetIndex>.json
+      // objects: assets_root/objects/<hashPrefix>/<hash>
+      const assetsRoot = joinPath(updatesDirBase, 'assets');
+      const assetIndexName = profile.assetIndex;
 
       // Function to replace variables in clientArgs
       const replaceVariables = (arg: string): string => {
@@ -1039,14 +1024,14 @@ export default function ServerDetailsPage() {
           .replace(/\$\{uuid\}/g, playerProfile.uuid)
           .replace(/\$\{accessToken\}/g, accessToken || '')
           .replace(/\$\{gameDir\}/g, gameDir)
-          .replace(/\$\{assetsDir\}/g, assetsDir)
+          .replace(/\$\{assetsDir\}/g, assetsRoot)
           .replace(/\$\{serverAddress\}/g, profile.serverAddress)
           .replace(/\$\{serverPort\}/g, profile.serverPort.toString())
           .replace(/\$\{version\}/g, profile.version)
           .replace(/\$\{version_name\}/g, profile.version)
           .replace(/\$\{game_directory\}/g, gameDir)
-          .replace(/\$\{assets_root\}/g, assetsDir)
-          .replace(/\$\{assets_index_name\}/g, profile.assetIndex)
+          .replace(/\$\{assets_root\}/g, assetsRoot)
+          .replace(/\$\{assets_index_name\}/g, assetIndexName)
           .replace(/\$\{auth_player_name\}/g, playerProfile.username)
           .replace(/\$\{auth_uuid\}/g, playerProfile.uuid)
           .replace(/\$\{auth_access_token\}/g, accessToken || '')
@@ -1128,14 +1113,14 @@ export default function ServerDetailsPage() {
       }
 
       // clientDir is already declared above for variable replacement
-      
+      // ВАЖНО: передаём workingDir = gameDir, чтобы запускаться из директории клиента
       const result = await window.electronAPI.launchGame({
         javaPath,
         jvmArgs,
         mainClass: profile.mainClass,
         classPath: profile.classPath,
         gameArgs,
-        workingDir,
+        workingDir: gameDir,
         version: profile.version,
         clientDirectory: clientDir, // Pass clientDirectory for file lookup
         jvmVersion,

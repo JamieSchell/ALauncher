@@ -101,11 +101,21 @@ export class ClientVersionService {
   /**
    * Получить информацию о версии по номеру версии
    */
-  static async getVersionByVersion(version: string): Promise<ClientVersionInfo | null> {
+  static async getVersionByVersion(version: string, clientDirectory?: string): Promise<ClientVersionInfo | null> {
     const clientVersion = await prisma.clientVersion.findUnique({
       where: { version },
       include: {
         files: {
+          // Если указан clientDirectory, возвращаем как файлы для этого клиента,
+          // так и общие файлы версии (clientDirectory = "").
+          where: clientDirectory
+            ? {
+                OR: [
+                  { clientDirectory },
+                  { clientDirectory: '' },
+                ],
+              }
+            : {},
           select: {
             filePath: true,
             fileHash: true,
@@ -136,8 +146,13 @@ export class ClientVersionService {
   static async getFilePath(versionId: string, filePath: string): Promise<string | null> {
     const file = await prisma.clientFile.findUnique({
       where: {
-        versionId_filePath: {
+        // Путь к файлу должен быть однозначно определён по версии и пути.
+        // Если есть несколько записей с разными clientDirectory, этот метод
+        // лучше не использовать напрямую (используем маршрут /file, который
+        // работает с конкретным versionId+filePath+clientDirectory).
+        versionId_clientDirectory_filePath: {
           versionId,
+          clientDirectory: "",
           filePath,
         },
       },
@@ -156,14 +171,9 @@ export class ClientVersionService {
     // Иначе вернуть локальный путь
     const version = file.version;
     
-    // Попытаться найти профиль, использующий эту версию, чтобы получить clientDirectory
-    const profile = await prisma.clientProfile.findFirst({
-      where: { version: version.version },
-      select: { clientDirectory: true },
-    });
-    
-    // Использовать clientDirectory из профиля, если найден, иначе fallback на version
-    const clientDir = profile?.clientDirectory || version.version;
+    // Если у файла есть clientDirectory, использовать её напрямую,
+    // иначе fallback на директорию версии (общие файлы).
+    const clientDir = file.clientDirectory || version.version;
     const basePath = path.join(config.paths.updates, clientDir);
 
     return path.join(basePath, filePath);
@@ -173,12 +183,12 @@ export class ClientVersionService {
    * Проверить существование файла на сервере
    */
   static async fileExists(versionId: string, filePath: string): Promise<boolean> {
-    const file = await prisma.clientFile.findUnique({
+    // Для проверки существования достаточно любого файла с таким versionId+filePath,
+    // независимо от clientDirectory (файл может быть общим или специфичным для клиента).
+    const file = await prisma.clientFile.findFirst({
       where: {
-        versionId_filePath: {
-          versionId,
-          filePath,
-        },
+        versionId,
+        filePath,
       },
     });
 

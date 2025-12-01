@@ -271,7 +271,10 @@ router.post(
 
       // Delete old skin file if exists
       if (currentUser?.skinUrl && currentUser.skinUrl.startsWith('/uploads/textures/')) {
-        const oldFilePath = path.join(process.cwd(), currentUser.skinUrl);
+        const oldFilePath = path.join(
+          process.cwd(),
+          currentUser.skinUrl.replace(/^\//, ''),
+        );
         if (fs.existsSync(oldFilePath)) {
           try {
             fs.unlinkSync(oldFilePath);
@@ -399,7 +402,10 @@ router.post(
 
       // Delete old cloak file if exists
       if (currentUser?.cloakUrl && currentUser.cloakUrl.startsWith('/uploads/textures/')) {
-        const oldFilePath = path.join(process.cwd(), currentUser.cloakUrl);
+        const oldFilePath = path.join(
+          process.cwd(),
+          currentUser.cloakUrl.replace(/^\//, ''),
+        );
         if (fs.existsSync(oldFilePath)) {
           try {
             fs.unlinkSync(oldFilePath);

@@ -1,6 +1,6 @@
 {
   "name": "@modern-launcher/frontend",
-  "version": "1.0.259",
+  "version": "1.0.268",
   "description": "Modern Minecraft Launcher - Electron Frontend",
   "author": "Modern Launcher Team",
   "main": "dist-electron/main.js",

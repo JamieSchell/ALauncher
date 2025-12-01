@@ -81,35 +81,25 @@ assets check <version> - Check if assets are downloaded for a version`;
         return;
       }
 
-      // Проверить, загружены ли assets
-      const assetsDir = path.join(config.paths.updates, 'assets', assetIndex);
-      const indexPath = path.join(assetsDir, 'index.json');
-      
+      // Проверить, загружены ли assets (используем общую логику сервиса)
+      const assetsRoot = path.join(config.paths.updates, 'assets');
+      const indexesDir = path.join(assetsRoot, 'indexes');
+      const indexPath = path.join(indexesDir, `${assetIndex}.json`);
+
       try {
         await fs.access(indexPath);
-        const objectsDir = path.join(assetsDir, 'objects');
-        try {
-          const stats = await fs.stat(objectsDir);
-          if (stats.isDirectory()) {
-            const files = await fs.readdir(objectsDir);
-            if (files.length > 0) {
-              this.printWarning(`\n⚠️  Assets for ${assetIndex} are already downloaded!`);
-              this.printInfo(`   Location: ${assetsDir}`);
-              const overwrite = await this.askYesNo(rl, 'Do you want to download them again?');
-              if (!overwrite) {
-                this.printInfo('Download cancelled');
-                return;
-              }
-            }
-          }
-        } catch {
-          // Objects directory doesn't exist, continue
+        this.printWarning(`\n⚠️  Assets for ${assetIndex} are already downloaded!`);
+        this.printInfo(`   Index: ${indexPath}`);
+        const overwrite = await this.askYesNo(rl, 'Do you want to re-check and re-download missing assets?');
+        if (!overwrite) {
+          this.printInfo('Download cancelled');
+          return;
         }
       } catch {
-        // Index doesn't exist, continue with download
+        // Index не существует, просто продолжим загрузку
       }
 
-      this.printInfo(`\n📥 Starting download of assets for ${assetIndex}...`);
+      this.printInfo(`\n📥 Starting download of assets for ${assetIndex} (version ${version})...`);
       this.print(`   This may take a while depending on your internet connection.\n`);
 
       let lastProgress = 0;
@@ -140,7 +130,9 @@ assets check <version> - Check if assets are downloaded for a version`;
       this.print(`   Downloaded: ${result.downloaded} file(s)`);
       this.print(`   Skipped: ${result.skipped} file(s)`);
       this.print(`   Errors: ${result.errors} file(s)`);
-      this.print(`\n📁 Location: ${assetsDir}`);
+      this.print(`\n📁 Assets root: ${assetsRoot}`);
+      this.print(`   Index file: ${path.join('assets', 'indexes', `${assetIndex}.json`)}`);
+      this.print(`   Objects dir: ${path.join('assets', 'objects')}`);
       this.print(`\n💡 All profiles using assetIndex "${assetIndex}" will use these assets.`);
 
       if (result.errors > 0) {

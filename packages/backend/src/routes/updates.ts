@@ -115,28 +115,48 @@ router.get('/:profileId/:dirType/file', async (req, res, next) => {
       throw new AppError(404, 'Profile not found');
     }
 
-    // Construct base directory path
-    let basePath: string;
-    switch (dirType) {
-      case 'client':
-        // Use clientDirectory if set, otherwise fallback to version
-        const clientDir = profile.clientDirectory || profile.version;
-        basePath = path.join(config.paths.updates, clientDir);
-        break;
-      case 'asset':
-        basePath = path.join(config.paths.updates, 'assets', profile.assetIndex);
-        break;
-      case 'jvm':
-        basePath = path.join(config.paths.updates, 'jvm');
-        break;
-      default:
-        throw new AppError(400, 'Invalid directory type');
-    }
+    let fullPath: string;
 
-    // Security: prevent path traversal
-    const fullPath = path.join(basePath, filePath);
-    if (!fullPath.startsWith(basePath)) {
-      throw new AppError(403, 'Access denied');
+    if (dirType === 'asset') {
+      // Новая каноничная схема хранения assets на сервере:
+      //   updates/assets/indexes/<assetIndex>.json
+      //   updates/assets/objects/<hashPrefix>/<hash>
+      const assetsRoot = path.join(config.paths.updates, 'assets');
+
+      if (filePath === 'index.json') {
+        // Отдать конкретный index для assetIndex профиля
+        fullPath = path.join(assetsRoot, 'indexes', `${profile.assetIndex}.json`);
+      } else if (filePath.startsWith('objects/')) {
+        // Проксируем objects/... как есть
+        fullPath = path.join(assetsRoot, filePath);
+      } else {
+        throw new AppError(400, 'Invalid asset file path');
+      }
+
+      // Security: prevent path traversal
+      if (!fullPath.startsWith(assetsRoot)) {
+        throw new AppError(403, 'Access denied');
+      }
+    } else {
+      // Construct base directory path for client/jvm
+      let basePath: string;
+      switch (dirType) {
+        case 'client':
+          // Use clientDirectory if set, otherwise fallback to version
+          const clientDir = profile.clientDirectory || profile.version;
+          basePath = path.join(config.paths.updates, clientDir);
+          break;
+        case 'jvm':
+          basePath = path.join(config.paths.updates, 'jvm');
+          break;
+        default:
+          throw new AppError(400, 'Invalid directory type');
+      }
+
+      fullPath = path.join(basePath, filePath);
+      if (!fullPath.startsWith(basePath)) {
+        throw new AppError(403, 'Access denied');
+      }
     }
 
     // Check if file exists

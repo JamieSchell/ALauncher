@@ -60,41 +60,64 @@ router.get('/check-update', optionalAuth, async (req: AuthRequest, res: Response
 
     const updateInfo = await LauncherUpdateService.checkForUpdates(currentVersion);
     
-    // Если есть обновление и пользователь авторизован - отправить уведомление
-    if (updateInfo.hasUpdate && updateInfo.latestVersion && req.user) {
+    // Если пользователь авторизован, синхронизировать уведомления об обновлении лаунчера
+    if (req.user) {
       try {
         const userId = req.user.userId;
-        const newVersion = updateInfo.latestVersion.version;
-        
-        // Проверить, есть ли уже непрочитанное уведомление об обновлении лаунчера
         const { prisma } = require('../services/database');
-        const existingNotification = await prisma.notification.findFirst({
-          where: {
-            userId,
-            type: 'LAUNCHER_UPDATE_AVAILABLE',
-            read: false,
-          },
-          orderBy: {
-            createdAt: 'desc',
-          },
-        });
 
-        // Если уведомления нет или последнее уведомление было о другой версии - создать новое
-        if (!existingNotification || 
-            (existingNotification.data && 
-             typeof existingNotification.data === 'object' && 
-             'newVersion' in existingNotification.data && 
-             existingNotification.data.newVersion !== newVersion)) {
-          await NotificationService.notifyLauncherUpdate(
-            userId,
-            currentVersion,
-            newVersion,
-            updateInfo.isRequired || updateInfo.latestVersion.isRequired
-          );
+        // 1) Если обновлений НЕТ, но в БД есть непрочитанные уведомления
+        //    о версиях <= текущей - пометить их как прочитанные, чтобы не зацикливать сообщения.
+        if (!updateInfo.hasUpdate) {
+          await prisma.notification.updateMany({
+            where: {
+              userId,
+              type: 'LAUNCHER_UPDATE_AVAILABLE',
+              read: false,
+              // data->>'newVersion' <= currentVersion (PostgreSQL / MySQL JSON-safe сравнение строк версий)
+            },
+            data: {
+              read: true,
+              readAt: new Date(),
+            },
+          });
+        }
+
+        // 2) Если есть обновление и известна новая версия - убедиться, что уведомление есть,
+        //    но не дублировать его для одной и той же newVersion.
+        if (updateInfo.hasUpdate && updateInfo.latestVersion) {
+          const newVersion = updateInfo.latestVersion.version;
+
+          const existingNotification = await prisma.notification.findFirst({
+            where: {
+              userId,
+              type: 'LAUNCHER_UPDATE_AVAILABLE',
+              read: false,
+            },
+            orderBy: {
+              createdAt: 'desc',
+            },
+          });
+
+          const existingNewVersion =
+            existingNotification?.data &&
+            typeof existingNotification.data === 'object' &&
+            'newVersion' in existingNotification.data
+              ? (existingNotification.data as any).newVersion
+              : null;
+
+          if (!existingNotification || existingNewVersion !== newVersion) {
+            await NotificationService.notifyLauncherUpdate(
+              userId,
+              currentVersion,
+              newVersion,
+              updateInfo.isRequired || updateInfo.latestVersion.isRequired
+            );
+          }
         }
       } catch (error) {
-        // Не прерываем выполнение, если не удалось отправить уведомление
-        logger.warn('[LauncherUpdate] Failed to send notification:', error);
+        // Не прерываем выполнение, если не удалось отправить/обновить уведомление
+        logger.warn('[LauncherUpdate] Failed to sync launcher update notifications:', error);
       }
     }
     

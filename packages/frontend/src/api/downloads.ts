@@ -55,10 +55,12 @@ export const downloadsAPI = {
     return response.data;
   },
   
-  async getClientVersionByVersion(version: string) {
+  async getClientVersionByVersion(version: string, clientDirectory?: string) {
     try {
       const response = await apiClient.get(
-        `/client-versions/version/${version}`
+        clientDirectory
+          ? `/client-versions/version/${version}?clientDirectory=${encodeURIComponent(clientDirectory)}`
+          : `/client-versions/version/${version}`
       );
       return response.data;
     } catch (error: any) {

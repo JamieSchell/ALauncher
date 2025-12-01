@@ -56,7 +56,10 @@ export const config = {
   },
   
   paths: {
-    updates: path.join(process.cwd(), 'updates'),
+    // Базовая директория, где backend ищет client.jar, libraries и т.п.
+    // Можно переопределить через переменную окружения UPDATES_DIR,
+    // например: /opt/launcher/updates-hitech
+    updates: process.env.UPDATES_DIR || path.join(process.cwd(), 'updates'),
     profiles: path.join(process.cwd(), 'profiles'),
     keys: path.join(process.cwd(), 'keys'),
   },

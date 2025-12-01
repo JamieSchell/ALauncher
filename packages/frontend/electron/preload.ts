@@ -53,25 +53,34 @@ contextBridge.exposeInMainWorld('electronAPI', {
   calculateFileHash: (filePath: string, algorithm: 'sha256' | 'sha1') => ipcRenderer.invoke('file:calculateHash', filePath, algorithm),
       downloadFile: (url: string, destPath: string, onProgress?: (progress: number) => void, authToken?: string) => {
     return new Promise<void>((resolve, reject) => {
-      const progressListener = (_: any, progress: number) => {
+      // Уникальный идентификатор данной загрузки (должен совпадать с main.ts)
+      const downloadId = `${url}-${destPath}`;
+
+      const progressListener = (_: any, id: string, progress: number) => {
+        if (id !== downloadId) return;
         if (onProgress) onProgress(progress);
       };
-      const completeListener = () => {
+
+      const completeListener = (_: any, id: string) => {
+        if (id !== downloadId) return;
         ipcRenderer.removeListener('file:download:progress', progressListener);
         ipcRenderer.removeListener('file:download:complete', completeListener);
         ipcRenderer.removeListener('file:download:error', errorListener);
         resolve();
       };
-      const errorListener = (_: any, error: string) => {
+
+      const errorListener = (_: any, id: string, error: string) => {
+        if (id !== downloadId) return;
         ipcRenderer.removeListener('file:download:progress', progressListener);
         ipcRenderer.removeListener('file:download:complete', completeListener);
         ipcRenderer.removeListener('file:download:error', errorListener);
         reject(new Error(error));
       };
 
-      ipcRenderer.once('file:download:progress', progressListener);
-      ipcRenderer.once('file:download:complete', completeListener);
-      ipcRenderer.once('file:download:error', errorListener);
+      // Используем on, а не once, чтобы поддерживать несколько событий для одной загрузки
+      ipcRenderer.on('file:download:progress', progressListener);
+      ipcRenderer.on('file:download:complete', completeListener);
+      ipcRenderer.on('file:download:error', errorListener);
 
       ipcRenderer.send('file:download', url, destPath, authToken);
     });

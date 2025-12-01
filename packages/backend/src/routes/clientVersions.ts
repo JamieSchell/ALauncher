@@ -43,8 +43,9 @@ router.get('/', async (req, res, next) => {
 router.get('/version/:version', async (req, res, next) => {
   try {
     const { version } = req.params;
+    const clientDirectory = req.query.clientDirectory as string | undefined;
     
-    const clientVersion = await ClientVersionService.getVersionByVersion(version);
+    const clientVersion = await ClientVersionService.getVersionByVersion(version, clientDirectory);
     
     if (!clientVersion) {
       throw new AppError(404, 'Version not found');
@@ -112,36 +113,39 @@ router.get('/:versionId/file', async (req, res, next) => {
     const { versionId } = req.params;
     // Get file path from query parameter (Express 5.x compatible)
     const filePath = (req.query.path as string) || '';
+    const clientDirectory = (req.query.clientDirectory as string | undefined) || undefined;
 
     if (!filePath) {
       throw new AppError(400, 'File path is required');
     }
-    
-    // Проверка авторизации
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new AppError(401, 'Unauthorized');
-    }
-
-    const token = authHeader.substring(7);
-    const payload = await AuthService.validateSession(token);
-    
-    if (!payload) {
-      throw new AppError(401, 'Invalid token');
-    }
 
     // Получить информацию о файле
-    const file = await prisma.clientFile.findUnique({
-      where: {
-        versionId_filePath: {
-          versionId,
-          filePath,
+    // Сначала пробуем найти файл для конкретного clientDirectory (если указано),
+    // затем, при отсутствии — общий файл версии (clientDirectory = "").
+    let file =
+      clientDirectory
+        ? await prisma.clientFile.findUnique({
+            where: {
+              versionId_clientDirectory_filePath: {
+                versionId,
+                clientDirectory,
+                filePath,
+              },
+            },
+          })
+        : null;
+
+    if (!file) {
+      file = await prisma.clientFile.findUnique({
+        where: {
+          versionId_clientDirectory_filePath: {
+            versionId,
+            clientDirectory: '',
+            filePath,
+          },
         },
-      },
-      include: {
-        version: true,
-      },
-    });
+      });
+    }
 
     if (!file) {
       throw new AppError(404, 'File not found');
@@ -152,18 +156,25 @@ router.get('/:versionId/file', async (req, res, next) => {
       return res.redirect(file.downloadUrl);
     }
 
-    // Иначе отдаем файл с сервера
-    const version = file.version;
-    
-    // Попытаться найти профиль, использующий эту версию, чтобы получить clientDirectory
-    const profile = await prisma.clientProfile.findFirst({
-      where: { version: version.version },
-      select: { clientDirectory: true },
-    });
-    
-    // Использовать clientDirectory из профиля, если найден, иначе fallback на version
-    const clientDir = profile?.clientDirectory || version.version;
-    const basePath = path.join(config.paths.updates, clientDir);
+    // Определить базовую директорию на диске
+    let basePath: string;
+    if (file.clientDirectory && file.clientDirectory !== '') {
+      // Файл привязан к конкретному клиенту
+      basePath = path.join(config.paths.updates, file.clientDirectory);
+    } else {
+      // Общий файл версии — используем директорию версии по её имени
+      const version = await prisma.clientVersion.findFirst({
+        where: { id: versionId },
+        select: { version: true },
+      });
+
+      if (!version) {
+        throw new AppError(500, 'Client version not found for file');
+      }
+
+      basePath = path.join(config.paths.updates, version.version);
+    }
+
     const fullPath = path.join(basePath, filePath);
 
     // Security: prevent path traversal
@@ -182,7 +193,9 @@ router.get('/:versionId/file', async (req, res, next) => {
     const isIntegrityValid = await verifyFileIntegrity(versionId, filePath);
     
     if (!isIntegrityValid) {
-      logger.warn(`[FileSync] Integrity check failed for file: ${filePath} (version: ${version.version})`);
+      logger.warn(
+        `[FileSync] Integrity check failed for file: ${filePath} (versionId: ${versionId}, clientDirectory: ${file.clientDirectory || ''})`
+      );
       throw new AppError(403, 'File integrity check failed. File has been modified or corrupted.');
     }
 

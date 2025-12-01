@@ -177,46 +177,49 @@ async function syncVersionFiles(version: string): Promise<{ added: number; updat
     try {
       // Используем upsert для атомарной операции - предотвращает дубликаты
       const fileData = {
-            versionId: clientVersion.id,
-            filePath: file.filePath,
-              fileHash: file.hash,
-              fileSize: file.size,
-              fileType: file.fileType,
-              verified: false,
-              integrityCheckFailed: false,
-      };
+        versionId: clientVersion.id,
+        clientDirectory: "", // общие файлы версии (vanilla) не привязаны к конкретному клиенту
+        filePath: file.filePath,
+        fileHash: file.hash,
+        fileSize: file.size,
+        fileType: file.fileType,
+        verified: false,
+        integrityCheckFailed: false,
+      } as any;
 
       // Проверить, существует ли файл, чтобы определить, это обновление или добавление
       const existing = await prisma.clientFile.findUnique({
         where: {
-          versionId_filePath: {
-                versionId: clientVersion.id,
+          versionId_clientDirectory_filePath: {
+            versionId: clientVersion.id,
+            clientDirectory: "",
             filePath: file.filePath,
           },
-              },
-            });
+        },
+      });
 
       const isNew = !existing;
       const isChanged = existing && (existing.fileHash !== file.hash || existing.fileSize !== file.size);
 
       // Используем upsert для атомарной операции
       const result = await prisma.clientFile.upsert({
-            where: {
-              versionId_filePath: {
-                versionId: clientVersion.id,
-                filePath: file.filePath,
-              },
-            },
-            update: {
-              fileHash: file.hash,
-              fileSize: file.size,
-              fileType: file.fileType,
+        where: {
+          versionId_clientDirectory_filePath: {
+            versionId: clientVersion.id,
+            clientDirectory: "",
+            filePath: file.filePath,
+          },
+        },
+        update: {
+          fileHash: file.hash,
+          fileSize: file.size,
+          fileType: file.fileType,
           verified: isChanged ? false : existing?.verified ?? false, // Сбрасываем verified только если файл изменился
-              integrityCheckFailed: false,
+          integrityCheckFailed: false,
           lastVerified: isChanged ? null : existing?.lastVerified ?? null,
-            },
+        },
         create: fileData,
-          });
+      });
 
       if (isNew) {
           added++;
@@ -368,12 +371,12 @@ async function syncVersionFiles(version: string): Promise<{ added: number; updat
  * Проверить целостность файла
  */
 export async function verifyFileIntegrity(versionId: string, filePath: string): Promise<boolean> {
-  const file = await prisma.clientFile.findUnique({
+  // Находим запись о файле по versionId + filePath (может быть несколько clientDirectory,
+  // но для проверки целостности достаточно первой найденной записи).
+  const file = await prisma.clientFile.findFirst({
     where: {
-      versionId_filePath: {
-        versionId,
-        filePath,
-      },
+      versionId,
+      filePath,
     },
     include: {
       version: true,
@@ -385,14 +388,9 @@ export async function verifyFileIntegrity(versionId: string, filePath: string): 
   }
   
   // Получить путь к файлу на диске
-  // Попытаться найти профиль, использующий эту версию, чтобы получить clientDirectory
-  const profile = await prisma.clientProfile.findFirst({
-    where: { version: file.version.version },
-    select: { clientDirectory: true },
-  });
-  
-  // Использовать clientDirectory из профиля, если найден, иначе fallback на version
-  const clientDir = profile?.clientDirectory || file.version.version;
+  // Если у файла есть clientDirectory, используем её напрямую;
+  // иначе считаем, что это общий файл версии и используем директорию версии.
+  const clientDir = file.clientDirectory || file.version.version;
   const versionDir = path.join(config.paths.updates, clientDir);
   const fullPath = path.join(versionDir, filePath);
   
@@ -843,51 +841,55 @@ export async function syncProfileFiles(profileId: string): Promise<{ added: numb
     });
   }
 
-  // Синхронизировать каждый файл (используем ту же логику что и в syncVersionFiles)
+  // Синхронизировать каждый файл (используем ту же логику что и в syncVersionFiles),
+  // НО с привязкой к конкретной директории клиента.
   for (const file of files) {
     try {
       // Используем upsert для атомарной операции - предотвращает дубликаты
       const fileData = {
             versionId: clientVersion.id,
+        clientDirectory: clientDir,
             filePath: file.filePath,
               fileHash: file.hash,
               fileSize: file.size,
               fileType: file.fileType,
               verified: false,
               integrityCheckFailed: false,
-      };
+      } as any;
 
       // Проверить, существует ли файл, чтобы определить, это обновление или добавление
       const existing = await prisma.clientFile.findUnique({
         where: {
-          versionId_filePath: {
-                versionId: clientVersion.id,
+          versionId_clientDirectory_filePath: {
+            versionId: clientVersion.id,
+            clientDirectory: clientDir,
             filePath: file.filePath,
           },
-              },
-            });
+        },
+      });
 
       const isNew = !existing;
       const isChanged = existing && (existing.fileHash !== file.hash || existing.fileSize !== file.size);
 
       // Используем upsert для атомарной операции
       const result = await prisma.clientFile.upsert({
-            where: {
-              versionId_filePath: {
-                versionId: clientVersion.id,
-                filePath: file.filePath,
-              },
-            },
-            update: {
-              fileHash: file.hash,
-              fileSize: file.size,
-              fileType: file.fileType,
+        where: {
+          versionId_clientDirectory_filePath: {
+            versionId: clientVersion.id,
+            clientDirectory: clientDir,
+            filePath: file.filePath,
+          },
+        },
+        update: {
+          fileHash: file.hash,
+          fileSize: file.size,
+          fileType: file.fileType,
           verified: isChanged ? false : existing?.verified ?? false, // Сбрасываем verified только если файл изменился
-              integrityCheckFailed: false,
+          integrityCheckFailed: false,
           lastVerified: isChanged ? null : existing?.lastVerified ?? null,
-            },
+        },
         create: fileData,
-          });
+      });
 
       if (isNew) {
           added++;
