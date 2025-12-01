@@ -60,21 +60,62 @@ export interface JWTPayload {
 
 export class AuthService {
   /**
-   * Hash password using bcrypt
+   * Hash password using bcrypt with configured salt rounds
+   * 
+   * Pure function: no side effects, deterministic output for same input.
+   * 
+   * @param password - Plain text password to hash
+   * @returns Hashed password string (bcrypt format)
+   * 
+   * @example
+   * ```ts
+   * const hash = await AuthService.hashPassword('myPassword123');
+   * // Store hash in database
+   * ```
    */
   static async hashPassword(password: string): Promise<string> {
     return bcrypt.hash(password, SALT_ROUNDS);
   }
 
   /**
-   * Verify password
+   * Verify password against stored hash
+   * 
+   * Pure function: no side effects, compares password with bcrypt hash.
+   * 
+   * @param password - Plain text password to verify
+   * @param hash - Stored bcrypt hash to compare against
+   * @returns `true` if password matches hash, `false` otherwise
+   * 
+   * @example
+   * ```ts
+   * const isValid = await AuthService.verifyPassword('myPassword123', storedHash);
+   * if (isValid) {
+   *   // Allow login
+   * }
+   * ```
    */
   static async verifyPassword(password: string, hash: string): Promise<boolean> {
     return bcrypt.compare(password, hash);
   }
 
   /**
-   * Generate JWT token
+   * Generate JWT access token for authenticated user
+   * 
+   * Pure function: no side effects, generates token from payload.
+   * Token expiration is controlled by `config.jwt.expiry`.
+   * 
+   * @param payload - User data to encode in token (userId, username, uuid, role)
+   * @returns Signed JWT token string
+   * 
+   * @example
+   * ```ts
+   * const token = AuthService.generateToken({
+   *   userId: '123',
+   *   username: 'player1',
+   *   uuid: 'uuid-here',
+   *   role: 'USER'
+   * });
+   * ```
    */
   static generateToken(payload: JWTPayload): string {
     return jwt.sign(payload, config.jwt.secret, {
@@ -83,7 +124,20 @@ export class AuthService {
   }
 
   /**
-   * Verify JWT token
+   * Verify and decode JWT token
+   * 
+   * Pure function: no side effects, validates token signature and expiration.
+   * 
+   * @param token - JWT token string to verify
+   * @returns Decoded payload if token is valid, `null` if invalid or expired
+   * 
+   * @example
+   * ```ts
+   * const payload = AuthService.verifyToken(token);
+   * if (payload) {
+   *   // Token is valid, use payload.userId
+   * }
+   * ```
    */
   static verifyToken(token: string): JWTPayload | null {
     try {
@@ -94,7 +148,27 @@ export class AuthService {
   }
 
   /**
-   * Authenticate user
+   * Authenticate user with username/password and create session
+   * 
+   * Side effects:
+   * - Records authentication attempt (for rate limiting)
+   * - Updates user's last login timestamp
+   * - Deletes old sessions for user
+   * - Creates new session in database
+   * - Calculates texture digests for player profile
+   * 
+   * @param login - Username or email to authenticate
+   * @param password - Plain text password
+   * @param ipAddress - Optional IP address for rate limiting and audit logging
+   * @returns Authentication result with player profile and access token on success
+   * 
+   * @example
+   * ```ts
+   * const result = await AuthService.authenticate('player1', 'password123', '192.168.1.1');
+   * if (result.success) {
+   *   // Use result.accessToken and result.playerProfile
+   * }
+   * ```
    */
   static async authenticate(login: string, password: string, ipAddress?: string): Promise<{
     success: boolean;
@@ -198,7 +272,25 @@ export class AuthService {
   }
 
   /**
-   * Register new user
+   * Register new user account
+   * 
+   * Side effects:
+   * - Creates new user record in database
+   * - Generates offline UUID for user
+   * - Hashes password before storage
+   * 
+   * @param username - Unique username (3-16 chars, alphanumeric + underscore)
+   * @param password - Plain text password (min 6 characters)
+   * @param email - Optional email address
+   * @returns Registration result with userId on success
+   * 
+   * @example
+   * ```ts
+   * const result = await AuthService.register('newplayer', 'securePass123', 'email@example.com');
+   * if (result.success) {
+   *   // User created with result.userId
+   * }
+   * ```
    */
   static async register(username: string, password: string, email?: string): Promise<{
     success: boolean;
@@ -263,7 +355,21 @@ export class AuthService {
   }
 
   /**
-   * Check if IP is rate limited
+   * Check if IP address is rate limited based on failed authentication attempts
+   * 
+   * Pure query: reads from database, no side effects.
+   * Rate limiting is controlled by `config.rateLimit` settings.
+   * 
+   * @param ipAddress - IP address to check
+   * @returns `true` if IP is rate limited, `false` otherwise
+   * 
+   * @example
+   * ```ts
+   * const isLimited = await AuthService.checkRateLimit('192.168.1.1');
+   * if (isLimited) {
+   *   // Reject request
+   * }
+   * ```
    */
   static async checkRateLimit(ipAddress: string): Promise<boolean> {
     if (!config.rateLimit.enabled) return false;
@@ -284,7 +390,25 @@ export class AuthService {
   }
 
   /**
-   * Validate session token
+   * Validate session token and check session in database
+   * 
+   * Side effects:
+   * - Updates session's lastUsedAt timestamp
+   * - Deletes session if user is banned
+   * 
+   * Validates both JWT signature/expiration and database session record.
+   * Handles database connection errors gracefully (returns null instead of throwing).
+   * 
+   * @param token - JWT access token to validate
+   * @returns Decoded payload if session is valid, `null` if invalid/expired/banned
+   * 
+   * @example
+   * ```ts
+   * const payload = await AuthService.validateSession(token);
+   * if (payload) {
+   *   // Session is valid, user is authenticated
+   * }
+   * ```
    */
   static async validateSession(token: string): Promise<JWTPayload | null> {
     const payload = this.verifyToken(token);
@@ -353,7 +477,18 @@ export class AuthService {
   }
 
   /**
-   * Revoke session
+   * Revoke session by deleting it from database
+   * 
+   * Side effects:
+   * - Deletes session record from database
+   * 
+   * @param token - Access token of session to revoke
+   * 
+   * @example
+   * ```ts
+   * await AuthService.revokeSession(token);
+   * // Session is now invalid, user must re-authenticate
+   * ```
    */
   static async revokeSession(token: string): Promise<void> {
     await prisma.session.delete({

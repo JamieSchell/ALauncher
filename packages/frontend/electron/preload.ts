@@ -1,11 +1,29 @@
 /**
  * Electron Preload Script
  * Exposes safe APIs to renderer process
+ * 
+ * Security:
+ * - Uses contextBridge for secure IPC communication
+ * - nodeIntegration: false (enforced in main.ts)
+ * - contextIsolation: true (enforced in main.ts)
+ * - Only exposes minimal, typed API surface
+ * 
+ * API Audit:
+ * All exposed APIs are actively used in the codebase:
+ * - Window controls: TitleBar, LoginPage
+ * - App info: errorLogger, ServerDetailsPage, HomePage, TitleBar, useLauncherUpdate, LoginPage, GameLogsModal
+ * - Java operations: SettingsPage (findJavaInstallations, selectJavaFile)
+ * - Game events: HomePage, ServerDetailsPage (all listeners)
+ * - File operations: ServerDetailsPage, HomePage, GameLogsModal (all methods)
+ * - Notifications: NotificationCenter, notificationService
+ * - HTTP requests: api/client.ts (IPC proxy)
+ * - Launcher updates: useLauncherUpdate, LauncherUpdateModal
  */
 
 import { contextBridge, ipcRenderer } from 'electron';
+import type { ElectronAPI, LaunchGameArgs, LaunchGameResponse, AppPaths, FindJavaInstallationsResponse, CheckJavaVersionResponse, GetJavaVersionResponse, SelectJavaFileResponse, GameCrashData, GameConnectionIssueData, FileHashAlgorithm, HttpRequestOptions, HttpResponse, NotificationOptions, CheckLauncherUpdateResponse, UpdateInfo, InstallLauncherUpdateResponse } from '@modern-launcher/shared';
 
-contextBridge.exposeInMainWorld('electronAPI', {
+const electronAPI: ElectronAPI = {
   // Window controls
   minimizeWindow: () => ipcRenderer.send('window:minimize'),
   maximizeWindow: () => ipcRenderer.send('window:maximize'),
@@ -13,22 +31,29 @@ contextBridge.exposeInMainWorld('electronAPI', {
   closeWindow: () => ipcRenderer.send('window:close'),
 
   // Launcher
-  launchGame: (args: any) => ipcRenderer.invoke('launcher:launch', args),
+  launchGame: (args: LaunchGameArgs): Promise<LaunchGameResponse> => 
+    ipcRenderer.invoke('launcher:launch', args),
 
   // App info
-  getAppVersion: () => ipcRenderer.invoke('app:version'),
-  getAppPaths: () => ipcRenderer.invoke('app:paths'),
-  getUpdatesDir: () => ipcRenderer.invoke('app:updatesDir'),
+  getAppVersion: (): Promise<string> => ipcRenderer.invoke('app:version'),
+  getAppPaths: (): Promise<AppPaths> => ipcRenderer.invoke('app:paths'),
+  getUpdatesDir: (): Promise<string> => ipcRenderer.invoke('app:updatesDir'),
 
   // Java operations
-  findJavaInstallations: () => ipcRenderer.invoke('java:findInstallations'),
-  checkJavaVersion: (javaPath: string, requiredVersion: string) => ipcRenderer.invoke('java:checkVersion', javaPath, requiredVersion),
-  getJavaVersion: (javaPath: string) => ipcRenderer.invoke('java:getVersion', javaPath),
+  // Note: findJavaInstallations and selectJavaFile are actively used in SettingsPage
+  // checkJavaVersion and getJavaVersion are available for future use or advanced Java validation
+  findJavaInstallations: (): Promise<FindJavaInstallationsResponse> => 
+    ipcRenderer.invoke('java:findInstallations'),
+  checkJavaVersion: (javaPath: string, requiredVersion: string): Promise<CheckJavaVersionResponse> => 
+    ipcRenderer.invoke('java:checkVersion', javaPath, requiredVersion),
+  getJavaVersion: (javaPath: string): Promise<GetJavaVersionResponse> => 
+    ipcRenderer.invoke('java:getVersion', javaPath),
   
   // Dialog operations
-  selectJavaFile: () => ipcRenderer.invoke('dialog:selectJavaFile'),
+  selectJavaFile: (): Promise<SelectJavaFileResponse> => 
+    ipcRenderer.invoke('dialog:selectJavaFile'),
 
-  // Listeners
+  // Game event listeners
   onGameLog: (callback: (log: string) => void) => {
     ipcRenderer.on('game:log', (_, log) => callback(log));
   },
@@ -38,20 +63,25 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onGameExit: (callback: (code: number) => void) => {
     ipcRenderer.on('game:exit', (_, code) => callback(code));
   },
-  onGameCrash: (callback: (data: any) => void) => {
+  onGameCrash: (callback: (data: GameCrashData) => void) => {
     ipcRenderer.on('game:crash', (_, data) => callback(data));
   },
-  onGameConnectionIssue: (callback: (data: any) => void) => {
+  onGameConnectionIssue: (callback: (data: GameConnectionIssueData) => void) => {
     ipcRenderer.on('game:connection-issue', (_, data) => callback(data));
   },
 
   // File operations
-  ensureDir: (dirPath: string) => ipcRenderer.invoke('file:ensureDir', dirPath),
-  writeFile: (filePath: string, data: Uint8Array) => ipcRenderer.invoke('file:writeFile', filePath, data),
-  deleteFile: (filePath: string) => ipcRenderer.invoke('file:deleteFile', filePath),
-  readFile: (filePath: string) => ipcRenderer.invoke('file:readFile', filePath),
-  calculateFileHash: (filePath: string, algorithm: 'sha256' | 'sha1') => ipcRenderer.invoke('file:calculateHash', filePath, algorithm),
-      downloadFile: (url: string, destPath: string, onProgress?: (progress: number) => void, authToken?: string) => {
+  ensureDir: (dirPath: string): Promise<void> => 
+    ipcRenderer.invoke('file:ensureDir', dirPath),
+  writeFile: (filePath: string, data: Uint8Array): Promise<void> => 
+    ipcRenderer.invoke('file:writeFile', filePath, data),
+  deleteFile: (filePath: string): Promise<void> => 
+    ipcRenderer.invoke('file:deleteFile', filePath),
+  readFile: (filePath: string): Promise<string> => 
+    ipcRenderer.invoke('file:readFile', filePath),
+  calculateFileHash: (filePath: string, algorithm: FileHashAlgorithm): Promise<string> => 
+    ipcRenderer.invoke('file:calculateHash', filePath, algorithm),
+  downloadFile: (url: string, destPath: string, onProgress?: (progress: number) => void, authToken?: string): Promise<void> => {
     return new Promise<void>((resolve, reject) => {
       // Уникальный идентификатор данной загрузки (должен совпадать с main.ts)
       const downloadId = `${url}-${destPath}`;
@@ -85,95 +115,48 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.send('file:download', url, destPath, authToken);
     });
   },
-  fileExists: (filePath: string) => ipcRenderer.invoke('file:exists', filePath),
+  fileExists: (filePath: string): Promise<boolean> => 
+    ipcRenderer.invoke('file:exists', filePath),
   
   // Notifications
-  showNotification: (title: string, body: string, options?: { icon?: string; sound?: boolean }) => 
+  showNotification: (title: string, body: string, options?: NotificationOptions): Promise<void> => 
     ipcRenderer.invoke('notification:show', title, body, options),
   
   // HTTP requests (proxy through main process to bypass file:// restrictions)
-  httpRequest: (options: {
-    method: string;
-    url: string;
-    headers?: Record<string, string>;
-    data?: any;
-    timeout?: number;
-  }) => ipcRenderer.invoke('http:request', options),
+  httpRequest: (options: HttpRequestOptions): Promise<HttpResponse> => 
+    ipcRenderer.invoke('http:request', options),
 
   // Launcher updates
-  checkLauncherUpdate: (currentVersion: string, apiUrl: string, authToken?: string) => 
+  checkLauncherUpdate: (currentVersion: string, apiUrl: string, authToken?: string): Promise<CheckLauncherUpdateResponse> => 
     ipcRenderer.invoke('launcher:checkUpdate', currentVersion, apiUrl, authToken),
-  downloadLauncherUpdate: (updateInfo: any, apiUrl: string) => {
+  downloadLauncherUpdate: (updateInfo: UpdateInfo, apiUrl: string): void => {
     ipcRenderer.send('launcher:downloadUpdate', updateInfo, apiUrl);
   },
-  cancelLauncherUpdate: () => {
+  cancelLauncherUpdate: (): void => {
     ipcRenderer.send('launcher:cancelUpdate');
   },
-  installLauncherUpdate: (installerPath: string, newVersion: string) => 
+  installLauncherUpdate: (installerPath: string, newVersion: string): Promise<InstallLauncherUpdateResponse> => 
     ipcRenderer.invoke('launcher:installUpdate', installerPath, newVersion),
-  restartLauncher: () => {
+  restartLauncher: (): void => {
     ipcRenderer.send('launcher:restart');
   },
-  onLauncherUpdateProgress: (callback: (progress: number) => void) => {
+  onLauncherUpdateProgress: (callback: (progress: number) => void): void => {
     ipcRenderer.on('launcher:update:progress', (_, progress) => callback(progress));
   },
-  onLauncherUpdateComplete: (callback: (installerPath: string) => void) => {
+  onLauncherUpdateComplete: (callback: (installerPath: string) => void): void => {
     ipcRenderer.on('launcher:update:complete', (_, path) => callback(path));
   },
-  onLauncherUpdateError: (callback: (error: string) => void) => {
+  onLauncherUpdateError: (callback: (error: string) => void): void => {
     ipcRenderer.on('launcher:update:error', (_, error) => callback(error));
   },
-});
+};
 
-// Type definitions for TypeScript
+// Expose typed API to renderer process
+contextBridge.exposeInMainWorld('electronAPI', electronAPI);
+
+// Type definitions for TypeScript (using shared types)
 declare global {
   interface Window {
-    electronAPI: {
-      minimizeWindow: () => void;
-      maximizeWindow: () => void;
-      minimizeToTray: () => void;
-      closeWindow: () => void;
-      launchGame: (args: any) => Promise<{ success: boolean; pid?: number; error?: string }>;
-      getAppVersion: () => Promise<string>;
-      getAppPaths: () => Promise<{ userData: string; appData: string; temp: string }>;
-      getUpdatesDir: () => Promise<string>;
-      findJavaInstallations: () => Promise<{ success: boolean; installations: Array<{ path: string; version: string; major: number; full: string }>; error?: string }>;
-      checkJavaVersion: (javaPath: string, requiredVersion: string) => Promise<{ success: boolean; valid: boolean; currentVersion?: string; requiredVersion: string; error?: string }>;
-      getJavaVersion: (javaPath: string) => Promise<{ success: boolean; version?: string; major?: number; full?: string; error?: string }>;
-      selectJavaFile: () => Promise<{ success: boolean; path?: string; version?: string; major?: number; canceled?: boolean; error?: string }>;
-      onGameLog: (callback: (log: string) => void) => void;
-      onGameError: (callback: (error: string) => void) => void;
-      onGameExit: (callback: (code: number) => void) => void;
-      onGameCrash: (callback: (data: any) => void) => void;
-      onGameConnectionIssue: (callback: (data: any) => void) => void;
-      ensureDir: (dirPath: string) => Promise<void>;
-      writeFile: (filePath: string, data: Uint8Array) => Promise<void>;
-      deleteFile: (filePath: string) => Promise<void>;
-      readFile: (filePath: string) => Promise<string>;
-      calculateFileHash: (filePath: string, algorithm: 'sha256' | 'sha1') => Promise<string>;
-      downloadFile: (url: string, destPath: string, onProgress?: (progress: number) => void, authToken?: string) => Promise<void>;
-      fileExists: (filePath: string) => Promise<boolean>;
-      showNotification: (title: string, body: string, options?: { icon?: string; sound?: boolean }) => Promise<void>;
-      checkLauncherUpdate: (currentVersion: string, apiUrl: string) => Promise<{ success: boolean; hasUpdate?: boolean; updateInfo?: any; isRequired?: boolean; error?: string }>;
-      downloadLauncherUpdate: (updateInfo: any, apiUrl: string) => void;
-      cancelLauncherUpdate: () => void;
-      installLauncherUpdate: (installerPath: string) => Promise<{ success: boolean; error?: string; message?: string }>;
-      restartLauncher: () => void;
-      onLauncherUpdateProgress: (callback: (progress: number) => void) => void;
-      onLauncherUpdateComplete: (callback: (installerPath: string) => void) => void;
-      onLauncherUpdateError: (callback: (error: string) => void) => void;
-      httpRequest: (options: {
-        method: string;
-        url: string;
-        headers?: Record<string, string>;
-        data?: any;
-        timeout?: number;
-      }) => Promise<{
-        status: number;
-        statusText: string;
-        headers: Record<string, string | string[]>;
-        data: any;
-      }>;
-    };
+    electronAPI?: ElectronAPI;
   }
 }

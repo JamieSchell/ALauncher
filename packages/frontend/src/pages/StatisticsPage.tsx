@@ -5,7 +5,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Clock,
@@ -36,10 +35,9 @@ import {
   Tooltip,
   ResponsiveContainer
 } from 'recharts';
-import { statisticsAPI } from '../api/statistics';
-import { profilesAPI } from '../api/profiles';
 import { useTranslation } from '../hooks/useTranslation';
 import { useOptimizedAnimation } from '../hooks/useOptimizedAnimation';
+import { useUserStatistics, useProfiles } from '../hooks/api';
 
 const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#3b82f6'];
 
@@ -112,15 +110,9 @@ export default function StatisticsPage() {
     }
   }, [isDropdownOpen]);
 
-  const { data: statsData, isLoading } = useQuery({
-    queryKey: ['user-statistics', days],
-    queryFn: () => statisticsAPI.getUserStatistics(days),
-  });
+  const { data: statsData, isLoading } = useUserStatistics(days);
 
-  const { data: profilesData } = useQuery({
-    queryKey: ['profiles'],
-    queryFn: profilesAPI.getProfiles,
-  });
+  const { data: profilesData } = useProfiles();
 
   const stats = statsData?.data;
   const profiles = profilesData?.data || [];
@@ -136,12 +128,7 @@ export default function StatisticsPage() {
     return `${secs}s`;
   };
 
-  const formatDate = (date: string | Date) =>
-    new Date(date).toLocaleDateString(language === 'ru' ? 'ru-RU' : 'en-US', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    });
+  const { formatDate, formatDateTime } = useFormatDate();
 
   const getProfileName = (profileId: string | null) => {
     if (!profileId) return t('statistics.unknownProfile');
@@ -574,7 +561,7 @@ export default function StatisticsPage() {
                       {launch.serverAddress ? `${launch.serverAddress}:${launch.serverPort || 25565}` : t('statistics.singleplayer')}
                     </p>
                     <p className="text-body-dim text-xs mt-2">
-                      {new Date(launch.createdAt).toLocaleString(language === 'ru' ? 'ru-RU' : 'en-US')}
+                      {formatDateTime(launch.createdAt)}
                     </p>
                   </div>
                   <div className="text-right space-y-2">

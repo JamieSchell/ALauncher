@@ -1,44 +1,63 @@
 #!/bin/bash
 # Production deployment script
-# Builds and prepares for production with IP 5.188.119.206
+# Builds and prepares for production using environment variables
 
-set -e
+set -eE
 
+# Load utilities
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+source "$SCRIPT_DIR/utils.sh"
 
-echo "🚀 Building Launcher for PRODUCTION..."
-echo "📍 Production IP: 5.188.119.206"
+# Load configuration
+load_config
+
+# Set defaults
+PROD_API_HOST="${PROD_API_HOST:-localhost}"
+PROD_API_PORT="${PROD_API_PORT:-7240}"
+
+log_step "Building Launcher for PRODUCTION"
+log_info "Production Host: $PROD_API_HOST"
+log_info "Production Port: $PROD_API_PORT"
 echo ""
 
 # Build shared package first
-echo "📦 Building shared package..."
+log_step "Building shared package..."
 cd "$PROJECT_ROOT"
-npm run build:shared
+if npm run build:shared; then
+  log_success "Shared package built"
+else
+  log_error "Failed to build shared package"
+  exit 1
+fi
 
 # Build backend
-echo "📦 Building Backend..."
+log_step "Building Backend..."
 cd "$PROJECT_ROOT/packages/backend"
-bash "$SCRIPT_DIR/prod-backend.sh" --build-only 2>/dev/null || {
-  # If --build-only not supported, just build
-  if [ -f .env.prod ]; then
-    cp .env.prod .env
-  fi
-  npm run build
-}
+if bash "$SCRIPT_DIR/prod-backend.sh" --build-only; then
+  log_success "Backend built"
+else
+  log_error "Failed to build backend"
+  exit 1
+fi
 
 # Build frontend
-echo "📦 Building Frontend..."
+log_step "Building Frontend..."
 cd "$PROJECT_ROOT/packages/frontend"
-bash "$SCRIPT_DIR/prod-frontend.sh"
+if bash "$SCRIPT_DIR/prod-frontend.sh"; then
+  log_success "Frontend built"
+else
+  log_error "Failed to build frontend"
+  exit 1
+fi
 
 echo ""
-echo "✅ Production build complete!"
+log_success "Production build complete!"
 echo ""
-echo "To start backend:"
+log_info "To start backend:"
 echo "  cd packages/backend && npm start"
 echo ""
-echo "Or use systemd:"
+log_info "Or use systemd:"
 echo "  sudo systemctl restart launcher-backend"
 echo ""
 

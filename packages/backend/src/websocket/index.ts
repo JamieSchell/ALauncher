@@ -12,10 +12,12 @@ interface Client {
   ws: WebSocket;
   userId?: string;
   username?: string;
+  isAlive: boolean;
 }
 
 const clients = new Map<string, Client>();
 let wss: WebSocketServer | null = null;
+let heartbeatInterval: NodeJS.Timeout | null = null;
 
 export function initializeWebSocket(server: HTTPServer) {
   wss = new WebSocketServer({ 
@@ -30,7 +32,8 @@ export function initializeWebSocket(server: HTTPServer) {
 
   wss.on('connection', (ws: WebSocket, req) => {
     const clientId = `${Date.now()}-${Math.random()}`;
-    clients.set(clientId, { ws });
+    const client: Client = { ws, isAlive: true };
+    clients.set(clientId, client);
 
     ws.on('message', async (message: Buffer) => {
       try {
@@ -45,6 +48,13 @@ export function initializeWebSocket(server: HTTPServer) {
         }
       } catch (error) {
         logger.error('WebSocket message error:', error);
+      }
+    });
+
+    ws.on('pong', () => {
+      const currentClient = clients.get(clientId);
+      if (currentClient) {
+        currentClient.isAlive = true;
       }
     });
 
@@ -67,6 +77,34 @@ export function initializeWebSocket(server: HTTPServer) {
       data: { clientId },
     });
   });
+
+  // Heartbeat / ping-pong to detect dead connections
+  if (heartbeatInterval) {
+    clearInterval(heartbeatInterval);
+  }
+
+  heartbeatInterval = setInterval(() => {
+    for (const [clientId, client] of clients.entries()) {
+      if (client.ws.readyState !== WebSocket.OPEN) {
+        clients.delete(clientId);
+        continue;
+      }
+
+      if (!client.isAlive) {
+        logger.warn(`WebSocket heartbeat: terminating stale client ${clientId}`);
+        client.ws.terminate();
+        clients.delete(clientId);
+        continue;
+      }
+
+      client.isAlive = false;
+      try {
+        client.ws.ping();
+      } catch {
+        // ignore ping errors; connection will be cleaned up on next tick
+      }
+    }
+  }, 30000);
 }
 
 /**
@@ -77,6 +115,11 @@ export function closeWebSocketServer(): Promise<void> {
     if (!wss) {
       resolve();
       return;
+    }
+
+    if (heartbeatInterval) {
+      clearInterval(heartbeatInterval);
+      heartbeatInterval = null;
     }
 
     // Close all client connections

@@ -1,39 +1,19 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
-import { useEffect, useState, Suspense, lazy } from 'react';
-import { useAuthStore } from './stores/authStore';
-import Layout from './components/Layout';
-import LoginPage from './pages/LoginPage';
+import { Routes, Route } from 'react-router-dom';
+import { useEffect, useState, Suspense } from 'react';
 import ErrorLoggerService from './services/errorLogger';
 import LauncherUpdateModal from './components/LauncherUpdateModal';
 import { useLauncherUpdate } from './hooks/useLauncherUpdate';
 import { API_CONFIG } from './config/api';
+import { routes, wrapRouteComponent } from './config/routes';
+import NotFoundPage from './pages/NotFoundPage';
+import { Layout } from './components/layout';
 import LoadingSpinner from './components/LoadingSpinner';
-
-// Lazy load pages for code splitting
-const HomePage = lazy(() => import('./pages/HomePage'));
-const SettingsPage = lazy(() => import('./pages/SettingsPage'));
-const ServerDetailsPage = lazy(() => import('./pages/ServerDetailsPage'));
-const ProfilesManagementPage = lazy(() => import('./pages/ProfilesManagementPage'));
-const CrashesManagementPage = lazy(() => import('./pages/CrashesManagementPage'));
-const UsersManagementPage = lazy(() => import('./pages/UsersManagementPage'));
-const ProfilePage = lazy(() => import('./pages/ProfilePage'));
-const StatisticsPage = lazy(() => import('./pages/StatisticsPage'));
-const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage'));
-
-function AdminRoute({ children }: { children: React.ReactNode }) {
-  const { isAdmin } = useAuthStore();
-  
-  if (!isAdmin()) {
-    return <Navigate to="/" replace />;
-  }
-  
-  return <>{children}</>;
-}
+import { useToastContext } from './providers/ToastProvider';
 
 function App() {
-  const { isAuthenticated, accessToken } = useAuthStore();
   const { updateCheckResult, currentVersion } = useLauncherUpdate();
   const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const { showError } = useToastContext();
 
   useEffect(() => {
     // Initialize error logger
@@ -41,17 +21,47 @@ function App() {
 
     // Global error handlers
     const handleError = (event: ErrorEvent) => {
-      ErrorLoggerService.logErrorAuto(event.error || new Error(event.message), {
+      const error = event.error || new Error(event.message);
+      
+      // Log error
+      ErrorLoggerService.logErrorAuto(error, {
         component: 'GlobalErrorHandler',
         action: 'unhandledError',
       });
+
+      // Show toast for critical errors (not network errors or expected errors)
+      const errorMessage = error.message || String(error);
+      const isNetworkError = errorMessage.toLowerCase().includes('network') || 
+                            errorMessage.toLowerCase().includes('fetch') ||
+                            errorMessage.toLowerCase().includes('connection');
+      
+      if (!isNetworkError && !errorMessage.includes('ResizeObserver')) {
+        showError('An unexpected error occurred. Please try refreshing the page.', 8000);
+      }
     };
 
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-      ErrorLoggerService.logErrorAuto(event.reason, {
+      const reason = event.reason;
+      
+      // Log error
+      ErrorLoggerService.logErrorAuto(reason, {
         component: 'GlobalErrorHandler',
         action: 'unhandledRejection',
       });
+
+      // Show toast for critical promise rejections
+      const errorMessage = reason?.message || String(reason);
+      const isNetworkError = errorMessage.toLowerCase().includes('network') || 
+                            errorMessage.toLowerCase().includes('fetch') ||
+                            errorMessage.toLowerCase().includes('connection');
+      
+      // Don't show toast for network errors (they're handled by API interceptor)
+      // Don't show for known non-critical errors
+      if (!isNetworkError && 
+          !errorMessage.includes('ResizeObserver') &&
+          !errorMessage.includes('Non-Error promise rejection')) {
+        showError('An operation failed. Please try again.', 6000);
+      }
     };
 
     // Register global error handlers
@@ -63,7 +73,7 @@ function App() {
       window.removeEventListener('error', handleError);
       window.removeEventListener('unhandledrejection', handleUnhandledRejection);
     };
-  }, []);
+  }, [showError]);
 
   // Show update modal when update is available
   useEffect(() => {
@@ -94,150 +104,27 @@ function App() {
       )}
 
       <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route
-        path="/"
-        element={
-          isAuthenticated ? (
-            <Layout>
-              <Suspense fallback={<LoadingSpinner fullScreen message="Loading..." />}>
-                <HomePage />
-              </Suspense>
-            </Layout>
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        }
-      />
-      <Route
-        path="/settings"
-        element={
-          isAuthenticated ? (
-            <Layout>
-              <Suspense fallback={<LoadingSpinner fullScreen message="Loading settings..." />}>
-                <SettingsPage />
-              </Suspense>
-            </Layout>
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        }
-      />
-      <Route
-        path="/profile"
-        element={
-          isAuthenticated ? (
-            <Layout>
-              <Suspense fallback={<LoadingSpinner fullScreen message="Loading profile..." />}>
-                <ProfilePage />
-              </Suspense>
-            </Layout>
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        }
-      />
-      <Route
-        path="/statistics"
-        element={
-          isAuthenticated ? (
-            <Layout>
-              <Suspense fallback={<LoadingSpinner fullScreen message="Loading statistics..." />}>
-                <StatisticsPage />
-              </Suspense>
-            </Layout>
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        }
-      />
-      <Route
-        path="/server"
-        element={<Navigate to="/" replace />}
-      />
-      <Route
-        path="/server/:id"
-        element={
-          isAuthenticated ? (
-            <Layout>
-              <Suspense fallback={<LoadingSpinner fullScreen message="Loading server details..." />}>
-                <ServerDetailsPage />
-              </Suspense>
-            </Layout>
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        }
-      />
-      <Route
-        path="/admin"
-        element={<Navigate to="/admin/profiles" replace />}
-      />
-      <Route
-        path="/admin/profiles"
-        element={
-          isAuthenticated ? (
-            <AdminRoute>
+        {/* Generate routes from configuration */}
+        {routes.map((route) => (
+          <Route
+            key={route.path}
+            path={route.path}
+            element={wrapRouteComponent(route)}
+          />
+        ))}
+        
+        {/* 404 - Catch all unmatched routes */}
+        <Route
+          path="*"
+          element={
+            <Suspense fallback={<LoadingSpinner fullScreen message="Loading page..." />}>
               <Layout>
-                <Suspense fallback={<LoadingSpinner fullScreen message="Loading profiles..." />}>
-                  <ProfilesManagementPage />
-                </Suspense>
+                <NotFoundPage />
               </Layout>
-            </AdminRoute>
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        }
-      />
-      <Route
-        path="/admin/crashes"
-        element={
-          isAuthenticated ? (
-            <AdminRoute>
-              <Layout>
-                <Suspense fallback={<LoadingSpinner fullScreen message="Loading crashes..." />}>
-                  <CrashesManagementPage />
-                </Suspense>
-              </Layout>
-            </AdminRoute>
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        }
-      />
-      <Route
-        path="/admin/users"
-        element={
-          isAuthenticated ? (
-            <AdminRoute>
-              <Layout>
-                <Suspense fallback={<LoadingSpinner fullScreen message="Loading users..." />}>
-                  <UsersManagementPage />
-                </Suspense>
-              </Layout>
-            </AdminRoute>
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        }
-      />
-      <Route
-        path="/admin/dashboard"
-        element={
-          isAuthenticated ? (
-            <AdminRoute>
-              <Layout>
-                <Suspense fallback={<LoadingSpinner fullScreen message="Loading dashboard..." />}>
-                  <AdminDashboardPage />
-                </Suspense>
-              </Layout>
-            </AdminRoute>
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        }
-      />
-    </Routes>
+            </Suspense>
+          }
+        />
+      </Routes>
     </>
   );
 }

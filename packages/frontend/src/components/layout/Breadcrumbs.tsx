@@ -1,22 +1,54 @@
 /**
- * Breadcrumbs Component
- * Displays navigation breadcrumbs
+ * Breadcrumbs Navigation Component
+ * 
+ * Компонент навигационных хлебных крошек.
+ * Автоматически генерирует крошки из текущего пути или принимает кастомный список.
+ * 
+ * @component
+ * @example
+ * ```tsx
+ * import { Breadcrumbs } from '@/components/layout';
+ * 
+ * // Автоматическая генерация из пути
+ * <Breadcrumbs />
+ * 
+ * // Кастомные крошки
+ * <Breadcrumbs items={[
+ *   { label: 'Home', path: '/' },
+ *   { label: 'Settings', path: '/settings' }
+ * ]} />
+ * ```
  */
 
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ChevronRight, Home } from 'lucide-react';
-import { useTranslation } from '../hooks/useTranslation';
+import { useTranslation } from '../../hooks/useTranslation';
 
+/**
+ * Breadcrumb item interface
+ */
 interface BreadcrumbItem {
+  /** Display label for breadcrumb */
   label: string;
+  /** Path to navigate to */
   path: string;
 }
 
+/**
+ * Props for Breadcrumbs component
+ */
 interface BreadcrumbsProps {
+  /** Optional custom breadcrumb items. If not provided, auto-generates from current path */
   items?: BreadcrumbItem[];
 }
 
+/**
+ * Breadcrumbs Navigation Component
+ * 
+ * @param props - Breadcrumbs component props
+ * @returns Breadcrumb navigation with links
+ */
 export default function Breadcrumbs({ items }: BreadcrumbsProps) {
   const location = useLocation();
   const { t } = useTranslation();

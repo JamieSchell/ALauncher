@@ -250,9 +250,10 @@ export default function ProfilePage() {
     );
   }
 
-  const joinedDate = new Date(profile.createdAt).toLocaleDateString();
+  const { formatDate, formatDateTime } = useFormatDate();
+  const joinedDate = formatDate(profile.createdAt);
   const lastLoginDisplay = profile.lastLogin
-    ? new Date(profile.lastLogin).toLocaleString()
+    ? formatDateTime(profile.lastLogin)
     : t('profile.lastLoginNever');
   const accountAgeDays = Math.max(
     1,

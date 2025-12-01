@@ -58,6 +58,9 @@ auth-handler.json
 config.local.json
 uploads/
 
+# Build configuration (contains sensitive data)
+scripts/config.sh
+
 # Old Java files (if any remain)
 *.class
 *.jar

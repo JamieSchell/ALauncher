@@ -1,14 +1,21 @@
 /**
  * Server Status Chart Component
  * График мониторинга Minecraft сервера - онлайн игроков за 24 часа
+ *
+ * Оптимизирован для производительности:
+ * - Мемоизация форматирования данных
+ * - Адаптивный дизайн с ResponsiveContainer
+ * - Оптимизированное обновление данных
+ *
+ * @module components/ServerStatusChart
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { WifiOff } from 'lucide-react';
 import { ServerStatus } from '@modern-launcher/shared';
-import { serversAPI } from '../api/servers';
+import { useServerStatistics } from '../hooks/api';
 
 interface ServerStatusChartProps {
   status: ServerStatus | undefined;
@@ -24,7 +31,10 @@ interface StatisticsData {
   maximum: number;
 }
 
-// Преобразуем статистику в формат для графика (24 часа, каждые 5 минут)
+/**
+ * Преобразуем статистику в формат для графика (24 часа, каждые 5 минут)
+ * Мемоизированная функция для оптимизации производительности
+ */
 const formatStatisticsData = (statistics: StatisticsData[], currentOnline: number): Array<{ time: string; value1: number; value2: number; value3: number }> => {
   const now = new Date();
   const data: Array<{ time: string; value1: number; value2: number; value3: number }> = [];
@@ -64,54 +74,67 @@ const formatStatisticsData = (statistics: StatisticsData[], currentOnline: numbe
   return data;
 };
 
-const CustomTooltip = ({ active, payload }: any) => {
-  if (active && payload && payload.length) {
-    const data = payload[0].payload;
-    
-    return (
-      <div className="bg-gray-900/95 border border-white/20 rounded-lg p-3 shadow-xl backdrop-blur-sm">
-        <p className="text-white text-sm font-semibold mb-2">{data.time}</p>
-        {payload.map((entry: any, index: number) => {
-          const labels = ['Онлайн', 'Средний', 'Минимум'];
-          const value = entry.value || 0;
-          
-          return (
-            <div key={index} className="mb-1">
-              <p className="text-xs" style={{ color: entry.color }}>
-                {labels[index]}: <span className="text-white font-semibold">{value}</span> игроков
-              </p>
-            </div>
-          );
-        })}
-      </div>
-    );
-  }
-  return null;
-};
 
 export default function ServerStatusChart({ status, isLoading = false, serverAddress, serverPort = 25565 }: ServerStatusChartProps) {
-  const [statistics, setStatistics] = useState<StatisticsData[]>([]);
-
-  // Загрузить статистику из базы данных - ВСЕГДА вызывается в начале компонента
-  useEffect(() => {
-    if (serverAddress) {
-      serversAPI.getServerStatistics(serverAddress, serverPort)
-        .then(data => {
-          console.log('[ServerStatusChart] Loaded statistics:', data.length, 'intervals');
-          console.log('[ServerStatusChart] Statistics sample:', data.slice(0, 5));
-          setStatistics(data);
-        })
-        .catch(error => {
-          console.error('Error loading statistics:', error);
-          // Если ошибка, используем пустой массив
-          setStatistics([]);
-        });
-    } else {
-      setStatistics([]);
+  // Используем custom hook для получения статистики с кешированием
+  const { data: statistics = [], isLoading: isLoadingStats } = useServerStatistics(
+    serverAddress || null,
+    serverPort,
+    {
+      enabled: !!serverAddress && !!status?.online,
+      refetchInterval: 60000, // Обновлять каждую минуту
     }
-  }, [serverAddress, serverPort, status?.online]);
+  );
 
-  if (isLoading || !status) {
+  // Мемоизируем форматирование данных для оптимизации производительности
+  const chartData = useMemo(() => {
+    if (!status || !status.online) return [];
+    const online = status.players?.online || 0;
+    return formatStatisticsData(statistics, online);
+  }, [statistics, status?.players?.online, status?.online]);
+
+  // Мемоизируем вычисление максимального значения Y-оси
+  const { maxYValue, yAxisTicks } = useMemo(() => {
+    if (chartData.length === 0) {
+      return { maxYValue: 50, yAxisTicks: Array.from({ length: 11 }, (_, i) => i * 5) };
+    }
+    const max = status?.players?.max || 50;
+    const maxDataValue = Math.max(
+      ...chartData.map(d => Math.max(d.value1, d.value2, d.value3)),
+      max
+    );
+    const maxY = Math.max(50, Math.ceil(maxDataValue / 10) * 10);
+    const ticks = Array.from({ length: Math.floor(maxY / 5) + 1 }, (_, i) => i * 5);
+    return { maxYValue: maxY, yAxisTicks: ticks };
+  }, [chartData, status?.players?.max]);
+
+  // Мемоизируем кастомный tooltip
+  const CustomTooltipMemo = useCallback(({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      
+      return (
+        <div className="bg-gray-900/95 border border-white/20 rounded-lg p-3 shadow-xl backdrop-blur-sm">
+          <p className="text-white text-sm font-semibold mb-2">{data.time}</p>
+          {payload.map((entry: any, index: number) => {
+            const labels = ['Онлайн', 'Средний', 'Минимум'];
+            const value = entry.value || 0;
+            
+            return (
+              <div key={index} className="mb-1">
+                <p className="text-xs" style={{ color: entry.color }}>
+                  {labels[index]}: <span className="text-white font-semibold">{value}</span> игроков
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      );
+    }
+    return null;
+  }, []);
+
+  if (isLoading || isLoadingStats || !status) {
     return (
       <div className="flex items-center justify-center h-full min-h-[300px]">
         <div className="text-center">
@@ -137,28 +160,11 @@ export default function ServerStatusChart({ status, isLoading = false, serverAdd
     );
   }
 
-  const online = status.players?.online || 0;
-  const max = status.players?.max || 0;
-
-  // Форматируем данные для графика
-  const chartData = formatStatisticsData(statistics, online);
-  
-  // Вычисляем максимальное значение для Y-оси на основе реальных данных
-  const maxDataValue = Math.max(
-    ...chartData.map(d => Math.max(d.value1, d.value2, d.value3)),
-    max || 50
-  );
-  const maxYValue = Math.max(50, Math.ceil(maxDataValue / 10) * 10);
-  const yAxisTicks = Array.from({ length: Math.floor(maxYValue / 5) + 1 }, (_, i) => i * 5);
-  
-  console.log('[ServerStatusChart] Chart data:', chartData.length, 'points, max value:', maxYValue);
-  console.log('[ServerStatusChart] Data sample:', chartData.slice(-10)); // Последние 10 точек
-
   return (
     <div className="relative h-full w-full flex flex-col">
-      {/* График */}
-      <div className="flex-1 min-h-[400px] w-full">
-        <ResponsiveContainer width="100%" height="100%" minHeight={400}>
+      {/* График - адаптивный контейнер */}
+      <div className="flex-1 min-h-[300px] sm:min-h-[400px] w-full">
+        <ResponsiveContainer width="100%" height="100%" minHeight={300}>
         <LineChart
           data={chartData}
           margin={{ top: 10, right: 20, left: 10, bottom: 40 }}
@@ -216,7 +222,7 @@ export default function ServerStatusChart({ status, isLoading = false, serverAdd
             tickFormatter={(value) => `${value}`}
           />
           
-          <Tooltip content={<CustomTooltip />} />
+          <Tooltip content={<CustomTooltipMemo />} />
           
           {/* Три линии графика как на скриншоте - волнистые и плавные */}
           <Line

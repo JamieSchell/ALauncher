@@ -3,11 +3,13 @@
  * Просмотр крэшей игры и проблем подключения к серверу
  */
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, WifiOff, RefreshCw, Loader2, Filter, X, Eye, Calendar, User, Server, Code, Bell } from 'lucide-react';
 import { crashesAPI, GameCrash, ServerConnectionIssue, LauncherError } from '../api/crashes';
+import { useOptimizedAnimation } from '../hooks/useOptimizedAnimation';
+import { useFormatDate } from '../hooks/useFormatDate';
 import { LauncherErrorsList, LauncherErrorDetailModal } from './CrashesManagementPage-LauncherErrors';
 import { useAuthStore } from '../stores/authStore';
 
@@ -515,15 +517,7 @@ export default function CrashesManagementPage() {
     }
   }, [activeTab, handleScroll]);
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString('ru-RU', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
+  const { formatDateTime } = useFormatDate();
 
   const getExitCodeColor = (code: number) => {
     if (code === 0) return 'text-green-400';
@@ -798,7 +792,7 @@ export default function CrashesManagementPage() {
           hasNext={crashesHasNext}
           selectedCrash={selectedCrash}
           onSelectCrash={setSelectedCrash}
-          formatDate={formatDate}
+          formatDate={formatDateTime}
           getExitCodeColor={getExitCodeColor}
         />
       ) : activeTab === 'connection-issues' ? (
@@ -810,7 +804,7 @@ export default function CrashesManagementPage() {
           hasNext={issuesHasNext}
           selectedIssue={selectedIssue}
           onSelectIssue={setSelectedIssue}
-          formatDate={formatDate}
+          formatDate={formatDateTime}
         />
       ) : (
         <LauncherErrorsList
@@ -820,7 +814,7 @@ export default function CrashesManagementPage() {
           hasNext={launcherErrorsHasNext}
           selectedError={selectedLauncherError}
           onSelectError={setSelectedLauncherError}
-          formatDate={formatDate}
+          formatDate={formatDateTime}
         />
       )}
 
@@ -829,7 +823,7 @@ export default function CrashesManagementPage() {
         <CrashDetailModal
           crash={selectedCrash}
           onClose={() => setSelectedCrash(null)}
-          formatDate={formatDate}
+          formatDate={formatDateTime}
           getExitCodeColor={getExitCodeColor}
         />
       )}
@@ -837,29 +831,95 @@ export default function CrashesManagementPage() {
         <ConnectionIssueDetailModal
           issue={selectedIssue}
           onClose={() => setSelectedIssue(null)}
-          formatDate={formatDate}
+          formatDate={formatDateTime}
         />
       )}
       {selectedLauncherError && (
         <LauncherErrorDetailModal
           error={selectedLauncherError}
           onClose={() => setSelectedLauncherError(null)}
-          formatDate={formatDate}
+          formatDate={formatDateTime}
         />
       )}
     </div>
   );
 }
 
-// Crashes List Component
-const CrashesList = React.forwardRef<HTMLDivElement, {
+// Crash Item Component - мемоизирован для оптимизации ререндеров
+const CrashItem = React.memo<{
+  crash: GameCrash;
+  isSelected: boolean;
+  onSelect: (crash: GameCrash) => void;
+  formatDate: (date: string | Date) => string;
+  getExitCodeColor: (code: number) => string;
+}>(({ crash, isSelected, onSelect, formatDate, getExitCodeColor }) => {
+  const { shouldAnimate } = useOptimizedAnimation();
+
+  return (
+    <motion.div
+      key={crash.id}
+      initial={shouldAnimate ? { opacity: 0, y: 10 } : false}
+      animate={shouldAnimate ? { opacity: 1, y: 0 } : false}
+      className={`bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl p-4 hover:bg-white/5 transition-colors cursor-pointer shadow-lg ${
+        isSelected ? 'ring-2 ring-primary-500' : ''
+      }`}
+      onClick={() => onSelect(crash)}
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1">
+          <div className="flex items-center gap-3 mb-2">
+            <Code className={`w-5 h-5 ${getExitCodeColor(crash.exitCode)}`} />
+            <span className={`font-mono font-bold ${getExitCodeColor(crash.exitCode)}`}>
+              Exit Code: {crash.exitCode}
+            </span>
+            {crash.profileVersion && (
+              <span className="px-2 py-0.5 bg-primary-500/20 text-primary-300 rounded text-xs">
+                {crash.profileVersion}
+              </span>
+            )}
+          </div>
+          {crash.errorMessage && (
+            <p className="text-sm text-gray-300 mb-2 line-clamp-2">
+              {crash.errorMessage.substring(0, 200)}
+            </p>
+          )}
+          <div className="flex items-center gap-4 text-xs text-gray-500">
+            {crash.username && (
+              <div className="flex items-center gap-1">
+                <User size={14} />
+                <span>{crash.username}</span>
+              </div>
+            )}
+            {crash.serverAddress && (
+              <div className="flex items-center gap-1">
+                <Server size={14} />
+                <span>{crash.serverAddress}:{crash.serverPort}</span>
+              </div>
+            )}
+            <div className="flex items-center gap-1">
+              <Calendar size={14} />
+              <span>{formatDate(crash.createdAt)}</span>
+            </div>
+          </div>
+        </div>
+        <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
+          <Eye size={18} className="text-gray-400" />
+        </button>
+      </div>
+    </motion.div>
+  );
+});
+CrashItem.displayName = 'CrashItem';
+
+// Crashes List Component - оптимизирован с мемоизацией
+const CrashesList = React.memo(React.forwardRef<HTMLDivElement, {
   crashes: GameCrash[];
   isLoading: boolean;
   isFetchingNext?: boolean;
   hasNext?: boolean;
   selectedCrash: GameCrash | null;
   onSelectCrash: (crash: GameCrash) => void;
-  formatDate: (date: string) => string;
+  formatDate: (date: string | Date) => string;
   getExitCodeColor: (code: number) => string;
 }>(({
   crashes,
@@ -871,6 +931,7 @@ const CrashesList = React.forwardRef<HTMLDivElement, {
   formatDate,
   getExitCodeColor,
 }, ref) => {
+  const { shouldAnimate } = useOptimizedAnimation();
   if (isLoading && crashes.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -892,60 +953,19 @@ const CrashesList = React.forwardRef<HTMLDivElement, {
       ) : (
         <>
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            initial={shouldAnimate ? { opacity: 0 } : false}
+            animate={shouldAnimate ? { opacity: 1 } : false}
             className="space-y-2"
           >
             {crashes.map((crash) => (
-              <motion.div
+              <CrashItem
                 key={crash.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl p-4 hover:bg-white/5 transition-colors cursor-pointer shadow-lg"
-                onClick={() => onSelectCrash(crash)}
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <Code className={`w-5 h-5 ${getExitCodeColor(crash.exitCode)}`} />
-                      <span className={`font-mono font-bold ${getExitCodeColor(crash.exitCode)}`}>
-                        Exit Code: {crash.exitCode}
-                      </span>
-                      {crash.profileVersion && (
-                        <span className="px-2 py-0.5 bg-primary-500/20 text-primary-300 rounded text-xs">
-                          {crash.profileVersion}
-                        </span>
-                      )}
-                    </div>
-                    {crash.errorMessage && (
-                      <p className="text-sm text-gray-300 mb-2 line-clamp-2">
-                        {crash.errorMessage.substring(0, 200)}
-                      </p>
-                    )}
-                    <div className="flex items-center gap-4 text-xs text-gray-500">
-                      {crash.username && (
-                        <div className="flex items-center gap-1">
-                          <User size={14} />
-                          <span>{crash.username}</span>
-                        </div>
-                      )}
-                      {crash.serverAddress && (
-                        <div className="flex items-center gap-1">
-                          <Server size={14} />
-                          <span>{crash.serverAddress}:{crash.serverPort}</span>
-                        </div>
-                      )}
-                      <div className="flex items-center gap-1">
-                        <Calendar size={14} />
-                        <span>{formatDate(crash.createdAt)}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
-                    <Eye size={18} className="text-gray-400" />
-                  </button>
-                </div>
-              </motion.div>
+                crash={crash}
+                isSelected={selectedCrash?.id === crash.id}
+                onSelect={onSelectCrash}
+                formatDate={formatDateTime}
+                getExitCodeColor={getExitCodeColor}
+              />
             ))}
           </motion.div>
           
@@ -966,18 +986,81 @@ const CrashesList = React.forwardRef<HTMLDivElement, {
       )}
     </div>
   );
-});
+}));
 CrashesList.displayName = 'CrashesList';
 
-// Connection Issues List Component
-const ConnectionIssuesList = React.forwardRef<HTMLDivElement, {
+// Connection Issue Item Component - мемоизирован для оптимизации ререндеров
+const ConnectionIssueItem = React.memo<{
+  issue: ServerConnectionIssue;
+  isSelected: boolean;
+  onSelect: (issue: ServerConnectionIssue) => void;
+  formatDate: (date: string | Date) => string;
+}>(({ issue, isSelected, onSelect, formatDate }) => {
+  const { shouldAnimate } = useOptimizedAnimation();
+
+  return (
+    <motion.div
+      key={issue.id}
+      initial={shouldAnimate ? { opacity: 0, y: 10 } : false}
+      animate={shouldAnimate ? { opacity: 1, y: 0 } : false}
+      className={`bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl p-4 hover:bg-white/5 transition-colors cursor-pointer shadow-lg ${
+        isSelected ? 'ring-2 ring-primary-500' : ''
+      }`}
+      onClick={() => onSelect(issue)}
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1">
+          <div className="flex items-center gap-3 mb-2">
+            <WifiOff className="w-5 h-5 text-yellow-400" />
+            <span className={`px-3 py-1 rounded text-sm font-medium inline-block ${issueTypeColors[issue.issueType]}`}>
+              {issueTypeLabels[issue.issueType]}
+            </span>
+            {issue.profileVersion && (
+              <span className="px-2 py-0.5 bg-primary-500/20 text-primary-300 rounded text-xs">
+                {issue.profileVersion}
+              </span>
+            )}
+          </div>
+          {issue.errorMessage && (
+            <p className="text-sm text-gray-300 mb-2 line-clamp-2">
+              {issue.errorMessage.substring(0, 200)}
+            </p>
+          )}
+          <div className="flex items-center gap-4 text-xs text-gray-500">
+            {issue.username && (
+              <div className="flex items-center gap-1">
+                <User size={14} />
+                <span>{issue.username}</span>
+              </div>
+            )}
+            <div className="flex items-center gap-1">
+              <Server size={14} />
+              <span>{issue.serverAddress}:{issue.serverPort}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Calendar size={14} />
+              <span>{formatDate(issue.createdAt)}</span>
+            </div>
+          </div>
+        </div>
+        <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
+          <Eye size={18} className="text-gray-400" />
+        </button>
+      </div>
+    </motion.div>
+  );
+});
+ConnectionIssueItem.displayName = 'ConnectionIssueItem';
+
+// Connection Issues List Component - оптимизирован с мемоизацией
+const ConnectionIssuesList = React.memo(React.forwardRef<HTMLDivElement, {
   issues: ServerConnectionIssue[];
   isLoading: boolean;
   isFetchingNext?: boolean;
   hasNext?: boolean;
   selectedIssue: ServerConnectionIssue | null;
   onSelectIssue: (issue: ServerConnectionIssue) => void;
-  formatDate: (date: string) => string;
+  formatDate: (date: string | Date) => string;
 }>(({
   issues,
   isLoading,
@@ -987,6 +1070,8 @@ const ConnectionIssuesList = React.forwardRef<HTMLDivElement, {
   onSelectIssue,
   formatDate,
 }, ref) => {
+  const { shouldAnimate } = useOptimizedAnimation();
+
   if (isLoading && issues.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -1008,59 +1093,18 @@ const ConnectionIssuesList = React.forwardRef<HTMLDivElement, {
       ) : (
         <>
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+            initial={shouldAnimate ? { opacity: 0 } : false}
+            animate={shouldAnimate ? { opacity: 1 } : false}
             className="space-y-2"
           >
             {issues.map((issue) => (
-              <motion.div
+              <ConnectionIssueItem
                 key={issue.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl p-4 hover:bg-white/5 transition-colors cursor-pointer shadow-lg"
-                onClick={() => onSelectIssue(issue)}
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <span className={`px-3 py-1 rounded text-xs font-medium ${issueTypeColors[issue.issueType]}`}>
-                        {issueTypeLabels[issue.issueType]}
-                      </span>
-                      {issue.profileVersion && (
-                        <span className="px-2 py-0.5 bg-primary-500/20 text-primary-300 rounded text-xs">
-                          {issue.profileVersion}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <Server size={16} className="text-gray-400" />
-                      <span className="text-sm text-white font-mono">
-                        {issue.serverAddress}:{issue.serverPort}
-                      </span>
-                    </div>
-                    {issue.errorMessage && (
-                      <p className="text-sm text-gray-300 mb-2 line-clamp-2">
-                        {issue.errorMessage.substring(0, 200)}
-                      </p>
-                    )}
-                    <div className="flex items-center gap-4 text-xs text-gray-500">
-                      {issue.username && (
-                        <div className="flex items-center gap-1">
-                          <User size={14} />
-                          <span>{issue.username}</span>
-                        </div>
-                      )}
-                      <div className="flex items-center gap-1">
-                        <Calendar size={14} />
-                        <span>{formatDate(issue.createdAt)}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
-                    <Eye size={18} className="text-gray-400" />
-                  </button>
-                </div>
-              </motion.div>
+                issue={issue}
+                isSelected={selectedIssue?.id === issue.id}
+                onSelect={onSelectIssue}
+                formatDate={formatDate}
+              />
             ))}
           </motion.div>
           
@@ -1081,7 +1125,7 @@ const ConnectionIssuesList = React.forwardRef<HTMLDivElement, {
       )}
     </div>
   );
-});
+}));
 ConnectionIssuesList.displayName = 'ConnectionIssuesList';
 
 // Crash Detail Modal
@@ -1093,7 +1137,7 @@ function CrashDetailModal({
 }: {
   crash: GameCrash;
   onClose: () => void;
-  formatDate: (date: string) => string;
+  formatDate: (date: string | Date) => string;
   getExitCodeColor: (code: number) => string;
 }) {
   return (
@@ -1206,7 +1250,7 @@ function ConnectionIssueDetailModal({
 }: {
   issue: ServerConnectionIssue;
   onClose: () => void;
-  formatDate: (date: string) => string;
+  formatDate: (date: string | Date) => string;
 }) {
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">

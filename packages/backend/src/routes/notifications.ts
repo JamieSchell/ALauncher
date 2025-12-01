@@ -8,6 +8,7 @@ import { prisma } from '../services/database';
 import { AppError } from '../middleware/errorHandler';
 import { authenticateToken, AuthRequest, requireAdmin } from '../middleware/auth';
 import { UserRole, Prisma, NotificationType } from '@prisma/client';
+import { ApiResponse } from '@modern-launcher/shared';
 
 // NotificationType enum values for validation
 const NotificationTypeValues = Object.values(NotificationType);
@@ -317,11 +318,21 @@ router.get(
           where: { userId, read: false },
         });
 
-        res.json({ success: true, count });
+        const payload: ApiResponse<{ count: number }> = {
+          success: true,
+          data: { count },
+        };
+
+        res.json(payload);
       } catch (error: any) {
         // If table doesn't exist, return 0
         if (error.code === 'P2021' || error.message?.includes('does not exist')) {
-          res.json({ success: true, count: 0 });
+          const payload: ApiResponse<{ count: number }> = {
+            success: true,
+            data: { count: 0 },
+          };
+
+          res.json(payload);
           return;
         }
         throw error;

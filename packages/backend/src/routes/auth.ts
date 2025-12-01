@@ -3,12 +3,29 @@
  */
 
 import { Router, Request, Response, NextFunction } from 'express';
-import { body, validationResult } from 'express-validator';
+import { z } from 'zod';
 import { AuthService } from '../services/auth';
 import { AppError } from '../middleware/errorHandler';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
+import { validate } from '../validation';
 
 const router = Router();
+
+const loginSchema = z.object({
+  login: z.string().min(1, 'Login is required').trim(),
+  password: z.string().min(1, 'Password is required'),
+});
+
+const registerSchema = z.object({
+  username: z
+    .string()
+    .min(3, 'Username must be 3-16 characters')
+    .max(16, 'Username must be 3-16 characters')
+    .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores')
+    .trim(),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  email: z.string().email('Invalid email address').optional(),
+});
 
 /**
  * POST /api/auth/login
@@ -16,18 +33,9 @@ const router = Router();
  */
 router.post(
   '/login',
-  [
-    body('login').trim().notEmpty().withMessage('Login is required'),
-    body('password').notEmpty().withMessage('Password is required'),
-  ],
+  validate(loginSchema, 'body'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        console.error('Validation errors:', errors.array());
-        throw new AppError(400, 'Validation failed: ' + errors.array().map(e => e.msg).join(', '));
-      }
-
       const { login, password } = req.body;
       const ipAddress = req.ip || req.socket.remoteAddress || 'unknown';
       
@@ -70,31 +78,9 @@ router.post(
  */
 router.post(
   '/register',
-  [
-    body('username')
-      .trim()
-      .isLength({ min: 3, max: 16 })
-      .withMessage('Username must be 3-16 characters')
-      .matches(/^[a-zA-Z0-9_]+$/)
-      .withMessage('Username can only contain letters, numbers, and underscores'),
-    body('password')
-      .isLength({ min: 6 })
-      .withMessage('Password must be at least 6 characters'),
-    body('email')
-      .optional()
-      .isEmail()
-      .withMessage('Invalid email address'),
-  ],
+  validate(registerSchema, 'body'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(400).json({
-          success: false,
-          errors: errors.array(),
-        });
-      }
-
       const { username, password, email } = req.body;
 
       const result = await AuthService.register(username, password, email);

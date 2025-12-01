@@ -1,6 +1,27 @@
 /**
- * Main Layout Component - Modern Design 2025
- * Senior UX/UI Designer Implementation
+ * Main Layout Component
+ * 
+ * Главный layout контейнер приложения, который включает:
+ * - TitleBar (кастомная панель заголовка окна)
+ * - Sidebar (боковая навигация)
+ * - Breadcrumbs (навигационные крошки)
+ * - Анимированный фон с градиентами
+ * - Skip links для accessibility
+ * - Плавные переходы между страницами
+ * 
+ * @component
+ * @example
+ * ```tsx
+ * import { Layout } from '@/components/layout';
+ * 
+ * function App() {
+ *   return (
+ *     <Layout>
+ *       <YourPageContent />
+ *     </Layout>
+ *   );
+ * }
+ * ```
  */
 
 import { ReactNode } from 'react';
@@ -10,10 +31,20 @@ import TitleBar from './TitleBar';
 import Sidebar from './Sidebar';
 import Breadcrumbs from './Breadcrumbs';
 
+/**
+ * Props for Layout component
+ */
 interface LayoutProps {
+  /** Content to render inside the layout */
   children: ReactNode;
 }
 
+/**
+ * Main Layout Component
+ * 
+ * @param props - Layout component props
+ * @returns Layout wrapper with TitleBar, Sidebar, Breadcrumbs and animated content area
+ */
 export default function Layout({ children }: LayoutProps) {
   const location = useLocation();
 

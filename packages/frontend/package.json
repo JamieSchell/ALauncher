@@ -1,21 +1,35 @@
 {
   "name": "@modern-launcher/frontend",
-  "version": "1.0.268",
+  "version": "1.0.280",
   "description": "Modern Minecraft Launcher - Electron Frontend",
-  "author": "Modern Launcher Team",
+  "homepage": "https://github.com/modern-launcher/modern-launcher",
+  "author": {
+    "name": "Modern Launcher Team",
+    "email": "team@modern-launcher.com"
+  },
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite",
     "dev:local": "bash ../../scripts/dev-frontend.sh",
     "prod": "bash ../../scripts/prod-frontend.sh",
     "build": "vite build 2>&1 | grep -v 'CJS build of Vite' || true",
+    "test": "echo \"No tests configured yet for @modern-launcher/frontend\"",
+    "lint": "eslint . --ext .ts,.tsx --max-warnings 0",
+    "lint:fix": "eslint . --ext .ts,.tsx --fix",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "build:portable": "node scripts/increment-version.js && node scripts/clean-release.js && node scripts/pre-build-installer.js && (vite build 2>&1 | grep -v 'CJS build of Vite' || true) && electron-builder --win portable && node scripts/update-launcher-version.js",
     "build:installer": "npm run build:portable",
     "update-launcher": "node scripts/update-launcher-full.js",
     "update-launcher:win": "node scripts/update-launcher-full.js",
     "preview": "vite preview",
     "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
-    "electron:build": "node scripts/increment-version.js && (vite build 2>&1 | grep -v 'CJS build of Vite' || true) && electron-builder"
+    "electron:build": "node scripts/increment-version.js && (vite build 2>&1 | grep -v 'CJS build of Vite' || true) && electron-builder",
+    "electron:build:win": "node scripts/increment-version.js && (vite build 2>&1 | grep -v 'CJS build of Vite' || true) && electron-builder --win",
+    "electron:build:win:installer": "node scripts/increment-version.js && (vite build 2>&1 | grep -v 'CJS build of Vite' || true) && electron-builder --win --config.win.target=nsis",
+    "electron:build:win:all": "npm run electron:build:win && npm run electron:build:win:installer",
+    "electron:build:linux": "node scripts/increment-version.js && (vite build 2>&1 | grep -v 'CJS build of Vite' || true) && electron-builder --linux"
   },
   "dependencies": {
     "@modern-launcher/shared": "*",
@@ -58,7 +72,6 @@
     "extraMetadata": {
       "name": "modern-launcher"
     },
-    "icon": "build/icon.ico",
     "directories": {
       "output": "release",
       "buildResources": "build"
@@ -92,12 +105,12 @@
       "artifactName": "${productName}-${version}-Setup.${ext}",
       "warningsAsErrors": false,
       "unicode": true,
-      "installerIcon": "build/icon.ico",
-      "uninstallerIcon": "build/icon.ico",
-      "installerHeaderIcon": "build/icon.ico",
       "differentialPackage": false,
-      "include": "build/installer.nsh",
-      "perMachine": false
+      "perMachine": false,
+      "installerLanguages": [
+        "en_US",
+        "ru_RU"
+      ]
     },
     "portable": {
       "artifactName": "${productName}-${version}-portable.${ext}"
@@ -107,7 +120,8 @@
         "AppImage",
         "deb"
       ],
-      "category": "Game"
+      "category": "Game",
+      "maintainer": "Modern Launcher Team <team@modern-launcher.com>"
     },
     "mac": {
       "target": [

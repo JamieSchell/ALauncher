@@ -4,11 +4,10 @@
 
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { useOptimizedAnimation } from '../hooks/useOptimizedAnimation';
 import { Play, Download, AlertCircle, Terminal, Wifi, WifiOff, Users, Loader2, ArrowRight, HardDrive, Gauge, Server } from 'lucide-react';
-import { profilesAPI } from '../api/profiles';
+import { useProfiles } from '../hooks/api';
 import { serversAPI } from '../api/servers';
 import { downloadsAPI } from '../api/downloads';
 import { crashesAPI } from '../api/crashes';
@@ -163,11 +162,8 @@ export default function HomePage() {
     };
   }, []);
 
-  const { data: profiles, isLoading, refetch } = useQuery({
-    queryKey: ['profiles'],
-    queryFn: profilesAPI.getProfiles,
+  const { data: profiles, isLoading, refetch } = useProfiles({
     refetchOnWindowFocus: true, // Auto-refresh when window gets focus
-    staleTime: 30000, // Consider data stale after 30 seconds
   });
 
   // Store previous server statuses to detect changes

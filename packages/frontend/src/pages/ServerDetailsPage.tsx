@@ -5,7 +5,6 @@
 
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { 
   ArrowLeft, 
@@ -26,8 +25,7 @@ import {
   Settings as SettingsIcon,
   Crown
 } from 'lucide-react';
-import { profilesAPI } from '../api/profiles';
-import { serversAPI } from '../api/servers';
+import { useProfile, useEconomyLeaderboard, useServerStatus } from '../hooks/api';
 import { downloadsAPI } from '../api/downloads';
 import { crashesAPI } from '../api/crashes';
 import { statisticsAPI } from '../api/statistics';
@@ -40,6 +38,8 @@ import { ServerStatus, UpdateProgress } from '@modern-launcher/shared';
 import { useTranslation } from '../hooks/useTranslation';
 import { API_CONFIG } from '../config/api';
 import { useOptimizedAnimation } from '../hooks/useOptimizedAnimation';
+import { useFormatDate } from '../hooks/useFormatDate';
+import { useFormatNumber } from '../hooks/useFormatNumber';
 // Simple path join function for browser (replaces Node.js path.join)
 const joinPath = (...parts: string[]): string => {
   return parts
@@ -66,9 +66,7 @@ export default function ServerDetailsPage() {
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [lastStatusUpdate, setLastStatusUpdate] = useState<number | null>(null);
 
-  const { data: profileData, isLoading, isError, error } = useQuery({
-    queryKey: ['profile', id],
-    queryFn: () => profilesAPI.getProfile(id!),
+  const { data: profileData, isLoading, isError, error } = useProfile(id, {
     enabled: !!id,
   });
 
@@ -83,34 +81,14 @@ export default function ServerDetailsPage() {
     error: serverStatusError,
     isFetching: isFetchingStatus,
     refetch: refetchServerStatus
-  } = useQuery({
-    queryKey: ['serverStatus', profile?.serverAddress, profile?.serverPort],
-    queryFn: async () => {
-      try {
-        if (!profile) {
-          throw new Error('Profile data is not available');
-        }
-        return await serversAPI.getServerStatus(
-          profile.serverAddress,
-          profile.serverPort
-        );
-      } catch (error) {
-        console.error('Failed to get server status:', error);
-        // Return offline status on error
-        return {
-          online: false,
-          players: { online: 0, max: 0 },
-          version: '',
-          motd: '',
-          ping: 0,
-        } as ServerStatus;
-      }
-    },
-    enabled: !!profile,
-    refetchInterval: 5000, // Обновлять каждые 5 секунд
-    retry: 2, // Retry twice on failure
-    staleTime: 0, // Always consider data stale
-  });
+  } = useServerStatus(
+    profile?.serverAddress || null,
+    profile?.serverPort || 25565,
+    {
+      enabled: !!profile,
+      refetchInterval: 5000, // Обновлять каждые 5 секунд
+    }
+  );
 
   React.useEffect(() => {
     if (serverStatus) {
@@ -124,35 +102,8 @@ export default function ServerDetailsPage() {
     isLoading: isEconomyLoading,
     isError: isEconomyError,
     refetch: refetchEconomy,
-  } = useQuery({
-    queryKey: ['economyLeaderboard', profileId],
-    queryFn: async () => {
-      if (!profileId) {
-        return {
-          players: [],
-          currencySymbol: '',
-          precision: 0,
-          limit: 0,
-          lastUpdated: new Date().toISOString(),
-        };
-      }
-      try {
-        return await profilesAPI.getEconomyLeaderboard(profileId);
-      } catch (error: any) {
-        console.error('[EconomyLeaderboard] Failed to fetch leaderboard:', error);
-        // Return empty leaderboard on error instead of throwing
-        return {
-          players: [],
-          currencySymbol: '',
-          precision: 0,
-          limit: 0,
-          lastUpdated: new Date().toISOString(),
-        };
-      }
-    },
-    enabled: economyEnabled && !!profileId,
-    staleTime: 60000,
-    retry: false, // Don't retry on error to avoid blocking page load
+  } = useEconomyLeaderboard(profileId, {
+    enabled: !!profileId && economyEnabled,
   });
 
   // formatBalance hook - must be before early return to maintain hook order
@@ -549,7 +500,8 @@ export default function ServerDetailsPage() {
   const javaRequirement = profile?.jvmVersion || '8';
   const StatusIcon = (serverStatus?.online ?? false) ? Wifi : WifiOff;
   const statusLabel = (serverStatus?.online ?? false) ? t('server.serverOnline') : t('server.serverOffline');
-  const lastCheckedLabel = lastStatusUpdate ? new Date(lastStatusUpdate).toLocaleTimeString() : t('common.loading');
+  const { formatTime } = useFormatDate();
+  const lastCheckedLabel = lastStatusUpdate ? formatTime(new Date(lastStatusUpdate)) : t('common.loading');
   const resolutionLabel = `${width}x${height}`;
 
   const statusCards = [
