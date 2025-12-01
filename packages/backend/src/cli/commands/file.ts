@@ -5,7 +5,7 @@
 
 import readline from 'readline';
 import { BaseCommand } from './base';
-import { syncVersion, verifyVersionIntegrity, getSyncStats } from '../../services/fileSyncService';
+import { syncVersion, syncProfileFiles, verifyVersionIntegrity, getSyncStats } from '../../services/fileSyncService';
 import { prisma } from '../../services/database';
 
 export class FileCommands extends BaseCommand {
@@ -73,20 +73,38 @@ file delete-all <version> - Delete all files for version from database`;
 
   private async handleSync(args: string[]): Promise<void> {
     if (args.length < 1) {
-      this.printError('Usage: file sync <version>');
+      this.printError('Usage: file sync <version|clientDirectory>');
+      this.printInfo('You can sync by version (e.g., "1.12.2") or by clientDirectory (e.g., "hitech")');
       return;
     }
 
-    const version = args[0];
+    const identifier = args[0];
 
     try {
-      this.printInfo(`Syncing files for version "${version}"...`);
-      const result = await syncVersion(version);
+      // Сначала проверим, является ли это clientDirectory профиля
+      const profile = await prisma.clientProfile.findFirst({
+        where: { clientDirectory: identifier },
+      });
+
+      if (profile) {
+        // Это clientDirectory профиля - синхронизируем через профиль
+        this.printInfo(`Syncing files for profile "${profile.title}" (clientDirectory: "${identifier}")...`);
+        const result = await syncProfileFiles(profile.id);
+        
+        this.printSuccess(`Sync completed for profile "${profile.title}"`);
+        this.print(`  Added: ${result.added} file(s)`);
+        this.print(`  Updated: ${result.updated} file(s)`);
+        this.print(`  Errors: ${result.errors} file(s)`);
+      } else {
+        // Это версия - синхронизируем как версию
+        this.printInfo(`Syncing files for version "${identifier}"...`);
+        const result = await syncVersion(identifier);
       
-      this.printSuccess(`Sync completed for version "${version}"`);
+        this.printSuccess(`Sync completed for version "${identifier}"`);
       this.print(`  Added: ${result.added} file(s)`);
       this.print(`  Updated: ${result.updated} file(s)`);
       this.print(`  Errors: ${result.errors} file(s)`);
+      }
     } catch (error: any) {
       this.printError(`Failed to sync files: ${error.message}`);
     }

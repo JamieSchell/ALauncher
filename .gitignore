@@ -8,6 +8,7 @@ coverage/
 
 # Production
 dist/
+dist-electron/
 build/
 out/
 release/
@@ -55,6 +56,7 @@ profiles/
 runtime/
 auth-handler.json
 config.local.json
+uploads/
 
 # Old Java files (if any remain)
 *.class

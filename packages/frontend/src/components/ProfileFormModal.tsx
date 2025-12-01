@@ -200,12 +200,12 @@ export default function ProfileFormModal({ isOpen, onClose, onSuccess, profile }
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/50 backdrop-blur-sm">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
-          className="glass-card rounded-2xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+          className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl sm:rounded-2xl p-4 sm:p-6 w-full max-w-full sm:max-w-2xl lg:max-w-4xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto shadow-lg transition-all"
         >
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-white">
@@ -231,7 +231,7 @@ export default function ProfileFormModal({ isOpen, onClose, onSuccess, profile }
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-white border-b border-white/10 pb-2">Basic Information</h3>
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     Version <span className="text-red-400">*</span>
@@ -274,7 +274,7 @@ export default function ProfileFormModal({ isOpen, onClose, onSuccess, profile }
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     Server Address <span className="text-red-400">*</span>
@@ -310,7 +310,7 @@ export default function ProfileFormModal({ isOpen, onClose, onSuccess, profile }
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-white border-b border-white/10 pb-2">Launch Settings</h3>
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     Main Class <span className="text-red-400">*</span>
@@ -383,7 +383,7 @@ export default function ProfileFormModal({ isOpen, onClose, onSuccess, profile }
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-white border-b border-white/10 pb-2">Additional Settings</h3>
               
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     Sort Index
@@ -456,7 +456,7 @@ export default function ProfileFormModal({ isOpen, onClose, onSuccess, profile }
 
               {economyConfig.enabled && (
                 <div className="space-y-4 pl-6 border-l-2 border-white/10">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
                         Table Name <span className="text-red-400">*</span>
@@ -488,7 +488,7 @@ export default function ProfileFormModal({ isOpen, onClose, onSuccess, profile }
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
                         Username Column <span className="text-red-400">*</span>
@@ -520,7 +520,7 @@ export default function ProfileFormModal({ isOpen, onClose, onSuccess, profile }
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
                         Order

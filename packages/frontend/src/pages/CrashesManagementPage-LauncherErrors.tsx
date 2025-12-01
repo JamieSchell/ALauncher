@@ -69,7 +69,7 @@ export const LauncherErrorsList = React.forwardRef<HTMLDivElement, {
           key={error.id}
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className={`glass rounded-lg p-4 cursor-pointer hover:bg-white/5 transition-colors ${
+          className={`bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-lg p-4 cursor-pointer hover:bg-white/5 transition-colors shadow-lg ${
             selectedError?.id === error.id ? 'ring-2 ring-primary-500' : ''
           }`}
           onClick={() => onSelectError(error)}
@@ -150,7 +150,7 @@ export const LauncherErrorDetailModal = ({ error, onClose, formatDate }: { error
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
-        className="glass rounded-xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+        className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-lg"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-6">

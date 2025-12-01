@@ -66,6 +66,7 @@ export const ru = {
     downloading: 'Загрузка...',
     launching: 'Запуск...',
     clientReady: 'Клиент готов',
+    clientDownloaded: 'Загружен',
     clientNotDownloaded: 'Клиент не загружен',
     online: 'Онлайн',
     offline: 'Офлайн',
@@ -195,6 +196,9 @@ export const ru = {
     skinUploadLabel: 'Загрузить скин (PNG, до 2 МБ)',
     skinUploadHint: 'Скин должен быть 64x64 или 64x32 пикселя.',
     skinUploadCta: 'Загрузить скин',
+    chooseFile: 'Выбрать файл',
+    noFileChosen: 'Файл не выбран',
+    fileChosen: 'Выбран файл',
     noSkin: 'Скин не установлен',
     cloakCardTitle: 'Предпросмотр плаща',
     cloakUploadLabel: 'Загрузить плащ (PNG или GIF, до 5 МБ)',
@@ -279,6 +283,7 @@ export const ru = {
     autoDetectNoJava: 'Установки Java не найдены. Установите Java или укажите путь вручную.',
     autoDetectFail: 'Не удалось определить Java',
     browseFail: 'Не удалось выбрать файл Java',
+    updateCheckElectronOnly: 'Проверка обновлений доступна только в приложении Electron',
   },
 
   // Errors
@@ -328,6 +333,20 @@ export const ru = {
     fillAllFields: 'Пожалуйста, заполните все поля правильно',
     fillAllRequiredFields: 'Пожалуйста, заполните все обязательные поля правильно',
     registrationSuccessful: 'Регистрация успешна! Перенаправление на страницу входа...',
+  },
+
+  // Notifications
+  notifications: {
+    title: 'Уведомления',
+    new: 'новых',
+    showUnreadOnly: 'Показать только непрочитанные',
+    markAllAsRead: 'Отметить все как прочитанные',
+    deleteAll: 'Удалить все',
+    noUnread: 'Нет непрочитанных уведомлений',
+    noNotifications: 'Нет уведомлений',
+    markAsRead: 'Отметить как прочитанное',
+    delete: 'Удалить',
+    settings: 'Настройки уведомлений',
   },
 };
 

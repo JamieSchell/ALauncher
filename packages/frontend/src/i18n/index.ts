@@ -9,7 +9,7 @@ export type Language = 'ru' | 'en';
 
 export const languages: Record<Language, { name: string; flag: string }> = {
   ru: { name: 'Русский', flag: '🇷🇺' },
-  en: { name: 'English', flag: '🇬🇧' },
+  en: { name: 'English', flag: '🇺🇸' },
 };
 
 export const translations = {

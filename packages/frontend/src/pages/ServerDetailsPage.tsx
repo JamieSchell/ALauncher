@@ -39,6 +39,7 @@ import ServerStatusChart from '../components/ServerStatusChart';
 import { ServerStatus, UpdateProgress } from '@modern-launcher/shared';
 import { useTranslation } from '../hooks/useTranslation';
 import { API_CONFIG } from '../config/api';
+import { useOptimizedAnimation } from '../hooks/useOptimizedAnimation';
 // Simple path join function for browser (replaces Node.js path.join)
 const joinPath = (...parts: string[]): string => {
   return parts
@@ -54,6 +55,7 @@ export default function ServerDetailsPage() {
   const { playerProfile, accessToken } = useAuthStore();
   const { selectedProfile, ram, width, height, fullScreen, autoEnter, javaPath, workingDir, updateSettings } = useSettingsStore();
   const { t } = useTranslation();
+  const { getAnimationProps, shouldAnimate } = useOptimizedAnimation();
   const [launching, setLaunching] = useState(false);
   const [launchError, setLaunchError] = useState<string | null>(null);
   const [checkingFiles, setCheckingFiles] = useState(false);
@@ -205,7 +207,8 @@ export default function ServerDetailsPage() {
         const assetIndexFile = `${assetsDir}/index.json`;
         let assetsReady = false;
         
-        if (await window.electronAPI.fileExists(assetIndexFile)) {
+        const assetIndexExists = await window.electronAPI.fileExists(assetIndexFile);
+        if (assetIndexExists) {
           try {
             const assetIndexContent = await window.electronAPI.readFile(assetIndexFile);
             const assetIndexData = JSON.parse(assetIndexContent);
@@ -231,44 +234,77 @@ export default function ServerDetailsPage() {
           } catch (e) {
             console.warn('[ClientCheck] Failed to parse asset index:', e);
           }
+        } else {
+          console.log(`[ClientCheck] Asset index file not found: ${assetIndexFile}, skipping assets check`);
+          // Если asset index не найден, не блокируем проверку - считаем assets опциональными
+          assetsReady = true;
         }
         
+        // Assets проверка не блокирует, если client.jar есть - только логируем
         if (!assetsReady) {
-          console.log(`[ClientCheck] Assets not ready for version ${version} (assetIndex: ${assetIndex})`);
-          return false;
+          console.log(`[ClientCheck] ⚠️ Assets not fully ready for version ${version} (assetIndex: ${assetIndex}), but client.jar exists - continuing`);
+        } else {
+          console.log(`[ClientCheck] ✓ Assets ready for version ${version}`);
         }
       }
 
-      // Если локальных файлов нет, пытаемся получить информацию с сервера для проверки всех файлов
-      const versionInfo = await downloadsAPI.getClientVersionByVersion(version);
+      // Пытаемся получить информацию с сервера для проверки всех файлов
+      let versionInfo;
+      try {
+        versionInfo = await downloadsAPI.getClientVersionByVersion(version);
+      } catch (error: any) {
+        // Если версии нет в БД (404), это нормально - проверяем только client.jar
+        if (error.response?.status === 404) {
+          console.log(`[ClientCheck] Version ${version} not in DB, but client.jar exists - considering ready`);
+          return true;
+        }
+        throw error;
+      }
       
       // Если версия есть в БД и есть список файлов - проверяем все файлы
       if (versionInfo.data && versionInfo.data.files && versionInfo.data.files.length > 0) {
         const files = versionInfo.data.files;
+        console.log(`[ClientCheck] Found ${files.length} files in DB to check`);
+        
+        let checkedFiles = 0;
+        let missingFiles: string[] = [];
         
         // Проверить каждый файл клиента (не assets, они проверены выше)
         for (const file of files) {
           // Пропустить assets, они проверены отдельно
-          if (file.type === 'asset') continue;
+          if (file.fileType === 'asset') continue;
           
           const destPath = `${clientFilesDir}/${file.filePath}`;
           
           try {
             const exists = await window.electronAPI.fileExists(destPath);
             if (!exists) {
-              console.log(`[ClientCheck] File not found: ${file.filePath}`);
-              return false;
+              console.log(`[ClientCheck] ❌ File not found: ${file.filePath}`);
+              missingFiles.push(file.filePath);
+              // Не возвращаем false сразу - проверим все файлы для диагностики
+            } else {
+              checkedFiles++;
             }
-            
-            // Проверка хеша отключена - проверяем только существование файла
           } catch (error) {
             console.warn(`[ClientCheck] Error checking file ${file.filePath}:`, error);
-            return false;
+            missingFiles.push(file.filePath);
           }
         }
+        
+        if (missingFiles.length > 0) {
+          console.log(`[ClientCheck] ⚠️ Missing ${missingFiles.length} files (showing first 5):`, missingFiles.slice(0, 5));
+          // Если есть отсутствующие файлы, но client.jar есть, всё равно считаем клиент готовым
+          // (файлы могут быть загружены позже или не критичны для запуска)
+          console.log(`[ClientCheck] ⚠️ Some files missing, but client.jar exists - considering ready`);
+          return true;
+        }
+        
+        console.log(`[ClientCheck] ✓ All ${checkedFiles} files checked and found`);
+      } else {
+        console.log(`[ClientCheck] No files list in DB, but client.jar exists - considering ready`);
       }
 
-      console.log(`[ClientCheck] All files ready for version ${version}`);
+      console.log(`[ClientCheck] ✅ All files ready for version ${version}`);
       return true;
     } catch (error: any) {
       // Don't log 404 errors as they're expected when version is not in database
@@ -281,9 +317,11 @@ export default function ServerDetailsPage() {
           const clientJarPath = `${updatesDir}/client.jar`;
           const exists = await window.electronAPI.fileExists(clientJarPath);
           if (exists) {
-            console.log(`[ClientCheck] Version ${version} not in DB, but found local client.jar`);
+            console.log(`[ClientCheck] Version ${version} not in DB, but found local client.jar in ${clientDir}`);
+            // Если client.jar найден, считаем клиент готовым (для обратной совместимости)
+            return true;
           }
-          return exists;
+          return false;
         } catch {
           return false;
         }
@@ -346,7 +384,9 @@ export default function ServerDetailsPage() {
               });
             }
           } else {
-            console.warn('[Statistics] ⚠️ No session ID available to end session');
+            // Session ID not available - this is normal if session wasn't created during launch
+            // (e.g., if statistics API was unavailable or user wasn't authenticated)
+            console.debug('[Statistics] No session ID available to end session (session may not have been created during launch)');
           }
       
       if (code !== 0 && code !== null) {
@@ -407,11 +447,30 @@ export default function ServerDetailsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-center">
-          <Loader2 className="w-12 h-12 text-[#6b8e23] animate-spin mx-auto mb-4" />
-          <div className="text-white">{t('common.loading')}</div>
+      <div className="space-y-lg">
+        {/* Header Skeleton */}
+        <div className="space-y-sm">
+          <div className="h-10 w-64 bg-gray-700/50 rounded-lg animate-pulse" />
+          <div className="h-6 w-96 bg-gray-700/30 rounded-lg animate-pulse" />
         </div>
+
+        {/* Server Info Skeleton */}
+        <div className="bg-surface-elevated/90 border border-white/15 rounded-2xl p-lg space-y-base">
+          <div className="flex items-center justify-between pb-lg border-b border-white/10">
+            <div className="space-y-sm flex-1">
+              <div className="h-8 w-48 bg-gray-700/50 rounded-lg animate-pulse" />
+              <div className="h-5 w-32 bg-gray-700/30 rounded-lg animate-pulse" />
+            </div>
+            <div className="h-8 w-24 bg-gray-700/50 rounded-lg animate-pulse" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-base">
+            <div className="h-20 bg-gray-700/30 rounded-lg animate-pulse" />
+            <div className="h-20 bg-gray-700/30 rounded-lg animate-pulse" />
+          </div>
+        </div>
+
+        {/* Launch Button Skeleton */}
+        <div className="h-14 w-full bg-gray-700/50 rounded-xl animate-pulse" />
       </div>
     );
   }
@@ -419,20 +478,20 @@ export default function ServerDetailsPage() {
   if (isError) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="text-center max-w-md mx-auto bg-[#1b1b1b]/90 border border-red-500/30 rounded-2xl p-8 space-y-4">
+        <div className="text-center max-w-md mx-auto bg-surface-elevated/90 border border-error/30 rounded-2xl p-8 space-y-4">
           <div className="w-16 h-16 rounded-full bg-red-500/15 border border-red-500/30 flex items-center justify-center mx-auto">
             <AlertCircle className="w-8 h-8 text-red-400" />
           </div>
-          <h2 className="text-2xl font-bold text-white">{t('errors.serverError')}</h2>
-          <p className="text-gray-400 text-sm">
+          <h2 className="text-2xl font-bold text-heading leading-tight">{t('errors.serverError')}</h2>
+          <p className="text-body-muted text-sm leading-relaxed">
             {t('server.failedToLoadDetails') || 'Не удалось загрузить детали сервера. Попробуйте обновить страницу или выбрать другой профиль.'}
           </p>
-          <p className="text-xs text-gray-500 break-all">
+          <p className="text-xs text-body-subtle break-all leading-normal">
             {(error as Error)?.message || String(error)}
           </p>
           <button
             onClick={() => window.location.reload()}
-            className="px-6 py-3 bg-[#6b8e23] hover:bg-[#7a9f35] text-white rounded-lg transition-colors"
+            className="px-6 py-3 bg-primary-500 hover:bg-primary-400 text-white rounded-lg transition-colors"
           >
             {t('common.retry') || 'Повторить'}
           </button>
@@ -446,11 +505,11 @@ export default function ServerDetailsPage() {
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
           <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-white mb-2">{t('errors.notFound')}</h2>
-          <p className="text-gray-400 mb-4">{t('server.notFound')}</p>
+          <h2 className="text-2xl font-bold text-heading leading-tight mb-2">{t('errors.notFound')}</h2>
+          <p className="text-body-muted leading-relaxed mb-4">{t('server.notFound')}</p>
           <button
             onClick={() => navigate('/')}
-            className="px-6 py-3 bg-[#6b8e23] hover:bg-[#7a9f35] text-white rounded-lg transition-colors"
+            className="px-6 py-3 bg-primary-500 hover:bg-primary-400 text-white rounded-lg transition-colors"
           >
             {t('common.back')}
           </button>
@@ -462,17 +521,17 @@ export default function ServerDetailsPage() {
   if (!profileData.profile) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="text-center max-w-md mx-auto bg-[#1b1b1b]/90 border border-red-500/30 rounded-2xl p-8 space-y-4">
+        <div className="text-center max-w-md mx-auto bg-surface-elevated/90 border border-error/30 rounded-2xl p-8 space-y-4">
           <div className="w-16 h-16 rounded-full bg-red-500/15 border border-red-500/30 flex items-center justify-center mx-auto">
             <AlertCircle className="w-8 h-8 text-red-400" />
           </div>
-          <h2 className="text-2xl font-bold text-white">{t('errors.serverError')}</h2>
-          <p className="text-gray-400 text-sm">
+          <h2 className="text-2xl font-bold text-heading leading-tight">{t('errors.serverError')}</h2>
+          <p className="text-body-muted text-sm leading-relaxed">
             {t('server.failedToLoadDetails') || 'Не удалось загрузить детали сервера. Профиль не найден в ответе сервера.'}
           </p>
           <button
             onClick={() => navigate('/')}
-            className="px-6 py-3 bg-[#6b8e23] hover:bg-[#7a9f35] text-white rounded-lg transition-colors"
+            className="px-6 py-3 bg-primary-500 hover:bg-primary-400 text-white rounded-lg transition-colors"
           >
             {t('common.back')}
           </button>
@@ -1152,39 +1211,53 @@ export default function ServerDetailsPage() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="max-w-7xl mx-auto px-base sm:px-lg lg:px-xl py-xl">
       <motion.section
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#1e1e1e] via-[#1a1a1a] to-[#111] p-8 border border-[#3d3d3d]/50"
+        initial={shouldAnimate ? { opacity: 0, y: -20 } : false}
+        animate={shouldAnimate ? { opacity: 1, y: 0 } : false}
+        transition={getAnimationProps({ duration: 0.4 })}
+        className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-surface-elevated via-surface-base to-background-primary p-8 lg:p-10 border border-white/10 shadow-xl"
+        style={{ marginBottom: '48px' }}
       >
+        {/* Premium Background Pattern */}
         <div className="absolute inset-0 opacity-[0.04] bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDAgTCA0MCAwIEwgNDAgNDAgTCAwIDQwIFoiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')]" />
-        <div className="relative flex flex-col gap-6">
+        
+        {/* Subtle Glow */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 via-transparent to-primary-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+        
+        <div className="relative flex flex-col gap-6 lg:gap-8">
           <div className="flex items-center gap-3 flex-wrap">
             <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={shouldAnimate ? { scale: 1.05, backgroundColor: 'rgba(255, 255, 255, 0.1)' } : undefined}
+              whileTap={shouldAnimate ? { scale: 0.95 } : undefined}
               onClick={() => navigate('/')}
-              className="p-2.5 border border-white/10 rounded-xl bg-black/20 hover:bg-black/40 transition-colors"
+              className="p-2.5 border border-white/10 rounded-xl bg-surface-base/50 hover:bg-interactive-hover-secondary transition-all duration-200 group"
               title={t('common.back')}
             >
-              <ArrowLeft size={18} className="text-gray-200" />
+              <ArrowLeft size={18} className="text-body-subtle group-hover:text-heading transition-colors" />
             </motion.button>
-            <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium border ${serverStatus?.online ? 'text-green-300 border-green-500/40 bg-green-500/10' : 'text-red-300 border-red-500/40 bg-red-500/10'}`}>
+            <motion.span 
+              className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-semibold border transition-all duration-200 ${
+                serverStatus?.online 
+                  ? 'text-success-400 border-success-border bg-success-bg shadow-sm shadow-success-500/10' 
+                  : 'text-error-400 border-error-border bg-error-bg shadow-sm shadow-error-500/10'
+              }`}
+              whileHover={shouldAnimate ? { scale: 1.05 } : undefined}
+            >
               <StatusIcon size={14} />
               {statusLabel}
-            </span>
-            <span className="text-xs uppercase tracking-[0.3em] text-gray-500">
+            </motion.span>
+            <span className="inline-flex items-center px-3 py-1.5 rounded-lg bg-gradient-to-r from-primary-500/20 to-primary-600/15 border border-primary-500/40 text-primary-400 text-xs font-semibold uppercase tracking-[0.3em] shadow-sm shadow-primary-500/10">
               Minecraft {profile.version}
             </span>
           </div>
 
-          <div>
-            <h1 className="text-4xl lg:text-5xl font-black text-white tracking-tight">
+          <div className="pt-2">
+            <h1 className="text-4xl lg:text-5xl font-black text-heading tracking-tight leading-tight mb-4 lg:mb-6">
               {profile.title}
             </h1>
             {tags.length > 0 && (
-              <div className="flex gap-2 flex-wrap mt-4">
+              <div className="flex gap-2 flex-wrap mt-4 lg:mt-6">
                 {tags.map(tag => (
                   <ServerBadge key={tag} type={tag} />
                 ))}
@@ -1195,92 +1268,119 @@ export default function ServerDetailsPage() {
       </motion.section>
 
       <motion.section
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4"
+        initial={shouldAnimate ? { opacity: 0, y: 10 } : false}
+        animate={shouldAnimate ? { opacity: 1, y: 0 } : false}
+        transition={getAnimationProps({ duration: 0.3 })}
+        className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4"
+        style={{ 
+          marginTop: '48px', 
+          marginBottom: '48px', 
+          gap: '32px',
+          rowGap: '32px',
+          columnGap: '32px'
+        }}
       >
         {statusCards.map((card, index) => {
           const Icon = card.icon;
           return (
             <motion.div
               key={card.key}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-              className="relative overflow-hidden rounded-2xl border border-[#2f2f2f] bg-[#151515]/80 p-5 backdrop-blur"
+              initial={shouldAnimate ? { opacity: 0, y: 20 } : false}
+              animate={shouldAnimate ? { opacity: 1, y: 0 } : false}
+              transition={getAnimationProps({ duration: 0.3, delay: shouldAnimate ? index * 0.05 : 0 })}
+              whileHover={shouldAnimate ? { y: -4, scale: 1.02 } : undefined}
+              className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-surface-base/90 to-surface-elevated/70 p-6 lg:p-8 backdrop-blur hover:border-primary-500/30 transition-all duration-300 group"
             >
-              <div className="flex items-center justify-between">
-                <div className="p-2 rounded-xl bg-[#1f1f1f] border border-[#2f2f2f]">
-                  <Icon size={18} className="text-[#7fb640]" />
-                </div>
-                <span className="text-xs uppercase tracking-[0.25em] text-gray-500">
+              {/* Hover Glow */}
+              <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              
+              <div className="relative z-10 flex items-center justify-between mb-5 lg:mb-6 gap-3">
+                <motion.div 
+                  className="p-3 lg:p-4 rounded-xl bg-gradient-to-br from-primary-500/20 to-primary-600/15 border border-primary-500/30 group-hover:from-primary-500/30 group-hover:to-primary-600/20 transition-all duration-300 flex-shrink-0"
+                  whileHover={shouldAnimate ? { scale: 1.1, rotate: 5 } : undefined}
+                >
+                  <Icon size={18} className="text-primary-400" />
+                </motion.div>
+                <span className="text-xs uppercase tracking-[0.25em] text-body-subtle font-semibold text-right flex-1 min-w-0 truncate">
                   {card.label}
                 </span>
               </div>
-              <p className="text-3xl font-bold text-white mt-4">{card.value}</p>
+              <p className="text-3xl font-bold text-heading leading-tight mt-5 lg:mt-6">{card.value}</p>
             </motion.div>
           );
         })}
       </motion.section>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <div className="xl:col-span-2 space-y-6">
+      <div className="grid grid-cols-1 xl:grid-cols-3" style={{ marginTop: '48px', gap: '48px', rowGap: '48px', columnGap: '48px' }}>
+        <div className="xl:col-span-2">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="relative overflow-hidden bg-[#1b1b1b]/90 rounded-3xl p-8 border border-[#2f2f2f]"
+            initial={shouldAnimate ? { opacity: 0, y: 20 } : false}
+            animate={shouldAnimate ? { opacity: 1, y: 0 } : false}
+            transition={getAnimationProps({ duration: 0.3 })}
+            className="relative overflow-hidden bg-surface-elevated/90 rounded-3xl p-8 lg:p-10 border border-white/10 shadow-lg"
+            style={{ marginBottom: '32px' }}
           >
             <div className="absolute inset-0 opacity-[0.03] bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDAgTCA0MCAwIEwgNDAgNDAgTCAwIDQwIFoiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')]" />
             <div className="relative">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-3 bg-[#242424] rounded-2xl border border-[#2f2f2f]">
-                  <Info size={22} className="text-[#7fb640]" />
-                </div>
+              <div className="flex items-center gap-4 lg:gap-5 mb-8 lg:mb-10">
+                <motion.div 
+                  className="p-4 bg-gradient-to-br from-primary-500/20 to-primary-600/15 rounded-2xl border border-primary-500/30 shadow-sm shadow-primary-500/10"
+                  whileHover={shouldAnimate ? { scale: 1.1, rotate: 5 } : undefined}
+                >
+                  <Info size={22} className="text-primary-400" />
+                </motion.div>
                 <div>
-                  <h2 className="text-2xl font-bold text-white">{t('server.description')}</h2>
-                  <p className="text-sm text-gray-500">{t('server.thisServerSelected')}</p>
+                  <h2 className="text-2xl font-bold text-heading leading-tight">{t('server.description')}</h2>
+                  <p className="text-sm text-body-muted mt-1">{t('server.thisServerSelected')}</p>
                 </div>
               </div>
               {profile.description ? (
-                <p className="text-gray-300 text-base leading-relaxed whitespace-pre-wrap">
+                <p className="text-body leading-relaxed whitespace-pre-wrap">
                   {profile.description}
                 </p>
               ) : (
-                <div className="text-center py-10 rounded-2xl border border-dashed border-[#2f2f2f] bg-black/10">
-                  <Info size={32} className="text-gray-600 mx-auto mb-3" />
-                  <p className="text-gray-400">{t('server.noDescription')}</p>
-                  <p className="text-gray-500 text-sm mt-2">{t('server.addDescription')}</p>
+                <div className="text-center py-12 rounded-2xl border border-dashed border-white/10 bg-surface-base/50">
+                  <Info size={32} className="text-body-dim mx-auto mb-3" />
+                  <p className="text-body-muted">{t('server.noDescription')}</p>
+                  <p className="text-body-dim text-sm mt-2">{t('server.addDescription')}</p>
                 </div>
               )}
             </div>
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="relative overflow-hidden bg-[#1b1b1b]/90 rounded-3xl p-6 border border-[#2f2f2f]"
+            initial={shouldAnimate ? { opacity: 0, y: 20 } : false}
+            animate={shouldAnimate ? { opacity: 1, y: 0 } : false}
+            transition={getAnimationProps({ duration: 0.3, delay: 0.1 })}
+            className="relative overflow-hidden bg-surface-elevated/90 rounded-3xl p-8 lg:p-10 border border-white/10 shadow-lg"
+            style={{ marginBottom: '32px' }}
           >
-            <div className="relative flex flex-col gap-4">
-              <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className="relative flex flex-col gap-5 lg:gap-6">
+              <div className="flex items-center justify-between flex-wrap gap-4">
                 <div className="flex items-center gap-3">
-                  <div className="p-3 bg-[#242424] rounded-2xl border border-[#2f2f2f]">
-                    <Server size={20} className="text-[#7fb640]" />
-                  </div>
+                  <motion.div 
+                    className="p-3 bg-gradient-to-br from-primary-500/20 to-primary-600/15 rounded-2xl border border-primary-500/30 shadow-sm shadow-primary-500/10"
+                    whileHover={shouldAnimate ? { scale: 1.1, rotate: 5 } : undefined}
+                  >
+                    <Server size={20} className="text-primary-400" />
+                  </motion.div>
                   <div>
-                    <h2 className="text-xl font-bold text-white">{t('server.connectionHealth')}</h2>
-                    <p className="text-sm text-gray-500">
+                    <h2 className="text-xl font-bold text-heading leading-tight">{t('server.connectionHealth')}</h2>
+                    <p className="text-sm text-body-muted mt-1">
                       {t('server.lastChecked')}: {lastCheckedLabel}
                     </p>
                   </div>
                 </div>
-                <button
+                <motion.button
                   onClick={() => refetchServerStatus()}
                   disabled={isFetchingStatus}
-                  className="inline-flex items-center gap-2 text-sm px-4 py-2 rounded-xl border border-[#2f2f2f] text-gray-300 hover:text-white hover:border-[#7fb640]/60 disabled:opacity-50"
+                  whileHover={shouldAnimate && !isFetchingStatus ? { scale: 1.05 } : undefined}
+                  whileTap={shouldAnimate && !isFetchingStatus ? { scale: 0.95 } : undefined}
+                  className="inline-flex items-center gap-2 text-sm px-4 py-2 rounded-xl border border-white/10 bg-surface-base/50 text-body-muted hover:text-heading hover:border-primary-500/60 hover:bg-interactive-hover-secondary disabled:opacity-50 transition-all duration-200"
                 >
                   <RefreshCw size={16} className={isFetchingStatus ? 'animate-spin' : ''} />
                   {t('server.refreshStatus')}
-                </button>
+                </motion.button>
               </div>
               <ServerStatusChart 
                 status={serverStatus} 
@@ -1289,66 +1389,105 @@ export default function ServerDetailsPage() {
                 serverPort={profile?.serverPort}
               />
               {serverStatusError && (
-                <div className="text-sm text-red-400 flex items-center gap-2">
+                <motion.div 
+                  initial={shouldAnimate ? { opacity: 0, y: -5 } : false}
+                  animate={shouldAnimate ? { opacity: 1, y: 0 } : false}
+                  className="text-sm text-error-400 flex items-center gap-2 p-3 rounded-lg bg-error-bg border border-error-border"
+                >
                   <AlertCircle size={16} />
                   {t('errors.serverError')}
-                </div>
+                </motion.div>
               )}
             </div>
           </motion.div>
         </div>
 
-        <div className="space-y-6">
+        <div>
           <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="relative overflow-hidden bg-[#1b1b1b]/90 rounded-3xl p-6 border border-[#2f2f2f] space-y-5"
+            initial={shouldAnimate ? { opacity: 0, x: 20 } : false}
+            animate={shouldAnimate ? { opacity: 1, x: 0 } : false}
+            transition={getAnimationProps({ duration: 0.3, delay: 0.2 })}
+            className="relative overflow-hidden bg-surface-elevated/90 rounded-3xl p-8 lg:p-10 border border-white/10 space-y-6 lg:space-y-8 shadow-lg"
+            style={{ marginBottom: '48px' }}
           >
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-[#242424] rounded-2xl border border-[#2f2f2f]">
-                <Play size={18} className="text-[#7fb640]" />
-              </div>
+            <div className="flex items-center gap-3 lg:gap-4">
+              <motion.div 
+                className="p-3 lg:p-4 bg-gradient-to-br from-primary-500/20 to-primary-600/15 rounded-2xl border border-primary-500/30 shadow-sm shadow-primary-500/10"
+                whileHover={shouldAnimate ? { scale: 1.1, rotate: 5 } : undefined}
+              >
+                <Play size={18} className="text-primary-400" />
+              </motion.div>
               <div>
-                <h2 className="text-xl font-bold text-white">{t('server.quickLaunch')}</h2>
-                <p className="text-sm text-gray-500">{t('server.launchGame')}</p>
+                <h2 className="text-xl lg:text-2xl font-bold text-heading leading-tight">{t('server.quickLaunch')}</h2>
+                <p className="text-sm text-body-muted mt-1 lg:mt-2">{t('server.launchGame')}</p>
               </div>
             </div>
 
             <motion.div
-              whileHover={{ scale: 1.01 }}
-              className="w-full px-4 py-3 bg-[#111111] rounded-2xl flex items-center justify-between border border-[#2f2f2f]"
+              whileHover={shouldAnimate ? { scale: 1.02, y: -2 } : undefined}
+              className="w-full px-4 lg:px-6 py-3 lg:py-4 bg-gradient-to-br from-surface-base/80 to-surface-elevated/60 rounded-2xl flex items-center justify-between border border-white/10 hover:border-primary-500/30 transition-all duration-300"
             >
               <div className="flex items-center gap-2 text-sm">
-                <span className={`w-2 h-2 rounded-full ${clientReady ? 'bg-green-400 animate-pulse' : 'bg-yellow-400'}`} />
-                <span className={clientReady ? 'text-green-300 font-medium' : 'text-yellow-300 font-medium'}>
+                <motion.span 
+                  className={`w-2 h-2 rounded-full ${clientReady ? 'bg-success-400 shadow-sm shadow-success-400/50' : 'bg-warning-400'}`}
+                  animate={clientReady && shouldAnimate ? { scale: [1, 1.2, 1] } : false}
+                  transition={{ duration: 2, repeat: Infinity }}
+                />
+                <span className={`font-semibold ${clientReady ? 'text-success-400' : 'text-warning-400'}`}>
                   {clientReady ? t('server.clientReady') : t('server.clientNotDownloaded')}
                 </span>
               </div>
-              <Clock size={16} className="text-gray-500" />
+              <Clock size={16} className="text-body-subtle" />
             </motion.div>
 
             <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              whileHover={shouldAnimate && !checkingFiles && !launching ? { scale: 1.02 } : undefined}
+              whileTap={shouldAnimate && !checkingFiles && !launching ? { scale: 0.98 } : undefined}
               onClick={handleLaunch}
               disabled={launching || checkingFiles || !playerProfile || downloadingVersion === profile.version}
-              className="relative w-full px-6 py-4 bg-gradient-to-r from-[#78b73b] to-[#4a7a20] text-white font-bold rounded-2xl focus:outline-none focus:ring-4 focus:ring-[#7fb640]/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 overflow-hidden group border border-[#7fb640]/40 shadow-lg shadow-[#618f2a]/30"
+              className="relative w-full px-7 lg:px-8 py-5 lg:py-6 bg-gradient-to-r from-primary-500 via-primary-600 to-primary-600 text-white font-bold rounded-2xl focus:outline-none focus:ring-2 focus:ring-interactive-focus-primary focus:ring-offset-2 focus:ring-offset-surface-base transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 overflow-hidden group border border-primary-500/40 shadow-lg shadow-primary-500/30 hover:from-primary-600 hover:via-primary-700 hover:to-primary-700"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent -translate-x-full group-hover:translate-x-full transition-all duration-1000" />
+              {shouldAnimate && (
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent -translate-x-full group-hover:translate-x-full transition-all duration-1000" />
+              )}
               {checkingFiles ? (
                 <>
-                  <Loader2 className="animate-spin" size={20} />
-                  <span>{t('server.checkingFiles')}</span>
+                  <motion.div
+                    animate={shouldAnimate ? { rotate: 360 } : false}
+                    transition={shouldAnimate ? { duration: 1, repeat: Infinity, ease: "linear" } : {}}
+                  >
+                    <Loader2 size={20} />
+                  </motion.div>
+                  <div className="flex flex-col items-start">
+                    <span className="font-semibold">{t('server.checkingFiles')}</span>
+                    <span className="text-xs text-body-subtle">Verifying client files...</span>
+                  </div>
                 </>
               ) : downloadingVersion === profile.version ? (
                 <>
-                  <Download className="animate-bounce" size={20} />
-                  <span>{t('server.downloading')}</span>
+                  <motion.div
+                    animate={shouldAnimate ? { y: [0, -4, 0] } : false}
+                    transition={shouldAnimate ? { duration: 0.6, repeat: Infinity } : {}}
+                  >
+                    <Download size={20} />
+                  </motion.div>
+                  <div className="flex flex-col items-start">
+                    <span className="font-semibold">{t('server.downloading')}</span>
+                    <span className="text-xs text-body-subtle">Preparing download...</span>
+                  </div>
                 </>
               ) : launching ? (
                 <>
-                  <Loader2 className="animate-spin" size={20} />
-                  <span>{t('server.launching')}</span>
+                  <motion.div
+                    animate={shouldAnimate ? { rotate: 360 } : false}
+                    transition={shouldAnimate ? { duration: 1, repeat: Infinity, ease: "linear" } : {}}
+                  >
+                    <Loader2 size={20} />
+                  </motion.div>
+                  <div className="flex flex-col items-start">
+                    <span className="font-semibold">{t('server.launching')}</span>
+                    <span className="text-xs text-body-subtle">Starting game...</span>
+                  </div>
                 </>
               ) : clientReady ? (
                 <>
@@ -1378,111 +1517,140 @@ export default function ServerDetailsPage() {
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="relative overflow-hidden bg-[#1b1b1b]/90 rounded-3xl p-6 border border-[#2f2f2f] space-y-5"
+            initial={shouldAnimate ? { opacity: 0, x: 20 } : false}
+            animate={shouldAnimate ? { opacity: 1, x: 0 } : false}
+            transition={getAnimationProps({ duration: 0.3, delay: 0.3 })}
+            className="relative overflow-hidden bg-surface-elevated/90 rounded-3xl p-8 lg:p-10 border border-white/10 space-y-6 lg:space-y-8 shadow-lg"
+            style={{ marginBottom: '48px' }}
           >
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <div className="flex items-center gap-3">
-                <div className="p-3 bg-[#242424] rounded-2xl border border-[#2f2f2f]">
-                  <Crown size={18} className="text-[#facc15]" />
-                </div>
+                <motion.div 
+                  className="p-3 bg-gradient-to-br from-warning-500/20 to-warning-600/15 rounded-2xl border border-warning-500/30 shadow-sm shadow-warning-500/10"
+                  whileHover={shouldAnimate ? { scale: 1.1, rotate: 5 } : undefined}
+                >
+                  <Crown size={18} className="text-warning-400" />
+                </motion.div>
                 <div>
-                  <h3 className="text-xl font-bold text-white">{t('server.economyTitle')}</h3>
-                  <p className="text-sm text-gray-500">{t('server.economySubtitle')}</p>
+                  <h3 className="text-xl font-bold text-heading leading-tight">{t('server.economyTitle')}</h3>
+                  <p className="text-sm text-body-muted mt-1">{t('server.economySubtitle')}</p>
                 </div>
               </div>
               {economyEnabled && (
-                <button
+                <motion.button
                   onClick={() => refetchEconomy()}
                   disabled={isEconomyLoading}
-                  className="inline-flex items-center gap-2 text-sm px-4 py-2 rounded-xl border border-[#2f2f2f] text-gray-300 hover:text-white hover:border-[#7fb640]/60 disabled:opacity-50"
+                  whileHover={shouldAnimate && !isEconomyLoading ? { scale: 1.05 } : undefined}
+                  whileTap={shouldAnimate && !isEconomyLoading ? { scale: 0.95 } : undefined}
+                  className="inline-flex items-center gap-2 text-sm px-4 py-2 rounded-xl border border-white/10 bg-surface-base/50 text-body-muted hover:text-heading hover:border-primary-500/60 hover:bg-interactive-hover-secondary disabled:opacity-50 transition-all duration-200"
                 >
                   <RefreshCw size={16} className={isEconomyLoading ? 'animate-spin' : ''} />
                   {t('server.economyRefresh')}
-                </button>
+                </motion.button>
               )}
             </div>
 
             {!economyEnabled ? (
-              <div className="p-5 rounded-2xl border border-dashed border-[#2f2f2f] text-center text-sm text-gray-500 bg-[#111111]/60">
+              <div className="p-5 rounded-2xl border border-dashed border-white/10 text-center text-sm text-body-muted bg-surface-base/50">
                 {t('server.economyDisabled')}
               </div>
             ) : isEconomyLoading ? (
               <div className="space-y-3">
                 {[...Array(3)].map((_, idx) => (
-                  <div key={idx} className="h-12 rounded-2xl bg-[#111]/60 border border-[#2f2f2f] animate-pulse" />
+                  <div key={idx} className="h-12 rounded-2xl bg-surface-base/60 border border-white/10 animate-pulse" />
                 ))}
               </div>
             ) : isEconomyError ? (
-              <div className="p-4 rounded-2xl border border-red-500/40 bg-red-500/10 text-sm text-red-200 flex items-center gap-2">
+              <motion.div 
+                initial={shouldAnimate ? { opacity: 0, y: -5 } : false}
+                animate={shouldAnimate ? { opacity: 1, y: 0 } : false}
+                className="p-4 rounded-2xl border border-error-border bg-error-bg text-sm text-error-400 flex items-center gap-2"
+              >
                 <AlertCircle size={16} />
                 {t('server.economyError')}
-              </div>
+              </motion.div>
             ) : leaderboardPlayers.length === 0 ? (
-              <div className="p-5 rounded-2xl border border-dashed border-[#2f2f2f] text-center text-sm text-gray-500 bg-[#111111]/60">
+              <div className="p-5 rounded-2xl border border-dashed border-white/10 text-center text-sm text-body-muted bg-surface-base/50">
                 {t('server.economyEmpty')}
               </div>
             ) : (
               <div className="space-y-3">
-                {leaderboardPlayers.map(player => (
-                  <div
+                {leaderboardPlayers.map((player, index) => (
+                  <motion.div
                     key={`${player.rank}-${player.username}`}
-                    className="flex items-center justify-between bg-[#111] rounded-2xl border border-[#2f2f2f] px-4 py-3"
+                    initial={shouldAnimate ? { opacity: 0, x: -20 } : false}
+                    animate={shouldAnimate ? { opacity: 1, x: 0 } : false}
+                    transition={getAnimationProps({ duration: 0.2, delay: shouldAnimate ? index * 0.05 : 0 })}
+                    whileHover={shouldAnimate ? { scale: 1.02, x: 4 } : undefined}
+                    className="flex items-center justify-between bg-gradient-to-r from-surface-base/80 to-surface-elevated/60 rounded-2xl border border-white/10 hover:border-primary-500/30 px-4 lg:px-6 py-3 lg:py-4 transition-all duration-300 group"
                   >
-                    <div className="flex items-center gap-3">
-                      <span className="w-10 h-10 rounded-2xl bg-[#1f1f1f] border border-[#2f2f2f] text-white font-bold flex items-center justify-center">
+                    <div className="flex items-center gap-3 lg:gap-4">
+                      <span className="w-10 h-10 lg:w-12 lg:h-12 rounded-2xl bg-gradient-to-br from-primary-500/20 to-primary-600/15 border border-primary-500/30 text-heading font-bold flex items-center justify-center shadow-sm shadow-primary-500/10 group-hover:from-primary-500/30 group-hover:to-primary-600/20 transition-all duration-300">
                         {player.rank}
                       </span>
                       <div>
-                        <p className="text-white font-semibold">{player.username}</p>
-                        <p className="text-xs uppercase tracking-[0.3em] text-gray-500">{t('server.economyPlayer')}</p>
+                        <p className="text-heading font-semibold lg:text-lg">{player.username}</p>
+                        <p className="text-xs uppercase tracking-[0.3em] text-body-subtle">{t('server.economyPlayer')}</p>
                       </div>
                     </div>
-                    <p className="text-[#7fb640] font-bold text-lg font-mono">
+                    <p className="text-success-400 font-bold text-lg lg:text-xl font-mono">
                       {formatBalance(player.balance)}
                     </p>
-                  </div>
+                  </motion.div>
                 ))}
               </div>
             )}
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="relative overflow-hidden bg-[#1b1b1b]/90 rounded-3xl p-6 border border-[#2f2f2f] space-y-5"
+            initial={shouldAnimate ? { opacity: 0, x: 20 } : false}
+            animate={shouldAnimate ? { opacity: 1, x: 0 } : false}
+            transition={getAnimationProps({ duration: 0.3, delay: 0.4 })}
+            className="relative overflow-hidden bg-surface-elevated/90 rounded-3xl p-8 lg:p-10 border border-white/10 space-y-6 lg:space-y-8 shadow-lg"
           >
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-[#242424] rounded-2xl border border-[#2f2f2f]">
-                <SettingsIcon size={18} className="text-[#7fb640]" />
-              </div>
+            <div className="flex items-center gap-3 lg:gap-4">
+              <motion.div 
+                className="p-3 lg:p-4 bg-gradient-to-br from-info-500/20 to-info-600/15 rounded-2xl border border-info-500/30 shadow-sm shadow-info-500/10"
+                whileHover={shouldAnimate ? { scale: 1.1, rotate: 5 } : undefined}
+              >
+                <SettingsIcon size={18} className="text-info-400" />
+              </motion.div>
               <div>
-                <h3 className="text-xl font-bold text-white">{t('server.launchPreferences')}</h3>
-                <p className="text-sm text-gray-500">{t('server.launchPreferencesHint')}</p>
+                <h3 className="text-xl lg:text-2xl font-bold text-heading leading-tight">{t('server.launchPreferences')}</h3>
+                <p className="text-sm text-body-muted mt-1 lg:mt-2">{t('server.launchPreferencesHint')}</p>
               </div>
             </div>
-            <div className="space-y-4">
-              {launchPreferences.map(item => {
+            <div className="space-y-5 lg:space-y-6">
+              {launchPreferences.map((item, index) => {
                 const Icon = item.icon;
                 return (
-                  <div key={item.key} className="flex items-center justify-between bg-[#111] rounded-2xl border border-[#2f2f2f] px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-xl bg-[#1f1f1f] border border-[#2f2f2f]">
-                        <Icon size={16} className="text-[#7fb640]" />
+                  <motion.div 
+                    key={item.key} 
+                    initial={shouldAnimate ? { opacity: 0, x: -20 } : false}
+                    animate={shouldAnimate ? { opacity: 1, x: 0 } : false}
+                    transition={getAnimationProps({ duration: 0.2, delay: shouldAnimate ? index * 0.05 : 0 })}
+                    whileHover={shouldAnimate ? { scale: 1.02, x: 4 } : undefined}
+                    className="flex items-center justify-between bg-gradient-to-r from-surface-base/80 to-surface-elevated/60 rounded-2xl border border-white/10 hover:border-info-500/30 px-5 lg:px-7 py-4 lg:py-5 transition-all duration-300 group"
+                  >
+                    <div className="flex items-center gap-3 lg:gap-4">
+                      <div className="p-2 lg:p-3 rounded-xl bg-gradient-to-br from-info-500/20 to-info-600/15 border border-info-500/30 group-hover:from-info-500/30 group-hover:to-info-600/20 transition-all duration-300">
+                        <Icon size={16} className="text-info-400" />
                       </div>
                       <div>
-                        <p className="text-xs uppercase tracking-[0.25em] text-gray-500">{item.label}</p>
-                        <p className="text-white text-sm">{item.value}</p>
+                        <p className="text-xs uppercase tracking-[0.25em] text-body-subtle font-semibold">{item.label}</p>
+                        <p className="text-heading text-sm lg:text-base font-medium">{item.value}</p>
                       </div>
                     </div>
-                  </div>
+                  </motion.div>
                 );
               })}
             </div>
           </motion.div>
         </div>
       </div>
+
+      {/* Bottom spacing */}
+      <div className="h-xl"></div>
 
       <DownloadProgressModal
         isOpen={showDownloadModal}
@@ -1496,4 +1664,5 @@ export default function ServerDetailsPage() {
     </div>
   );
 }
+
 

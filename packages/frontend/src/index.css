@@ -1,60 +1,72 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-:root {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+/* 
+ * Note: Tailwind CSS v4 may generate @property rules that trigger browser warnings.
+ * These warnings are non-critical and can be safely ignored.
+ * The @property rules are used internally by Tailwind for CSS custom properties.
+ * This is a known issue with Tailwind v4 and does not affect functionality.
+ */
 
-  color-scheme: dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #1a1a1a;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
+/* Typography Base Styles */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
+/* Color System - Dark Mode (Default) */
+:root {
+  color-scheme: dark;
+}
+
+/* Light Mode Support (Future) */
+@media (prefers-color-scheme: light) {
+  :root {
+    color-scheme: light;
+    /* Light mode colors can be added here when needed */
+  }
+}
+
+/* Performance Optimizations */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Optimize rendering for better performance */
 * {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+  will-change: auto;
 }
 
-body {
-  margin: 0;
-  display: flex;
-  min-width: 320px;
-  min-height: 100vh;
+/* Only enable will-change for elements that need it */
+.animate-pulse,
+.animate-spin,
+[class*="animate-"] {
+  will-change: transform, opacity;
 }
 
-#root {
-  width: 100%;
-  height: 100vh;
-  overflow: hidden;
+/* Optimize image rendering */
+img {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 10px;
+/* GPU acceleration for transforms */
+.transform,
+.transition-transform {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
 }
 
-::-webkit-scrollbar-track {
-  background: #1a1a1a;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #3d3d3d;
-  border-radius: 5px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #4d4d4d;
-}
-
-/* Window drag region */
+/* Минимальные стили для Electron window controls */
 .window-drag {
   -webkit-app-region: drag;
   user-select: none;
@@ -64,131 +76,43 @@ body {
   -webkit-app-region: no-drag;
 }
 
-/* Animations */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes slideUp {
-  from {
-    transform: translateY(20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-.fade-in {
-  animation: fadeIn 0.3s ease-in;
-}
-
-.slide-up {
-  animation: slideUp 0.4s ease-out;
-}
-
-/* Glass effect - Minecraft style */
-.glass {
-  background: rgba(42, 42, 42, 0.8);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(61, 61, 61, 0.5);
-}
-
-/* Glass effect without blur on hover for cards - Minecraft style */
-.glass-card {
-  background: rgba(42, 42, 42, 0.8);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(61, 61, 61, 0.5);
-  transition: backdrop-filter 0.2s ease, background 0.2s ease, border-color 0.2s ease;
-}
-
-.glass-card:hover {
-  backdrop-filter: blur(8px);
-  background: rgba(47, 47, 47, 0.85);
-  border-color: rgba(107, 142, 35, 0.5);
-}
-
-/* Custom select styling */
-select {
-  background-image: none !important;
-}
-
-select option {
-  background-color: #1a1a1a;
-  color: #ffffff;
-  padding: 8px 12px;
-}
-
-select option:hover {
-  background-color: #2a2a2a;
-}
-
-select option:checked {
-  background-color: #6b8e23;
-  color: #ffffff;
-}
-
-/* Spin animation for download icon */
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* Shimmer animation for progress bars and buttons */
+/* Keyframes для анимаций (используются в Tailwind config) */
 @keyframes shimmer {
   0% {
-    transform: translateX(-100%);
+    background-position: -1000px 0;
   }
   100% {
-    transform: translateX(100%);
+    background-position: 1000px 0;
   }
 }
 
-.animate-shimmer {
-  animation: shimmer 3s infinite;
+/* Accessibility: Focus indicators */
+*:focus-visible {
+  outline: 2px solid #06b6d4;
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
-/* Pulse animation for background orbs */
-@keyframes pulse-slow {
-  0%, 100% {
-    opacity: 0.3;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.5;
-    transform: scale(1.1);
-  }
+/* Screen reader only class */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }
 
-.animate-pulse-slow {
-  animation: pulse-slow 4s ease-in-out infinite;
-}
-
-/* Custom scrollbar for release notes */
-.custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 3px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 3px;
-}
-
-.custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+.sr-only:focus {
+  position: static;
+  width: auto;
+  height: auto;
+  padding: inherit;
+  margin: inherit;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
 }

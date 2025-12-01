@@ -1,9 +1,10 @@
 /**
- * Custom window title bar
- * Draggable window with controls: minimize, minimize to tray, maximize, close
+ * Custom window title bar - Modern Design 2025
+ * Senior UX/UI Designer Implementation
  */
 
 import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { Minus, Square, X, ChevronDown, Gamepad2 } from 'lucide-react';
 import NotificationCenter from './NotificationCenter';
 import LanguageSwitcher from './LanguageSwitcher';
@@ -24,18 +25,17 @@ export default function TitleBar() {
       }
     };
     
-    // Get version immediately
     getVersion();
     
-    // Refresh version periodically
     const interval = setInterval(() => {
       getVersion();
-    }, 30000); // Every 30 seconds
+    }, 30000);
     
     return () => {
       clearInterval(interval);
     };
   }, []);
+
   const handleMinimize = () => {
     if (window.electronAPI) {
       window.electronAPI.minimizeWindow();
@@ -60,52 +60,83 @@ export default function TitleBar() {
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent, action: () => void) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      action();
+    }
+  };
+
   return (
-    <div className="flex items-center justify-between h-10 bg-[#2a2a2a]/90 backdrop-blur-sm window-drag px-4 border-b border-[#3d3d3d]/50 relative z-[100]">
+    <header 
+      className="flex items-center justify-between h-12 bg-surface-base/80 backdrop-blur-xl window-drag px-6 border-b border-white/10 relative z-[100]"
+      role="banner"
+      aria-label="Application title bar"
+    >
       <div className="flex items-center gap-3">
-        <div className="w-6 h-6 bg-gradient-to-br from-[#6b8e23] to-[#556b2f] rounded flex items-center justify-center border border-[#7a9f35]/30">
-          <Gamepad2 size={16} className="text-white" />
-        </div>
-        <span className="text-sm font-semibold text-white">Modern Launcher</span>
+        <motion.div
+          whileHover={{ scale: 1.1, rotate: 5 }}
+          className="w-8 h-8 bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700 rounded-lg flex items-center justify-center border border-primary-500/30 shadow-lg shadow-primary-500/20"
+          aria-hidden="true"
+        >
+          <Gamepad2 size={18} className="text-white" strokeWidth={2.5} />
+        </motion.div>
+        <span className="text-sm font-bold text-white tracking-tight">Modern Launcher</span>
         {launcherVersion && (
-          <span className="text-xs text-gray-500 font-medium px-2 py-0.5 bg-[#1f1f1f] rounded border border-[#3d3d3d]">
+          <span className="text-xs text-white/60 font-medium px-2 py-1 bg-white/5 rounded-md border border-white/10" aria-label={`Version ${launcherVersion}`}>
             v{launcherVersion}
           </span>
         )}
       </div>
 
-      <div className="flex items-center gap-2 window-no-drag">
+      <div className="flex items-center gap-1 window-no-drag" role="toolbar" aria-label="Window controls">
         <NotificationCenter />
         <LanguageSwitcher />
-        <button
+        <motion.button
+          whileHover={{ scale: 1.1, backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
+          whileTap={{ scale: 0.9 }}
           onClick={handleMinimize}
-          className="p-1.5 hover:bg-[#1f1f1f] rounded transition-colors"
-          title="Minimize"
+          onKeyDown={(e) => handleKeyDown(e, handleMinimize)}
+          className="p-2 hover:bg-white/10 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-surface-base"
+          aria-label="Minimize window"
+          type="button"
         >
-          <Minus size={16} className="text-gray-300" />
-        </button>
-        <button
+          <Minus size={16} className="text-white/70" aria-hidden="true" />
+        </motion.button>
+        <motion.button
+          whileHover={{ scale: 1.1, backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
+          whileTap={{ scale: 0.9 }}
           onClick={handleMinimizeToTray}
-          className="p-1.5 hover:bg-[#1f1f1f] rounded transition-colors"
-          title="Minimize to Tray"
+          onKeyDown={(e) => handleKeyDown(e, handleMinimizeToTray)}
+          className="p-2 hover:bg-white/10 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-surface-base"
+          aria-label="Minimize to system tray"
+          type="button"
         >
-          <ChevronDown size={16} className="text-gray-300" />
-        </button>
-        <button
+          <ChevronDown size={16} className="text-white/70" aria-hidden="true" />
+        </motion.button>
+        <motion.button
+          whileHover={{ scale: 1.1, backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
+          whileTap={{ scale: 0.9 }}
           onClick={handleMaximize}
-          className="p-1.5 hover:bg-[#1f1f1f] rounded transition-colors"
-          title="Maximize"
+          onKeyDown={(e) => handleKeyDown(e, handleMaximize)}
+          className="p-2 hover:bg-white/10 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-surface-base"
+          aria-label="Maximize window"
+          type="button"
         >
-          <Square size={14} className="text-gray-300" />
-        </button>
-        <button
+          <Square size={14} className="text-white/70" aria-hidden="true" />
+        </motion.button>
+        <motion.button
+          whileHover={{ scale: 1.1, backgroundColor: 'rgba(239, 68, 68, 0.2)' }}
+          whileTap={{ scale: 0.9 }}
           onClick={handleClose}
-          className="p-1.5 hover:bg-[#5a3d3d]/30 hover:text-[#cc6b6b] rounded transition-colors"
-          title="Close"
+          onKeyDown={(e) => handleKeyDown(e, handleClose)}
+          className="p-2 hover:bg-red-500/20 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-surface-base"
+          aria-label="Close window"
+          type="button"
         >
-          <X size={16} className="text-gray-300" />
-        </button>
+          <X size={16} className="text-white/70" aria-hidden="true" />
+        </motion.button>
       </div>
-    </div>
+    </header>
   );
 }

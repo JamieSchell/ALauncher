@@ -61,10 +61,24 @@ export default function DownloadProgressModal({ isOpen, onClose, progress }: Dow
   const [dragStart, setDragStart] = React.useState({ x: 0, y: 0 });
   const [modalWidth, setModalWidth] = React.useState(672);
 
-  // Update modal width on window resize
+  // Update modal width on window resize - responsive
   React.useEffect(() => {
     const updateWidth = () => {
-      setModalWidth(Math.min(672, window.innerWidth - 40));
+      const screenWidth = window.innerWidth;
+      let maxWidth = 672;
+      
+      // Responsive breakpoints
+      if (screenWidth < 640) { // sm
+        maxWidth = screenWidth - 20; // Full width minus padding
+      } else if (screenWidth < 768) { // md
+        maxWidth = screenWidth - 40;
+      } else if (screenWidth < 1024) { // lg
+        maxWidth = Math.min(600, screenWidth - 40);
+      } else { // xl+
+        maxWidth = 672;
+      }
+      
+      setModalWidth(maxWidth);
     };
     updateWidth();
     window.addEventListener('resize', updateWidth);
@@ -181,13 +195,14 @@ export default function DownloadProgressModal({ isOpen, onClose, progress }: Dow
               left: `${position.x}px`,
               top: `${position.y}px`,
               width: `${modalWidth}px`,
-              maxWidth: '90vw',
+              maxWidth: 'calc(100vw - 20px)',
+              maxHeight: 'calc(100vh - 20px)',
               transform: 'translate(0, 0)',
               zIndex: 70,
             }}
-            className="p-6"
+            className="p-4 sm:p-6"
           >
-            <div className="glass rounded-2xl overflow-hidden shadow-2xl">
+            <div className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-2xl overflow-hidden shadow-2xl">
               {/* Header - Draggable */}
               <div 
                 onMouseDown={handleDragStart}
@@ -280,20 +295,20 @@ export default function DownloadProgressModal({ isOpen, onClose, progress }: Dow
 
                 {/* Stats Grid */}
                 {progress && (
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="glass rounded-xl p-4 text-center">
+                  <div className="grid grid-cols-3 gap-2 sm:gap-4">
+                    <div className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl p-4 text-center shadow-lg">
                       <div className="text-2xl font-bold text-white mb-1">
                         {progress.downloadedFiles}
                       </div>
                       <div className="text-xs text-gray-400">Files</div>
                     </div>
-                    <div className="glass rounded-xl p-4 text-center">
+                    <div className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl p-4 text-center shadow-lg">
                       <div className="text-2xl font-bold text-white mb-1">
                         {progress.totalFiles}
                       </div>
                       <div className="text-xs text-gray-400">Total</div>
                     </div>
-                    <div className="glass rounded-xl p-4 text-center">
+                    <div className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl p-4 text-center shadow-lg">
                       <div className="text-2xl font-bold text-white mb-1">
                         {progress.totalFiles > 0 
                           ? Math.round((progress.downloadedFiles / progress.totalFiles) * 100)

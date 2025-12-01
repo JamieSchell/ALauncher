@@ -19,9 +19,22 @@ export default function GameLogsModal({ isOpen, onClose, logs }: GameLogsModalPr
   const modalRef = React.useRef<HTMLDivElement>(null);
   const searchInputRef = React.useRef<HTMLInputElement>(null);
   
-  // Position and size state
+  // Position and size state - responsive
   const [position, setPosition] = React.useState({ x: 0, y: 0 });
-  const [size, setSize] = React.useState({ width: 900, height: 600 });
+  const [size, setSize] = React.useState(() => {
+    const screenWidth = window.innerWidth;
+    const screenHeight = window.innerHeight;
+    // Responsive sizing
+    if (screenWidth < 640) { // sm
+      return { width: screenWidth - 20, height: screenHeight - 100 };
+    } else if (screenWidth < 768) { // md
+      return { width: Math.min(700, screenWidth - 40), height: Math.min(500, screenHeight - 100) };
+    } else if (screenWidth < 1024) { // lg
+      return { width: Math.min(800, screenWidth - 40), height: Math.min(550, screenHeight - 100) };
+    } else { // xl+
+      return { width: 900, height: 600 };
+    }
+  });
   const [isDragging, setIsDragging] = React.useState(false);
   const [isResizing, setIsResizing] = React.useState(false);
   const [dragStart, setDragStart] = React.useState({ x: 0, y: 0 });
@@ -33,11 +46,42 @@ export default function GameLogsModal({ isOpen, onClose, logs }: GameLogsModalPr
   const [currentMatchIndex, setCurrentMatchIndex] = React.useState(-1);
   const [matchIndices, setMatchIndices] = React.useState<number[]>([]);
 
+  // Update size on window resize
+  React.useEffect(() => {
+    const updateSize = () => {
+      const screenWidth = window.innerWidth;
+      const screenHeight = window.innerHeight;
+      let newWidth = 900;
+      let newHeight = 600;
+      
+      // Responsive sizing
+      if (screenWidth < 640) { // sm
+        newWidth = screenWidth - 20;
+        newHeight = screenHeight - 100;
+      } else if (screenWidth < 768) { // md
+        newWidth = Math.min(700, screenWidth - 40);
+        newHeight = Math.min(500, screenHeight - 100);
+      } else if (screenWidth < 1024) { // lg
+        newWidth = Math.min(800, screenWidth - 40);
+        newHeight = Math.min(550, screenHeight - 100);
+      } else { // xl+
+        newWidth = 900;
+        newHeight = 600;
+      }
+      
+      setSize({ width: newWidth, height: newHeight });
+    };
+    
+    updateSize();
+    window.addEventListener('resize', updateSize);
+    return () => window.removeEventListener('resize', updateSize);
+  }, []);
+
   // Center modal on first open
   React.useEffect(() => {
     if (isOpen && modalRef.current) {
-      const centerX = (window.innerWidth - size.width) / 2;
-      const centerY = (window.innerHeight - size.height) / 2;
+      const centerX = Math.max(10, (window.innerWidth - size.width) / 2);
+      const centerY = Math.max(10, (window.innerHeight - size.height) / 2);
       setPosition({ x: centerX, y: centerY });
     }
   }, [isOpen, size.width, size.height]);
@@ -244,7 +288,7 @@ export default function GameLogsModal({ isOpen, onClose, logs }: GameLogsModalPr
               top: 0,
               zIndex: 50,
             }}
-            className="flex flex-col glass rounded-xl overflow-hidden select-none"
+            className="flex flex-col bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl overflow-hidden select-none shadow-lg"
           >
             {/* Header - Draggable */}
             <div 

@@ -151,6 +151,8 @@ export default function PlayerHead({
         height: size,
         imageRendering: 'pixelated' // Minecraft pixel art style
       }}
+      loading="lazy"
+      decoding="async"
       onError={() => {
         setError(true);
         setHeadImage(null);

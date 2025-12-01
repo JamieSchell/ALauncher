@@ -22,8 +22,9 @@ async function calculateTextureDigest(url: string): Promise<string> {
     // If URL is relative (starts with /), convert to absolute URL
     let absoluteUrl = url;
     if (url.startsWith('/')) {
-      // Use localhost for relative paths (textures are served by this server)
-      const baseUrl = `http://localhost:${config.server.port}`;
+      // Use 127.0.0.1 for relative paths (textures are served by this server)
+      // 127.0.0.1 works even when server listens on 0.0.0.0
+      const baseUrl = `http://127.0.0.1:${config.server.port}`;
       absoluteUrl = `${baseUrl}${url}`;
     }
     

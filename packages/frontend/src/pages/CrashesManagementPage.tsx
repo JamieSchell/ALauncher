@@ -557,7 +557,7 @@ export default function CrashesManagementPage() {
               animate={{ opacity: 1, y: 0, x: 0 }}
               exit={{ opacity: 0, x: 300 }}
               transition={{ duration: 0.3 }}
-              className="glass rounded-xl p-4 shadow-lg max-w-md cursor-pointer pointer-events-auto border border-white/10"
+              className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl p-4 shadow-lg max-w-md cursor-pointer pointer-events-auto"
               onClick={() => {
                 handleNotificationClick(notification);
                 removeNotification(notification.id);
@@ -686,7 +686,7 @@ export default function CrashesManagementPage() {
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="glass rounded-xl p-4 space-y-4"
+        className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl p-4 space-y-4 shadow-lg"
       >
         <div className="flex items-center gap-2 mb-2">
           <Filter size={18} className="text-gray-400" />
@@ -885,7 +885,7 @@ const CrashesList = React.forwardRef<HTMLDivElement, {
       className="space-y-2 max-h-[calc(100vh-400px)] overflow-y-auto"
     >
       {crashes.length === 0 ? (
-        <div className="glass rounded-xl p-12 text-center">
+        <div className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl p-12 text-center shadow-lg">
           <AlertTriangle className="w-16 h-16 text-gray-600 mx-auto mb-4" />
           <p className="text-gray-400">No crashes found</p>
         </div>
@@ -901,7 +901,7 @@ const CrashesList = React.forwardRef<HTMLDivElement, {
                 key={crash.id}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="glass rounded-xl p-4 hover:bg-white/5 transition-colors cursor-pointer"
+                className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl p-4 hover:bg-white/5 transition-colors cursor-pointer shadow-lg"
                 onClick={() => onSelectCrash(crash)}
               >
                 <div className="flex items-start justify-between gap-4">
@@ -1001,7 +1001,7 @@ const ConnectionIssuesList = React.forwardRef<HTMLDivElement, {
       className="space-y-2 max-h-[calc(100vh-400px)] overflow-y-auto"
     >
       {issues.length === 0 ? (
-        <div className="glass rounded-xl p-12 text-center">
+        <div className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl p-12 text-center shadow-lg">
           <WifiOff className="w-16 h-16 text-gray-600 mx-auto mb-4" />
           <p className="text-gray-400">No connection issues found</p>
         </div>
@@ -1017,7 +1017,7 @@ const ConnectionIssuesList = React.forwardRef<HTMLDivElement, {
                 key={issue.id}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="glass rounded-xl p-4 hover:bg-white/5 transition-colors cursor-pointer"
+                className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl p-4 hover:bg-white/5 transition-colors cursor-pointer shadow-lg"
                 onClick={() => onSelectIssue(issue)}
               >
                 <div className="flex items-start justify-between gap-4">
@@ -1101,7 +1101,7 @@ function CrashDetailModal({
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="glass rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+        className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-lg"
       >
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-white">Crash Details</h2>
@@ -1213,7 +1213,7 @@ function ConnectionIssueDetailModal({
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="glass rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+        className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-lg"
       >
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-white">Connection Issue Details</h2>

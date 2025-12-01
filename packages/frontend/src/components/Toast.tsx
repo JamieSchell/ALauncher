@@ -38,10 +38,10 @@ function ToastItem({ toast, onClose }: ToastProps) {
   };
 
   const colors = {
-    success: 'bg-green-500/20 border-green-500/50 text-green-300',
-    error: 'bg-red-500/20 border-red-500/50 text-red-300',
-    warning: 'bg-yellow-500/20 border-yellow-500/50 text-yellow-300',
-    info: 'bg-blue-500/20 border-blue-500/50 text-blue-300',
+    success: 'bg-success-bg border-success-border text-success-400',
+    error: 'bg-error-bg border-error-border text-error-400',
+    warning: 'bg-warning-bg border-warning-border text-warning-400',
+    info: 'bg-info-bg border-info-border text-info-400',
   };
 
   const Icon = icons[toast.type];

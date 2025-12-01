@@ -2,10 +2,11 @@
  * Home Page - Main launcher interface
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
+import { useOptimizedAnimation } from '../hooks/useOptimizedAnimation';
 import { Play, Download, AlertCircle, Terminal, Wifi, WifiOff, Users, Loader2, ArrowRight, HardDrive, Gauge, Server } from 'lucide-react';
 import { profilesAPI } from '../api/profiles';
 import { serversAPI } from '../api/servers';
@@ -37,6 +38,7 @@ export default function HomePage() {
   const { playerProfile, accessToken, isAdmin } = useAuthStore();
   const { selectedProfile, ram, width, height, fullScreen, autoEnter, javaPath, workingDir } = useSettingsStore();
   const { t } = useTranslation();
+  const { getAnimationProps, shouldAnimate } = useOptimizedAnimation();
   const [launching, setLaunching] = useState(false);
   const [launchError, setLaunchError] = useState<string | null>(null);
   const [gameLogs, setGameLogs] = useState<string[]>([]);
@@ -106,7 +108,9 @@ export default function HomePage() {
           setGameLogs(prev => [...prev, `[STATS] Error ending session: ${error.message || 'Unknown error'}`]);
         }
       } else {
-        console.warn('[Statistics] ⚠️ No session ID available to end session');
+        // Session ID not available - this is normal if session wasn't created during launch
+        // (e.g., if statistics API was unavailable or user wasn't authenticated)
+        console.debug('[Statistics] No session ID available to end session (session may not have been created during launch)');
       }
       
       if (code !== 0 && code !== null) {
@@ -466,7 +470,7 @@ export default function HomePage() {
         };
 
         // Загрузить файлы параллельно с ограничением
-        const downloadPromises: Array<{ promise: Promise<void>; index: number }> = [];
+        const downloadPromises: Array<{ promise: Promise<void | { error: string; filePath: string }>; index: number }> = [];
         
         for (let i = 0; i < files.length; i++) {
           const file = files[i];
@@ -503,8 +507,11 @@ export default function HomePage() {
         results.forEach((result, idx) => {
           if (result.status === 'rejected') {
             errors.push({ filePath: files[idx]?.filePath || 'unknown', error: result.reason?.message || String(result.reason) });
-          } else if (result.value && typeof result.value === 'object' && 'error' in result.value) {
-            errors.push({ filePath: (result.value as any).filePath, error: (result.value as any).error });
+          } else if (result.status === 'fulfilled') {
+            const value = result.value;
+            if (value !== undefined && value !== null && typeof value === 'object' && 'error' in value) {
+              errors.push({ filePath: (value as { error: string; filePath: string }).filePath, error: (value as { error: string; filePath: string }).error });
+            }
           }
         });
         
@@ -930,6 +937,8 @@ export default function HomePage() {
   // Check if client files are downloaded
   const checkClientFiles = async (version: string): Promise<boolean> => {
     try {
+      console.log(`[ClientCheck] Starting check for version: ${version}`);
+      
       // Найти профиль по версии, чтобы получить clientDirectory и assetIndex
       const profile = profiles?.find(p => p.profile.version === version);
       if (!profile) {
@@ -940,19 +949,26 @@ export default function HomePage() {
       const clientDir = profile.profile.clientDirectory || version;
       const assetIndex = profile.profile.assetIndex;
       
+      console.log(`[ClientCheck] Using clientDir: ${clientDir}, assetIndex: ${assetIndex}`);
+      
       // Получить правильный путь к updates директории
       const updatesDirBase = await window.electronAPI.getUpdatesDir();
       const clientFilesDir = `${updatesDirBase}/${clientDir}`;
       const assetsDir = `${updatesDirBase}/assets/${assetIndex}`;
 
-      // Проверить client.jar
+      console.log(`[ClientCheck] Checking clientFilesDir: ${clientFilesDir}`);
+
+      // Проверить client.jar - это обязательный файл
       const clientJarPath = `${clientFilesDir}/client.jar`;
+      console.log(`[ClientCheck] Checking client.jar at: ${clientJarPath}`);
       const clientJarExists = await window.electronAPI.fileExists(clientJarPath);
       
       if (!clientJarExists) {
-        console.log(`[ClientCheck] client.jar not found for version ${version}`);
+        console.log(`[ClientCheck] ❌ client.jar not found for version ${version} at ${clientJarPath}`);
         return false;
       }
+      
+      console.log(`[ClientCheck] ✓ client.jar found`);
 
       // Проверка хеша client.jar отключена - проверяем только существование
 
@@ -961,7 +977,8 @@ export default function HomePage() {
         const assetIndexFile = `${assetsDir}/index.json`;
         let assetsReady = false;
         
-        if (await window.electronAPI.fileExists(assetIndexFile)) {
+        const assetIndexExists = await window.electronAPI.fileExists(assetIndexFile);
+        if (assetIndexExists) {
           try {
             const assetIndexContent = await window.electronAPI.readFile(assetIndexFile);
             const assetIndexData = JSON.parse(assetIndexContent);
@@ -987,44 +1004,77 @@ export default function HomePage() {
           } catch (e) {
             console.warn('[ClientCheck] Failed to parse asset index:', e);
           }
+        } else {
+          console.log(`[ClientCheck] Asset index file not found: ${assetIndexFile}, skipping assets check`);
+          // Если asset index не найден, не блокируем проверку - считаем assets опциональными
+          assetsReady = true;
         }
         
+        // Assets проверка не блокирует, если client.jar есть - только логируем
         if (!assetsReady) {
-          console.log(`[ClientCheck] Assets not ready for version ${version} (assetIndex: ${assetIndex})`);
-          return false;
+          console.log(`[ClientCheck] ⚠️ Assets not fully ready for version ${version} (assetIndex: ${assetIndex}), but client.jar exists - continuing`);
+        } else {
+          console.log(`[ClientCheck] ✓ Assets ready for version ${version}`);
         }
       }
 
-      // Если локальных файлов нет, пытаемся получить информацию с сервера для проверки всех файлов
-      const versionInfo = await downloadsAPI.getClientVersionByVersion(version);
+      // Пытаемся получить информацию с сервера для проверки всех файлов
+      let versionInfo;
+      try {
+        versionInfo = await downloadsAPI.getClientVersionByVersion(version);
+      } catch (error: any) {
+        // Если версии нет в БД (404), это нормально - проверяем только client.jar
+        if (error.response?.status === 404) {
+          console.log(`[ClientCheck] Version ${version} not in DB, but client.jar exists - considering ready`);
+          return true;
+        }
+        throw error;
+      }
       
       // Если версия есть в БД и есть список файлов - проверяем все файлы
       if (versionInfo.data && versionInfo.data.files && versionInfo.data.files.length > 0) {
         const files = versionInfo.data.files;
+        console.log(`[ClientCheck] Found ${files.length} files in DB to check`);
+        
+        let checkedFiles = 0;
+        let missingFiles: string[] = [];
         
         // Проверить каждый файл клиента (не assets, они проверены выше)
         for (const file of files) {
           // Пропустить assets, они проверены отдельно
-          if (file.type === 'asset') continue;
+          if (file.fileType === 'asset') continue;
           
           const destPath = `${clientFilesDir}/${file.filePath}`;
           
           try {
             const exists = await window.electronAPI.fileExists(destPath);
             if (!exists) {
-              console.log(`[ClientCheck] File not found: ${file.filePath}`);
-              return false;
+              console.log(`[ClientCheck] ❌ File not found: ${file.filePath}`);
+              missingFiles.push(file.filePath);
+              // Не возвращаем false сразу - проверим все файлы для диагностики
+            } else {
+              checkedFiles++;
             }
-            
-            // Проверка хеша отключена - проверяем только существование файла
           } catch (error) {
             console.warn(`[ClientCheck] Error checking file ${file.filePath}:`, error);
-            return false;
+            missingFiles.push(file.filePath);
           }
         }
+        
+        if (missingFiles.length > 0) {
+          console.log(`[ClientCheck] ⚠️ Missing ${missingFiles.length} files (showing first 5):`, missingFiles.slice(0, 5));
+          // Если есть отсутствующие файлы, но client.jar есть, всё равно считаем клиент готовым
+          // (файлы могут быть загружены позже или не критичны для запуска)
+          console.log(`[ClientCheck] ⚠️ Some files missing, but client.jar exists - considering ready`);
+          return true;
+        }
+        
+        console.log(`[ClientCheck] ✓ All ${checkedFiles} files checked and found`);
+      } else {
+        console.log(`[ClientCheck] No files list in DB, but client.jar exists - considering ready`);
       }
 
-      console.log(`[ClientCheck] All files ready for version ${version}`);
+      console.log(`[ClientCheck] ✅ All files ready for version ${version}`);
       return true;
     } catch (error: any) {
       // Don't log 404 errors as they're expected when version is not in database
@@ -1032,19 +1082,27 @@ export default function HomePage() {
         // Version not found in database - check local files directly
         try {
           const updatesDirBase = await window.electronAPI.getUpdatesDir();
-          const updatesDir = `${updatesDirBase}/${version}`;
+          // Использовать clientDirectory из профиля, если доступен
+          const profile = profiles?.find(p => p.profile.version === version);
+          const clientDir = profile?.profile.clientDirectory || version;
+          const updatesDir = `${updatesDirBase}/${clientDir}`;
           const clientJarPath = `${updatesDir}/client.jar`;
+          console.log(`[ClientCheck] Version not in DB, checking local client.jar at: ${clientJarPath}`);
           const exists = await window.electronAPI.fileExists(clientJarPath);
           if (exists) {
-            console.log(`[ClientCheck] Version ${version} not in DB, but found local client.jar`);
+            console.log(`[ClientCheck] ✅ Version ${version} not in DB, but found local client.jar in ${clientDir}`);
+            // Если client.jar найден, считаем клиент готовым (для обратной совместимости)
+            return true;
           }
-          return exists;
-        } catch {
+          console.log(`[ClientCheck] ❌ client.jar not found at: ${clientJarPath}`);
+          return false;
+        } catch (err) {
+          console.error('[ClientCheck] Error in fallback check:', err);
           return false;
         }
       }
       // Only log unexpected errors
-      console.error('Error checking client files:', error);
+      console.error('[ClientCheck] ❌ Unexpected error checking client files:', error);
       return false;
     }
   };
@@ -1179,8 +1237,48 @@ export default function HomePage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-gray-300">{t('server.loadingProfiles')}</div>
+      <div className="space-y-xl">
+        {/* Header Skeleton */}
+        <div className="space-y-sm">
+          <div className="h-10 w-64 bg-gray-700/50 rounded-lg animate-pulse" />
+          <div className="h-6 w-96 bg-gray-700/30 rounded-lg animate-pulse" />
+        </div>
+
+        {/* Server Cards Skeleton */}
+        <section aria-label="Loading servers">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-base lg:gap-lg">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <motion.div
+                key={i}
+                initial={shouldAnimate ? { opacity: 0, y: 20 } : false}
+                animate={shouldAnimate ? { opacity: 1, y: 0 } : false}
+                transition={getAnimationProps({ duration: 0.3, delay: shouldAnimate ? i * 0.05 : 0 })}
+              >
+                <div className="bg-surface-elevated/90 border border-white/15 rounded-2xl p-lg space-y-base">
+                  <div className="flex items-start justify-between pb-lg border-b border-white/10">
+                    <div className="space-y-sm flex-1">
+                      <div className="h-6 w-3/4 bg-gray-700/50 rounded-lg animate-pulse" />
+                      <div className="h-4 w-1/2 bg-gray-700/30 rounded-lg animate-pulse" />
+                    </div>
+                    <div className="h-6 w-16 bg-gray-700/50 rounded-lg animate-pulse" />
+                  </div>
+                  <div className="flex gap-sm pb-lg border-b border-white/10">
+                    <div className="h-6 w-16 bg-gray-700/50 rounded-lg animate-pulse" />
+                    <div className="h-6 w-16 bg-gray-700/50 rounded-lg animate-pulse" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-md">
+                    <div className="h-16 bg-gray-700/50 rounded-lg animate-pulse" />
+                    <div className="h-16 bg-gray-700/50 rounded-lg animate-pulse" />
+                  </div>
+                  <div className="flex items-center justify-between pt-sm">
+                    <div className="h-4 w-20 bg-gray-700/30 rounded-lg animate-pulse" />
+                    <div className="h-4 w-16 bg-gray-700/30 rounded-lg animate-pulse" />
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </section>
       </div>
     );
   }
@@ -1189,22 +1287,67 @@ export default function HomePage() {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
-          <AlertCircle className="w-16 h-16 text-[#6b8e23] mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-white mb-2">{t('server.noProfilesAvailable')}</h2>
-          <p className="text-gray-400">{t('server.contactAdmin')}</p>
+          <AlertCircle className="w-16 h-16 text-primary-500 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-heading leading-tight mb-2">{t('server.noProfilesAvailable')}</h2>
+          <p className="text-body-muted leading-relaxed">{t('server.contactAdmin')}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-4xl font-bold text-white mb-2">{t('server.title')}</h1>
-        <p className="text-gray-400">{t('server.selectProfile')}</p>
-      </div>
+    <div className="space-y-xl">
+      {/* Header Section - Premium Design */}
+      <motion.section
+        initial={shouldAnimate ? { opacity: 0, y: 20 } : false}
+        animate={shouldAnimate ? { opacity: 1, y: 0 } : false}
+        transition={getAnimationProps({ duration: 0.3 })}
+        className="relative overflow-hidden bg-gradient-to-br from-surface-elevated/90 to-surface-base/70 rounded-3xl p-8 lg:p-10 border border-white/10 shadow-lg backdrop-blur-sm"
+        style={{ marginBottom: '48px' }}
+      >
+        {/* Background Pattern */}
+        <div className="absolute inset-0 opacity-[0.03] bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDAgTCA0MCAwIEwgNDAgNDAgTCAwIDQwIFoiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')]" />
+        
+        {/* Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 to-transparent" />
+        
+        <div className="relative z-10 flex items-start gap-6 lg:gap-8">
+          {/* Icon */}
+          <motion.div
+            initial={shouldAnimate ? { scale: 0, rotate: -180 } : false}
+            animate={shouldAnimate ? { scale: 1, rotate: 0 } : false}
+            transition={getAnimationProps({ duration: 0.5, delay: 0.1 })}
+            className="flex-shrink-0 p-4 lg:p-5 bg-gradient-to-br from-primary-500/20 to-primary-600/15 rounded-2xl border border-primary-500/30 shadow-lg shadow-primary-500/10"
+            whileHover={shouldAnimate ? { scale: 1.1, rotate: 5 } : undefined}
+          >
+            <Play size={32} className="text-primary-400" strokeWidth={2.5} />
+          </motion.div>
+          
+          {/* Content */}
+          <div className="flex-1 min-w-0 space-y-3 lg:space-y-4">
+            <motion.h1
+              initial={shouldAnimate ? { opacity: 0, x: -20 } : false}
+              animate={shouldAnimate ? { opacity: 1, x: 0 } : false}
+              transition={getAnimationProps({ duration: 0.4, delay: 0.2 })}
+              className="text-4xl lg:text-5xl font-black text-heading leading-tight tracking-tight bg-gradient-to-r from-white via-white to-white/90 bg-clip-text"
+            >
+              {t('server.title')}
+            </motion.h1>
+            <motion.p
+              initial={shouldAnimate ? { opacity: 0, x: -20 } : false}
+              animate={shouldAnimate ? { opacity: 1, x: 0 } : false}
+              transition={getAnimationProps({ duration: 0.4, delay: 0.3 })}
+              className="text-body-muted text-lg lg:text-xl leading-relaxed max-w-2xl"
+            >
+              {t('server.selectProfile')}
+            </motion.p>
+          </div>
+        </div>
+      </motion.section>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+      {/* Servers Grid Section */}
+      <section aria-label="Available servers">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-base lg:gap-lg">
         {profiles.map((item) => {
           const profile = item.profile;
           const serverKey = `${profile.serverAddress}:${profile.serverPort}`;
@@ -1217,152 +1360,146 @@ export default function HomePage() {
           const pingValue = serverStatus?.ping && serverStatus.ping > 0 ? `${serverStatus.ping}ms` : '--';
 
           return (
-            <motion.div
+            <motion.article
               key={profile.id}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              whileHover={{ 
-                scale: 1.02,
-                y: -2,
-              }}
+              initial={shouldAnimate ? { opacity: 0, y: 20 } : false}
+              animate={shouldAnimate ? { opacity: 1, y: 0 } : false}
+              whileHover={shouldAnimate ? { y: -6, scale: 1.02 } : undefined}
+              whileTap={shouldAnimate ? { scale: 0.98 } : undefined}
+              transition={getAnimationProps({ duration: 0.3 })}
               onClick={() => navigate(`/server/${profile.id}`)}
-              className="relative overflow-hidden rounded-2xl border border-[#3d3d3d]/40 bg-[#1b1b1b]/80 p-6 cursor-pointer transition-all group hover:border-[#6b8e23]/50 hover:bg-[#1f1f1f]/90 backdrop-blur-sm"
-              style={{ willChange: 'transform' }}
+              className="relative overflow-hidden rounded-2xl border border-white/15 bg-surface-elevated/90 p-6 cursor-pointer transition-all duration-300 group hover:border-primary-500/60 hover:shadow-xl hover:shadow-primary-500/20 backdrop-blur-sm"
             >
-              {/* Background accents */}
-              <div className="absolute inset-0 bg-gradient-to-br from-[#6b8e23]/5 via-transparent to-[#3d3d3d]/20 opacity-60" />
-              <div className="absolute -right-16 -top-16 w-40 h-40 bg-[#6b8e23]/10 blur-3xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              {/* Premium Glow Effect */}
+              <div className="absolute inset-0 bg-gradient-to-br from-primary-500/10 via-transparent to-primary-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               
-              {/* Arrow icon - appears on hover */}
-              <motion.div
-                initial={{ opacity: 0, x: -10 }}
-                whileHover={{ opacity: 1, x: 0 }}
-                className="absolute top-4 right-4 z-10"
-              >
-                <ArrowRight 
-                  size={24} 
-                  className="text-[#6b8e23] group-hover:text-[#7a9f35] transition-colors" 
-                />
-              </motion.div>
-
-              <div className="relative z-10 flex flex-col gap-4">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="space-y-1">
-                    <h3 className="text-2xl font-bold text-white leading-tight group-hover:text-[#7a9f35] transition-colors">
+              {/* Animated Border Glow */}
+              <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-primary-500/20 via-primary-400/20 to-primary-500/20 blur-xl" />
+              </div>
+              
+              {/* Header Section */}
+              <header className="relative z-10 mb-5 pb-5 border-b border-white/10">
+                <div className="flex items-start justify-between gap-4 mb-3">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-xl font-bold text-heading leading-tight group-hover:text-primary-400 transition-colors duration-300 mb-1.5">
                       {profile.title}
                     </h3>
-                    <p className="text-sm text-gray-400">
-                      {profile.serverAddress}:{profile.serverPort}
-                    </p>
-                  </div>
-                  <div className="text-right space-y-2">
-                    <span className="inline-flex items-center px-3 py-1 text-xs font-semibold rounded-lg bg-[#6b8e23]/15 border border-[#6b8e23]/30 text-[#9ec75b]">
-                      Minecraft {profile.version}
-                    </span>
-                    <div
-                      className={`inline-flex items-center gap-2 px-3 py-1 rounded-lg border text-xs font-medium ${
-                        isClientReady
-                          ? 'border-[#6b8e23]/40 bg-[#6b8e23]/10 text-[#9ec75b]'
-                          : 'border-yellow-500/30 bg-yellow-500/10 text-yellow-300'
-                      }`}
-                    >
-                      <div
-                        className={`w-2 h-2 rounded-full ${
-                          isClientReady ? 'bg-[#6b8e23] animate-pulse' : 'bg-yellow-500'
-                        }`}
-                      />
-                      <span>{isClientReady ? t('server.clientReady') : t('server.clientNotDownloaded')}</span>
+                    <div className="flex items-center gap-2 text-sm text-body-muted">
+                      <Server size={14} className="text-body-subtle" />
+                      <span className="leading-normal truncate">
+                        {profile.serverAddress}:{profile.serverPort}
+                      </span>
                     </div>
                   </div>
+                  <motion.div
+                    whileHover={shouldAnimate ? { x: 4 } : undefined}
+                    transition={getAnimationProps({ duration: 0.2 })}
+                  >
+                    <ArrowRight 
+                      size={20} 
+                      className="text-body-subtle group-hover:text-primary-400 transition-colors duration-300 flex-shrink-0 mt-1" 
+                    />
+                  </motion.div>
                 </div>
 
-                {tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5">
-                    {tags.map((tag) => (
-                      <ServerBadge key={tag} type={tag} />
-                    ))}
-                  </div>
-                )}
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-[#141414]/80 border border-[#2f2f2f] rounded-xl p-3 flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-[#6b8e23]/15 text-[#9ec75b]">
-                      <Users size={16} />
+                {/* Tags and Version */}
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  {tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {tags.map((tag) => (
+                        <ServerBadge key={tag} type={tag} />
+                      ))}
                     </div>
-                    <div>
-                      <p className="text-xs text-gray-400">{t('server.players')}</p>
-                      <p className="text-sm font-semibold text-white">
-                        {serverStatus ? `${playerCount}/${maxPlayers || '∞'}` : '--'}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="bg-[#141414]/80 border border-[#2f2f2f] rounded-xl p-3 flex items-center gap-3">
-                    <div className={`p-2 rounded-lg ${serverStatus?.online ? 'bg-green-500/15 text-green-300' : 'bg-red-500/15 text-red-300'}`}>
-                      <Server size={16} />
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-400">{t('server.serverStatus')}</p>
-                      <p className={`text-sm font-semibold ${serverStatus?.online ? 'text-green-300' : 'text-red-300'}`}>
-                        {serverStatus
-                          ? serverStatus.online
-                            ? t('server.online')
-                            : t('server.offline')
-                          : '...'}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="bg-[#141414]/80 border border-[#2f2f2f] rounded-xl p-3 flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-blue-500/15 text-blue-300">
-                      <Gauge size={16} />
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-400">{t('server.ping')}</p>
-                      <p className="text-sm font-semibold text-white">{pingValue}</p>
-                    </div>
-                  </div>
-
-                  <div className="bg-[#141414]/80 border border-[#2f2f2f] rounded-xl p-3 flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-indigo-500/15 text-indigo-300">
-                      <HardDrive size={16} />
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-400">{t('server.javaRequirement')}</p>
-                      <p className="text-sm font-semibold text-white">Java {profile.jvmVersion || '8'}</p>
-                    </div>
-                  </div>
+                  )}
                 </div>
+              </header>
 
-                <div className="flex items-center justify-between pt-2 text-sm text-gray-400">
-                  <div className="flex items-center gap-2">
+              {/* Status Section */}
+              <div className="relative z-10 mb-5 pb-5 border-b border-white/10">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="px-2.5 py-1.5 rounded-lg bg-surface-base/50 border border-white/5 text-body-muted hover:bg-surface-base/70 hover:border-white/10 transition-all duration-200 text-sm font-semibold">
+                    {isClientReady ? t('server.clientDownloaded') : t('server.clientNotDownloaded')}
+                  </div>
+                  <motion.div 
+                    className="flex items-center gap-2 text-sm"
+                    whileHover={shouldAnimate ? { scale: 1.05 } : undefined}
+                  >
                     {serverStatus ? (
                       serverStatus.online ? (
-                        <Wifi className="text-green-400" size={16} />
+                        <Wifi className="text-success-400" size={16} />
                       ) : (
-                        <WifiOff className="text-red-400" size={16} />
+                        <WifiOff className="text-error-400" size={16} />
                       )
                     ) : (
-                      <div className="w-4 h-4 border-2 border-gray-500 border-t-transparent rounded-full animate-spin" />
+                      <div className="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
                     )}
-                    <span>
+                    <span className={`font-semibold ${serverStatus?.online ? 'text-success-400' : serverStatus ? 'text-error-400' : 'text-body-muted'}`}>
                       {serverStatus
                         ? serverStatus.online
-                          ? `${t('server.online')} ${playerCount}`
-                          : t('server.serverOffline')
+                          ? t('server.online')
+                          : t('server.offline')
                         : t('common.loading')}
                     </span>
-                  </div>
-                  <div className="flex items-center gap-2 text-[#7a9f35] font-medium">
-                    <span>{t('common.details')}</span>
-                    <ArrowRight size={18} />
-                  </div>
+                  </motion.div>
+                </div>
+
+                {/* Stats Grid */}
+                <div className="grid grid-cols-2 gap-3">
+                  <motion.div 
+                    className="bg-gradient-to-br from-surface-base/80 to-surface-elevated/60 border border-white/10 rounded-xl p-4 hover:border-primary-500/30 transition-all duration-300 group/stat"
+                    whileHover={shouldAnimate ? { scale: 1.02, y: -2 } : undefined}
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="p-1.5 rounded-lg bg-primary-500/20 border border-primary-500/30 group-hover/stat:bg-primary-500/30 transition-colors">
+                        <Users size={14} className="text-primary-400" />
+                      </div>
+                      <p className="text-xs text-body-subtle uppercase tracking-wide font-semibold">{t('server.players')}</p>
+                    </div>
+                    <p className="text-lg font-bold text-heading leading-tight">
+                      {serverStatus ? `${playerCount}/${maxPlayers || '∞'}` : '--'}
+                    </p>
+                  </motion.div>
+
+                  <motion.div 
+                    className="bg-gradient-to-br from-surface-base/80 to-surface-elevated/60 border border-white/10 rounded-xl p-4 hover:border-primary-500/30 transition-all duration-300 group/stat"
+                    whileHover={shouldAnimate ? { scale: 1.02, y: -2 } : undefined}
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="p-1.5 rounded-lg bg-primary-500/20 border border-primary-500/30 group-hover/stat:bg-primary-500/30 transition-colors">
+                        <Gauge size={14} className="text-primary-400" />
+                      </div>
+                      <p className="text-xs text-body-subtle uppercase tracking-wide font-semibold">{t('server.ping')}</p>
+                    </div>
+                    <p className="text-lg font-bold text-heading leading-tight">{pingValue}</p>
+                  </motion.div>
                 </div>
               </div>
-            </motion.div>
+
+              {/* Footer Section */}
+              <footer className="relative z-10 flex items-center justify-between text-sm pt-2">
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-surface-base/50 border border-white/5 text-body-muted hover:bg-surface-base/70 hover:border-white/10 transition-all duration-200">
+                    <HardDrive size={14} className="text-body-subtle" />
+                    <span className="font-medium">Java {profile.jvmVersion || '8'}</span>
+                  </div>
+                  <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-surface-base/50 border border-white/5 text-body-muted hover:bg-surface-base/70 hover:border-white/10 transition-all duration-200">
+                    <span className="font-medium">{profile.version}</span>
+                  </div>
+                </div>
+                <motion.div 
+                  className="flex items-center gap-1.5 text-primary-400 font-semibold group-hover:gap-2 transition-all duration-300"
+                  whileHover={shouldAnimate ? { x: 2 } : undefined}
+                >
+                  <span>{t('common.details')}</span>
+                  <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform duration-300" />
+                </motion.div>
+              </footer>
+            </motion.article>
           );
         })}
-      </div>
+        </div>
+      </section>
 
       {/* Game Logs Modal */}
       <GameLogsModal
@@ -1383,3 +1520,4 @@ export default function HomePage() {
     </div>
   );
 }
+

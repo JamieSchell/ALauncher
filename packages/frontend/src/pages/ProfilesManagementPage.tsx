@@ -60,10 +60,41 @@ export default function ProfilesManagementPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-center">
-          <Loader2 className="w-12 h-12 text-primary-500 animate-spin mx-auto mb-4" />
-          <p className="text-gray-400">Loading profiles...</p>
+      <div className="space-y-lg">
+        {/* Header Skeleton */}
+        <div className="flex items-center justify-between">
+          <div className="space-y-sm">
+            <div className="h-10 w-64 bg-gray-700/50 rounded-lg animate-pulse" />
+            <div className="h-6 w-96 bg-gray-700/30 rounded-lg animate-pulse" />
+          </div>
+          <div className="flex gap-base">
+            <div className="h-10 w-24 bg-gray-700/50 rounded-lg animate-pulse" />
+            <div className="h-10 w-32 bg-gray-700/50 rounded-lg animate-pulse" />
+          </div>
+        </div>
+
+        {/* Profiles Grid Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-base">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="bg-surface-elevated/90 border border-white/15 rounded-xl p-lg space-y-base">
+              <div className="flex items-start justify-between">
+                <div className="space-y-sm flex-1">
+                  <div className="h-6 w-3/4 bg-gray-700/50 rounded-lg animate-pulse" />
+                  <div className="h-4 w-1/2 bg-gray-700/30 rounded-lg animate-pulse" />
+                </div>
+                <div className="h-6 w-16 bg-gray-700/50 rounded-lg animate-pulse" />
+              </div>
+              <div className="space-y-sm">
+                <div className="h-4 w-full bg-gray-700/30 rounded-lg animate-pulse" />
+                <div className="h-4 w-full bg-gray-700/30 rounded-lg animate-pulse" />
+                <div className="h-4 w-3/4 bg-gray-700/30 rounded-lg animate-pulse" />
+              </div>
+              <div className="flex gap-sm pt-sm">
+                <div className="h-9 w-20 bg-gray-700/50 rounded-lg animate-pulse" />
+                <div className="h-9 w-20 bg-gray-700/50 rounded-lg animate-pulse" />
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -118,7 +149,7 @@ export default function ProfilesManagementPage() {
               key={profile.id}
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="glass-card rounded-xl p-6 relative"
+              className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl p-6 relative shadow-lg transition-all"
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">

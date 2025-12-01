@@ -5,6 +5,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { API_CONFIG } from '../config/api';
 import { useAuthStore } from '../stores/authStore';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface UpdateInfo {
   version: string;
@@ -27,6 +28,7 @@ export function useLauncherUpdate() {
   const [isChecking, setIsChecking] = useState(false);
   const [currentVersion, setCurrentVersion] = useState<string | null>(null);
   const { accessToken } = useAuthStore();
+  const { t } = useTranslation();
 
   // Get current version
   useEffect(() => {
@@ -70,7 +72,7 @@ export function useLauncherUpdate() {
       console.log('[LauncherUpdate] Running in browser mode, skipping update check');
       setUpdateCheckResult({
         hasUpdate: false,
-        error: 'Update check only available in Electron app',
+        error: t('settings.updateCheckElectronOnly'),
       });
       if (!silent) {
         setIsChecking(false);

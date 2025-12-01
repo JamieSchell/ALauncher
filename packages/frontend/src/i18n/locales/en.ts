@@ -66,6 +66,7 @@ export const en = {
     downloading: 'Downloading...',
     launching: 'Launching...',
     clientReady: 'Client Ready',
+    clientDownloaded: 'Downloaded',
     clientNotDownloaded: 'Client Not Downloaded',
     online: 'Online',
     offline: 'Offline',
@@ -195,6 +196,9 @@ export const en = {
     skinUploadLabel: 'Upload Skin (PNG, max 2MB)',
     skinUploadHint: 'Minecraft skins should be 64x64 or 64x32 pixels.',
     skinUploadCta: 'Upload Skin',
+    chooseFile: 'Choose File',
+    noFileChosen: 'No file chosen',
+    fileChosen: 'File chosen',
     noSkin: 'No skin applied',
     cloakCardTitle: 'Cloak preview',
     cloakUploadLabel: 'Upload Cloak (PNG or GIF, max 5MB)',
@@ -279,6 +283,7 @@ export const en = {
     autoDetectNoJava: 'No Java installations found. Please install Java or specify the path manually.',
     autoDetectFail: 'Failed to detect Java',
     browseFail: 'Failed to select Java file',
+    updateCheckElectronOnly: 'Update check only available in Electron app',
   },
 
   // Errors
@@ -328,6 +333,20 @@ export const en = {
     fillAllFields: 'Please fill out all fields correctly',
     fillAllRequiredFields: 'Please fill out all required fields correctly',
     registrationSuccessful: 'Registration successful! Redirecting to login...',
+  },
+
+  // Notifications
+  notifications: {
+    title: 'Notifications',
+    new: 'new',
+    showUnreadOnly: 'Show unread only',
+    markAllAsRead: 'Mark all as read',
+    deleteAll: 'Delete all',
+    noUnread: 'No unread notifications',
+    noNotifications: 'No notifications',
+    markAsRead: 'Mark as read',
+    delete: 'Delete',
+    settings: 'Notification Settings',
   },
 };
 

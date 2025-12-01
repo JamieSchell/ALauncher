@@ -23,6 +23,8 @@ import {
 } from 'lucide-react';
 import { notificationsAPI, Notification, NotificationType } from '../api/notifications';
 import { useAuthStore } from '../stores/authStore';
+import { useTranslation } from '../hooks/useTranslation';
+import { useOptimizedAnimation } from '../hooks/useOptimizedAnimation';
 
 interface NotificationCenterProps {
   className?: string;
@@ -40,22 +42,24 @@ const notificationTypeIcons: Record<NotificationType, React.ComponentType<any>> 
 };
 
 const notificationTypeColors: Record<NotificationType, string> = {
-  CLIENT_UPDATE_AVAILABLE: 'bg-blue-500/20 text-blue-300 border-blue-500/30',
-  SERVER_STATUS_CHANGE: 'bg-green-500/20 text-green-300 border-green-500/30',
-  LAUNCHER_UPDATE_AVAILABLE: 'bg-purple-500/20 text-purple-300 border-purple-500/30',
-  GAME_CRASH: 'bg-red-500/20 text-red-300 border-red-500/30',
-  CONNECTION_ISSUE: 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
-  LAUNCHER_ERROR: 'bg-orange-500/20 text-orange-300 border-orange-500/30',
-  SYSTEM_MESSAGE: 'bg-gray-500/20 text-gray-300 border-gray-500/30',
-  ADMIN_ALERT: 'bg-red-500/20 text-red-300 border-red-500/30',
+  CLIENT_UPDATE_AVAILABLE: 'bg-info-bg text-info-400 border-info-border',
+  SERVER_STATUS_CHANGE: 'bg-success-bg text-success-400 border-success-border',
+  LAUNCHER_UPDATE_AVAILABLE: 'bg-primary-500/20 text-primary-400 border-primary-500/30',
+  GAME_CRASH: 'bg-error-bg text-error-400 border-error-border',
+  CONNECTION_ISSUE: 'bg-warning-bg text-warning-400 border-warning-border',
+  LAUNCHER_ERROR: 'bg-error-bg text-error-400 border-error-border',
+  SYSTEM_MESSAGE: 'bg-surface-base text-body border-white/10',
+  ADMIN_ALERT: 'bg-error-bg text-error-400 border-error-border',
 };
 
 export default function NotificationCenter({ className = '' }: NotificationCenterProps) {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [showUnreadOnly, setShowUnreadOnly] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { isAdmin } = useAuthStore();
   const queryClient = useQueryClient();
+  const { shouldAnimate, getAnimationProps } = useOptimizedAnimation();
 
   // Fetch notifications (максимум 10)
   const { data: notificationsData, isLoading } = useQuery({
@@ -155,100 +159,169 @@ export default function NotificationCenter({ className = '' }: NotificationCente
 
   return (
     <div className={`relative ${className}`} ref={dropdownRef}>
-      {/* Bell Icon Button */}
-      <button
+      {/* Bell Icon Button - Premium Design */}
+      <motion.button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 rounded-lg hover:bg-white/10 transition-colors"
+        initial={shouldAnimate ? { opacity: 0, scale: 0.8 } : false}
+        animate={shouldAnimate ? { opacity: 1, scale: 1 } : false}
+        transition={getAnimationProps({ duration: 0.2 })}
+        whileHover={shouldAnimate ? { 
+          scale: 1.1, 
+          backgroundColor: 'rgba(255, 255, 255, 0.1)',
+          boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)'
+        } : undefined}
+        whileTap={shouldAnimate ? { scale: 0.95 } : undefined}
+        className="relative p-2 rounded-lg bg-gradient-to-br from-surface-elevated/95 to-surface-base/90 backdrop-blur-xl border border-white/15 hover:border-primary-500/40 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-surface-base shadow-lg shadow-black/20 hover:shadow-xl hover:shadow-primary-500/20 group"
+        aria-label={t('notifications.title')}
+        style={{
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(255, 255, 255, 0.05)'
+        }}
       >
-        <Bell className="w-5 h-5 text-gray-400" />
+        <div className="relative">
+          {/* Hover Glow Effect */}
+          <div className="absolute inset-0 bg-gradient-to-br from-primary-500/20 to-primary-600/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <Bell className="w-5 h-5 text-white/80 group-hover:text-primary-400 transition-colors duration-300 relative z-10" strokeWidth={2.5} />
+        </div>
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-xs flex items-center justify-center text-white font-bold">
+          <motion.span
+            initial={{ scale: 0 }}
+            animate={shouldAnimate ? { scale: [0, 1.2, 1] } : { scale: 1 }}
+            transition={shouldAnimate ? { duration: 0.3, ease: "easeOut" } : {}}
+            className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-br from-error-500 to-error-600 rounded-full text-xs flex items-center justify-center text-white font-bold shadow-lg shadow-error-500/50 border border-error-400/30"
+          >
             {unreadCount > 99 ? '99+' : unreadCount}
-          </span>
+          </motion.span>
         )}
-      </button>
+      </motion.button>
 
       {/* Dropdown */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            transition={{ duration: 0.2 }}
-            className="absolute right-0 top-full mt-2 w-96 glass rounded-xl shadow-2xl border border-white/10 z-50 max-h-[600px] flex flex-col"
+            initial={shouldAnimate ? { opacity: 0, y: -10, scale: 0.95 } : false}
+            animate={shouldAnimate ? { opacity: 1, y: 0, scale: 1 } : false}
+            exit={shouldAnimate ? { opacity: 0, y: -10, scale: 0.95 } : false}
+            transition={getAnimationProps({ duration: 0.2 })}
+            className="absolute right-0 top-full mt-2 w-96 bg-gradient-to-br from-surface-elevated to-surface-base border border-white/15 rounded-2xl shadow-2xl shadow-black/40 z-50 max-h-[600px] flex flex-col overflow-hidden"
+            style={{
+              boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1)'
+            }}
           >
+            {/* Background Pattern */}
+            <div className="absolute inset-0 opacity-[0.03] bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDAgTCA0MCAwIEwgNDAgNDAgTCAwIDQwIFoiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')]" />
+            
+            {/* Gradient Overlay */}
+            <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 to-transparent" />
+            
+            <div className="relative z-10 flex flex-col h-full">
             {/* Header */}
-            <div className="p-4 border-b border-white/10 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Bell className="w-5 h-5 text-primary-400" />
-                <h3 className="text-lg font-bold text-white">Notifications</h3>
-                {unreadCount > 0 && (
-                  <span className="px-2 py-0.5 bg-red-500/20 text-red-300 rounded text-xs font-medium">
-                    {unreadCount} new
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setShowUnreadOnly(!showUnreadOnly)}
-                  className={`p-1.5 rounded hover:bg-white/10 transition-colors ${
-                    showUnreadOnly ? 'bg-primary-500/20 text-primary-400' : 'text-gray-400'
-                  }`}
-                  title="Show unread only"
+            <div className="p-4 lg:p-5 border-b border-white/10 flex items-center justify-between bg-surface-base">
+              <div className="flex items-center gap-3">
+                <motion.div
+                  className="p-2 bg-gradient-to-br from-primary-500/20 to-primary-600/15 rounded-xl border border-primary-500/30 shadow-sm shadow-primary-500/10"
+                  whileHover={shouldAnimate ? { scale: 1.1, rotate: 5 } : undefined}
                 >
-                  <Filter className="w-4 h-4" />
-                </button>
+                  <Bell className="w-5 h-5 text-primary-400" strokeWidth={2.5} />
+                </motion.div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-lg font-bold text-heading">{t('notifications.title')}</h3>
+                  {unreadCount > 0 && (
+                    <motion.span
+                      initial={shouldAnimate ? { scale: 0 } : false}
+                      animate={shouldAnimate ? { scale: 1 } : false}
+                      className="px-2 py-0.5 bg-gradient-to-r from-error-500/20 to-error-600/20 text-error-400 border border-error-500/30 rounded-lg text-xs font-semibold shadow-sm shadow-error-500/20"
+                    >
+                      {unreadCount} {t('notifications.new')}
+                    </motion.span>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-1">
+                <motion.button
+                  onClick={() => setShowUnreadOnly(!showUnreadOnly)}
+                  whileHover={shouldAnimate ? { scale: 1.1 } : undefined}
+                  whileTap={shouldAnimate ? { scale: 0.9 } : undefined}
+                  className={`p-2 rounded-lg transition-all duration-200 ${
+                    showUnreadOnly 
+                      ? 'bg-primary-500/20 text-primary-400 border border-primary-500/30 shadow-sm shadow-primary-500/10' 
+                      : 'text-body-muted hover:bg-white/10 hover:text-heading border border-transparent'
+                  }`}
+                  title={t('notifications.showUnreadOnly')}
+                >
+                  <Filter className="w-4 h-4" strokeWidth={2.5} />
+                </motion.button>
                 {notifications.length > 0 && (
                   <>
                     {unreadCount > 0 && (
-                      <button
+                      <motion.button
                         onClick={() => markAllAsReadMutation.mutate()}
-                        className="p-1.5 rounded hover:bg-white/10 transition-colors text-gray-400 hover:text-white"
-                        title="Mark all as read"
+                        whileHover={shouldAnimate ? { scale: 1.1 } : undefined}
+                        whileTap={shouldAnimate ? { scale: 0.9 } : undefined}
+                        className="p-2 rounded-lg hover:bg-success-500/20 hover:text-success-400 transition-all duration-200 text-body-muted border border-transparent hover:border-success-500/30"
+                        title={t('notifications.markAllAsRead')}
                         disabled={markAllAsReadMutation.isPending}
                       >
                         {markAllAsReadMutation.isPending ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
                         ) : (
-                          <Check className="w-4 h-4" />
+                          <Check className="w-4 h-4" strokeWidth={2.5} />
                         )}
-                      </button>
+                      </motion.button>
                     )}
-                    <button
+                    <motion.button
                       onClick={() => deleteAllMutation.mutate()}
-                      className="p-1.5 rounded hover:bg-white/10 transition-colors text-gray-400 hover:text-red-400"
-                      title="Delete all"
+                      whileHover={shouldAnimate ? { scale: 1.1 } : undefined}
+                      whileTap={shouldAnimate ? { scale: 0.9 } : undefined}
+                      className="p-2 rounded-lg hover:bg-error-500/20 hover:text-error-400 transition-all duration-200 text-body-muted border border-transparent hover:border-error-500/30"
+                      title={t('notifications.deleteAll')}
                       disabled={deleteAllMutation.isPending}
                     >
                       {deleteAllMutation.isPending ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
                       ) : (
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-4 h-4" strokeWidth={2.5} />
                       )}
-                    </button>
+                    </motion.button>
                   </>
                 )}
-                <button
+                <motion.button
                   onClick={() => setIsOpen(false)}
-                  className="p-1.5 rounded hover:bg-white/10 transition-colors text-gray-400 hover:text-white"
+                  whileHover={shouldAnimate ? { scale: 1.1 } : undefined}
+                  whileTap={shouldAnimate ? { scale: 0.9 } : undefined}
+                  className="p-2 rounded-lg hover:bg-white/10 hover:text-heading transition-all duration-200 text-body-muted border border-transparent"
+                  title={t('common.close')}
                 >
-                  <X className="w-4 h-4" />
-                </button>
+                  <X className="w-4 h-4" strokeWidth={2.5} />
+                </motion.button>
               </div>
             </div>
 
             {/* Notifications List */}
             <div className="flex-1 overflow-y-auto">
               {isLoading ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="w-6 h-6 text-primary-500 animate-spin" />
+                <div className="p-4 space-y-3">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="flex items-center gap-3 p-3 bg-surface-base border border-white/10 rounded-xl">
+                      <div className="w-10 h-10 bg-surface-elevated rounded-xl animate-pulse" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-4 w-3/4 bg-surface-elevated rounded-lg animate-pulse" />
+                        <div className="h-3 w-1/2 bg-surface-elevated rounded-lg animate-pulse" />
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ) : notifications.length === 0 ? (
                 <div className="text-center py-12">
-                  <Bell className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-                  <p className="text-gray-400 text-sm">
-                    {showUnreadOnly ? 'No unread notifications' : 'No notifications'}
+                  <motion.div
+                    initial={shouldAnimate ? { scale: 0, rotate: -180 } : false}
+                    animate={shouldAnimate ? { scale: 1, rotate: 0 } : false}
+                    transition={getAnimationProps({ duration: 0.5 })}
+                    className="w-16 h-16 mx-auto mb-4 p-4 bg-surface-base rounded-2xl border border-white/10"
+                  >
+                    <Bell className="w-8 h-8 text-body-dim mx-auto" strokeWidth={2} />
+                  </motion.div>
+                  <p className="text-body-muted text-sm font-medium">
+                    {showUnreadOnly ? t('notifications.noUnread') : t('notifications.noNotifications')}
                   </p>
                 </div>
               ) : (
@@ -260,49 +333,62 @@ export default function NotificationCenter({ className = '' }: NotificationCente
                     return (
                       <motion.div
                         key={notification.id}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className={`p-4 hover:bg-white/5 transition-colors ${
-                          !notification.read ? 'bg-primary-500/5' : ''
+                        initial={shouldAnimate ? { opacity: 0, x: -20 } : false}
+                        animate={shouldAnimate ? { opacity: 1, x: 0 } : false}
+                        transition={getAnimationProps({ duration: 0.3 })}
+                        whileHover={shouldAnimate ? { x: 4 } : undefined}
+                        className={`p-4 lg:p-5 hover:bg-surface-hover transition-all duration-200 rounded-xl border border-transparent hover:border-white/10 ${
+                          !notification.read ? 'bg-primary-500/10 border-primary-500/20' : 'bg-surface-base'
                         }`}
                       >
-                        <div className="flex items-start gap-3">
-                          <div className={`p-2 rounded-lg ${colorClass} flex-shrink-0`}>
-                            <Icon size={18} />
-                          </div>
+                        <div className="flex items-start gap-3 lg:gap-4">
+                          <motion.div 
+                            className={`p-2.5 lg:p-3 rounded-xl ${colorClass} flex-shrink-0 shadow-sm`}
+                            whileHover={shouldAnimate ? { scale: 1.1, rotate: 5 } : undefined}
+                          >
+                            <Icon size={18} strokeWidth={2.5} />
+                          </motion.div>
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-2 mb-1">
-                              <h4 className="text-sm font-semibold text-white">
+                            <div className="flex items-start justify-between gap-2 mb-2">
+                              <h4 className="text-sm font-bold text-heading leading-tight">
                                 {notification.title}
                               </h4>
                               {!notification.read && (
-                                <div className="w-2 h-2 bg-primary-500 rounded-full flex-shrink-0 mt-1" />
+                                <motion.div 
+                                  initial={shouldAnimate ? { scale: 0 } : false}
+                                  animate={shouldAnimate ? { scale: 1 } : false}
+                                  className="w-2.5 h-2.5 bg-primary-500 rounded-full flex-shrink-0 mt-1.5 shadow-sm shadow-primary-500/50"
+                                />
                               )}
                             </div>
-                            <p className="text-xs text-gray-400 mb-2 whitespace-pre-wrap">
+                            <p className="text-xs text-body-muted mb-3 leading-relaxed whitespace-pre-wrap">
                               {notification.message}
                             </p>
                             <div className="flex items-center justify-between">
-                              <span className="text-xs text-gray-500">
+                              <span className="text-xs text-body-dim font-medium">
                                 {formatDate(notification.createdAt)}
                               </span>
                               <div className="flex items-center gap-1">
                                 {!notification.read && (
-                                  <button
+                                  <motion.button
                                     onClick={() => handleMarkAsRead(notification.id)}
-                                    className="p-1 rounded hover:bg-white/10 transition-colors text-gray-400 hover:text-green-400"
-                                    title="Mark as read"
+                                    whileHover={shouldAnimate ? { scale: 1.1 } : undefined}
+                                    whileTap={shouldAnimate ? { scale: 0.9 } : undefined}
+                                    className="p-1.5 rounded-lg hover:bg-success-500/20 hover:text-success-400 transition-all duration-200 text-body-muted border border-transparent hover:border-success-500/30"
+                                    title={t('notifications.markAsRead')}
                                   >
-                                    <Check className="w-3 h-3" />
-                                  </button>
+                                    <Check className="w-3.5 h-3.5" strokeWidth={2.5} />
+                                  </motion.button>
                                 )}
-                                <button
+                                <motion.button
                                   onClick={() => handleDelete(notification.id)}
-                                  className="p-1 rounded hover:bg-white/10 transition-colors text-gray-400 hover:text-red-400"
-                                  title="Delete"
+                                  whileHover={shouldAnimate ? { scale: 1.1 } : undefined}
+                                  whileTap={shouldAnimate ? { scale: 0.9 } : undefined}
+                                  className="p-1.5 rounded-lg hover:bg-error-500/20 hover:text-error-400 transition-all duration-200 text-body-muted border border-transparent hover:border-error-500/30"
+                                  title={t('notifications.delete')}
                                 >
-                                  <Trash2 className="w-3 h-3" />
-                                </button>
+                                  <Trash2 className="w-3.5 h-3.5" strokeWidth={2.5} />
+                                </motion.button>
                               </div>
                             </div>
                           </div>
@@ -316,19 +402,22 @@ export default function NotificationCenter({ className = '' }: NotificationCente
 
             {/* Footer */}
             {notifications.length > 0 && (
-              <div className="p-3 border-t border-white/10">
-                <button
+              <div className="p-3 lg:p-4 border-t border-white/10 bg-surface-base">
+                <motion.button
                   onClick={() => {
                     // Navigate to notifications settings page
                     window.location.href = '/settings?tab=notifications';
                   }}
-                  className="w-full px-3 py-2 text-xs text-gray-400 hover:text-white hover:bg-white/5 rounded transition-colors flex items-center justify-center gap-2"
+                  whileHover={shouldAnimate ? { scale: 1.02 } : undefined}
+                  whileTap={shouldAnimate ? { scale: 0.98 } : undefined}
+                  className="w-full px-4 py-2.5 text-xs font-semibold text-body-muted hover:text-heading hover:bg-surface-hover rounded-xl transition-all duration-200 flex items-center justify-center gap-2 border border-transparent hover:border-white/10"
                 >
-                  <Settings className="w-4 h-4" />
-                  <span>Notification Settings</span>
-                </button>
+                  <Settings className="w-4 h-4" strokeWidth={2.5} />
+                  <span>{t('notifications.settings')}</span>
+                </motion.button>
               </div>
             )}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

@@ -1,5 +1,6 @@
 /**
- * Login Page - Professional Design
+ * Login Page - Premium Professional UI/UX Design
+ * Senior UX/UI Designer Implementation 2025
  */
 
 import { useState, useEffect } from 'react';
@@ -18,9 +19,10 @@ import {
   Mail,
   Eye,
   EyeOff,
-  CheckCircle2,
   AlertCircle,
-  Gamepad2
+  Gamepad2,
+  ArrowRight,
+  Sparkles
 } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { authAPI } from '../api/auth';
@@ -28,12 +30,14 @@ import { useToast } from '../hooks/useToast';
 import { ToastContainer } from '../components/Toast';
 import { useTranslation } from '../hooks/useTranslation';
 import LanguageSwitcher from '../components/LanguageSwitcher';
+import { useOptimizedAnimation } from '../hooks/useOptimizedAnimation';
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const { setAuth } = useAuthStore();
   const { toasts, showInfo, showError, showSuccess, removeToast } = useToast();
   const { t } = useTranslation();
+  const { getAnimationProps, shouldAnimate } = useOptimizedAnimation();
   
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [username, setUsername] = useState('');
@@ -230,6 +234,13 @@ export default function LoginPage() {
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent, action: () => void) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      action();
+    }
+  };
+
   // Get launcher version
   useEffect(() => {
     const getVersion = async () => {
@@ -266,324 +277,496 @@ export default function LoginPage() {
   }, [mode]);
 
   return (
-    <div className="flex items-center justify-center min-h-screen relative window-drag overflow-hidden bg-[#1a1a1a]">
-      {/* Minecraft-inspired Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#2d2d2d] via-[#1f1f1f] to-[#0f0f0f]">
-        {/* Subtle texture overlay - reminiscent of blocks */}
-        <div className="absolute inset-0 opacity-[0.03] bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDAgTCA0MCAwIEwgNDAgNDAgTCAwIDQwIFoiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')]" />
-        
-        {/* Subtle ambient lighting - earthy tones */}
-        <div className="absolute top-0 left-0 w-[600px] h-[600px] bg-[#3d5a3d]/5 rounded-full blur-[120px]" />
-        <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-[#5d4a2d]/5 rounded-full blur-[100px]" />
-        
-        {/* Subtle grid pattern - block-like */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(139,139,139,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(139,139,139,0.03)_1px,transparent_1px)] bg-[size:32px_32px]" />
-      </div>
-
-      {/* Window controls */}
-      <div className="absolute top-4 right-4 flex items-center gap-2 z-50 window-no-drag">
-        <LanguageSwitcher />
-        <motion.button
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          onClick={handleMinimize}
-          className="p-2 hover:bg-white/10 rounded-lg transition-colors backdrop-blur-sm"
-          title="Minimize"
-        >
-          <Minus size={18} className="text-white" />
-        </motion.button>
-        <motion.button
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          onClick={handleMaximize}
-          className="p-2 hover:bg-white/10 rounded-lg transition-colors backdrop-blur-sm"
-          title="Maximize"
-        >
-          <Square size={16} className="text-white" />
-        </motion.button>
-        <motion.button
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          onClick={handleMinimizeToTray}
-          className="p-2 hover:bg-white/10 rounded-lg transition-colors backdrop-blur-sm"
-          title="Minimize to Tray"
-        >
-          <ChevronDown size={18} className="text-white" />
-        </motion.button>
-        <motion.button
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          onClick={handleClose}
-          className="p-2 hover:bg-red-500/80 rounded-lg transition-colors backdrop-blur-sm"
-          title="Close"
-        >
-          <X size={18} className="text-white" />
-        </motion.button>
-      </div>
-
-      {/* Main Content */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
-        className="w-full max-w-md p-8 window-no-drag relative z-10"
+    <div className="flex flex-col min-h-screen relative window-drag overflow-hidden bg-gradient-to-br from-background-primary via-background-secondary to-background-primary">
+      {/* Skip Link for Accessibility */}
+      <a
+        href="#login-form"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-base focus:left-base focus:z-[9999] focus:px-base focus:py-sm focus:bg-primary-500 focus:text-white focus:rounded-lg focus:font-semibold focus:outline-none focus:ring-2 focus:ring-interactive-focus-primary focus:ring-offset-2 focus:ring-offset-background-primary"
+        aria-label="Skip to login form"
       >
-        <motion.div
-          className="relative backdrop-blur-sm bg-[#2a2a2a]/80 rounded-2xl p-8 shadow-2xl border border-[#3d3d3d]/50 overflow-hidden"
-          whileHover={{ borderColor: 'rgba(107, 142, 35, 0.4)' }}
-          transition={{ duration: 0.3 }}
-        >
-          {/* Subtle inner shadow */}
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/10 pointer-events-none" />
-          
-          {/* Logo/Icon - Minecraft-inspired */}
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-            className="flex items-center justify-center mb-6"
-          >
-            <div className="relative">
-              <div className="absolute inset-0 bg-[#6b8e23]/20 rounded-xl blur-lg" />
-              <div className="relative w-16 h-16 bg-gradient-to-br from-[#6b8e23] to-[#556b2f] rounded-xl flex items-center justify-center shadow-lg border border-[#7a9f35]/30">
-                <Gamepad2 className="text-white" size={28} />
+        Skip to login form
+      </a>
+
+      {/* Premium Top Bar - Window Controls */}
+      <motion.header
+        initial={shouldAnimate ? { opacity: 0, y: -20 } : false}
+        animate={shouldAnimate ? { opacity: 1, y: 0 } : false}
+        transition={getAnimationProps({ duration: 0.4 })}
+        className="relative z-50 window-no-drag"
+        role="banner"
+        aria-label="Application title bar"
+      >
+        <div className="absolute top-0 left-0 right-0 h-14 bg-gradient-to-b from-surface-elevated/95 via-surface-base/90 to-surface-elevated/80 backdrop-blur-xl border-b border-white/10 shadow-lg">
+          <div className="flex items-center justify-between h-full px-4">
+            {/* Left side - Logo/Brand */}
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center shadow-md shadow-primary-500/30" aria-hidden="true">
+                <Gamepad2 className="text-white" size={18} strokeWidth={2.5} />
               </div>
+              <span className="text-sm font-semibold text-heading">Modern Launcher</span>
             </div>
-          </motion.div>
 
-          {/* Title */}
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="text-center mb-8"
-          >
-            <AnimatePresence mode="wait">
-              <motion.h1
-                key={mode}
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 10 }}
-                className="text-3xl font-bold mb-2 text-white"
+            {/* Right side - Controls */}
+            <div className="flex items-center gap-1" role="toolbar" aria-label="Window controls">
+              <LanguageSwitcher />
+              <motion.button
+                onClick={handleMinimize}
+                onKeyDown={(e) => handleKeyDown(e, handleMinimize)}
+                whileHover={shouldAnimate ? { scale: 1.05, backgroundColor: 'rgba(255, 255, 255, 0.1)' } : undefined}
+                whileTap={shouldAnimate ? { scale: 0.95 } : undefined}
+                className="p-2 rounded-lg hover:bg-white/10 active:bg-white/15 transition-all duration-200 group focus:outline-none focus:ring-2 focus:ring-interactive-focus-primary focus:ring-offset-2 focus:ring-offset-surface-base"
+                aria-label="Minimize window"
+                type="button"
               >
-                {mode === 'login' ? t('auth.welcomeBack') : t('auth.createAccount')}
-              </motion.h1>
-            </AnimatePresence>
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.4 }}
-              className="text-gray-400 text-sm"
-            >
-              {mode === 'login' ? t('auth.signInToContinue') : t('auth.joinUs')}
-            </motion.p>
-          </motion.div>
+                <Minus size={16} className="text-white/80 group-hover:text-white transition-colors" aria-hidden="true" />
+              </motion.button>
+              <motion.button
+                onClick={handleMaximize}
+                onKeyDown={(e) => handleKeyDown(e, handleMaximize)}
+                whileHover={shouldAnimate ? { scale: 1.05, backgroundColor: 'rgba(255, 255, 255, 0.1)' } : undefined}
+                whileTap={shouldAnimate ? { scale: 0.95 } : undefined}
+                className="p-2 rounded-lg hover:bg-white/10 active:bg-white/15 transition-all duration-200 group focus:outline-none focus:ring-2 focus:ring-interactive-focus-primary focus:ring-offset-2 focus:ring-offset-surface-base"
+                aria-label="Maximize window"
+                type="button"
+              >
+                <Square size={14} className="text-white/80 group-hover:text-white transition-colors" aria-hidden="true" />
+              </motion.button>
+              <motion.button
+                onClick={handleMinimizeToTray}
+                onKeyDown={(e) => handleKeyDown(e, handleMinimizeToTray)}
+                whileHover={shouldAnimate ? { scale: 1.05, backgroundColor: 'rgba(255, 255, 255, 0.1)' } : undefined}
+                whileTap={shouldAnimate ? { scale: 0.95 } : undefined}
+                className="p-2 rounded-lg hover:bg-white/10 active:bg-white/15 transition-all duration-200 group focus:outline-none focus:ring-2 focus:ring-interactive-focus-primary focus:ring-offset-2 focus:ring-offset-surface-base"
+                aria-label="Minimize to system tray"
+                type="button"
+              >
+                <ChevronDown size={16} className="text-white/80 group-hover:text-white transition-colors" aria-hidden="true" />
+              </motion.button>
+              <motion.button
+                onClick={handleClose}
+                onKeyDown={(e) => handleKeyDown(e, handleClose)}
+                whileHover={shouldAnimate ? { scale: 1.05, backgroundColor: 'rgba(239, 68, 68, 0.2)' } : undefined}
+                whileTap={shouldAnimate ? { scale: 0.95 } : undefined}
+                className="p-2 rounded-lg hover:bg-red-500/20 active:bg-red-500/30 transition-all duration-200 group focus:outline-none focus:ring-2 focus:ring-interactive-focus-error focus:ring-offset-2 focus:ring-offset-surface-base"
+                aria-label="Close window"
+                type="button"
+              >
+                <X size={16} className="text-white/80 group-hover:text-red-300 transition-colors" aria-hidden="true" />
+              </motion.button>
+            </div>
+          </div>
+        </div>
+      </motion.header>
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Username */}
+      {/* Beautiful Animated Background */}
+      <div className="absolute inset-0 overflow-hidden pt-14">
+        {/* Soft Gradient Background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-background-primary via-background-secondary to-background-primary" />
+        
+        {/* Gentle Animated Orbs */}
+        {shouldAnimate && (
+          <>
             <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.5 }}
-            >
-              <label className="block text-sm font-medium text-gray-300 mb-2 flex items-center gap-2">
-                <User size={16} />
-                {t('auth.username')}
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={username}
-                  onChange={(e) => {
-                    setUsername(e.target.value);
-                    validateUsername(e.target.value, false);
-                  }}
-                  onBlur={() => {
-                    if (username) {
-                      if (!validateUsername(username, false)) {
-                        validateUsername(username, true);
-                      }
-                    }
-                  }}
-                  className={`w-full pl-12 pr-4 py-3.5 bg-[#1f1f1f] border rounded-lg text-white placeholder-gray-500 
-                    focus:outline-none focus:ring-2 focus:ring-[#6b8e23]/50 focus:border-[#6b8e23]/50 
-                    transition-all ${
-                    usernameError ? 'border-red-500/50' : 'border-[#3d3d3d]'
-                  }`}
-                  placeholder={t('auth.username')}
-                  required
-                />
-                <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
-              </div>
-            </motion.div>
+              className="absolute top-20 left-10 w-96 h-96 bg-primary-500/8 rounded-full blur-3xl"
+              animate={{
+                x: [0, 50, 0],
+                y: [0, 30, 0],
+                scale: [1, 1.1, 1],
+                opacity: [0.3, 0.5, 0.3],
+              }}
+              transition={{
+                duration: 15,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+            />
+            <motion.div
+              className="absolute bottom-20 right-10 w-[500px] h-[500px] bg-primary-500/6 rounded-full blur-3xl"
+              animate={{
+                x: [0, -40, 0],
+                y: [0, -50, 0],
+                scale: [1, 1.15, 1],
+                opacity: [0.2, 0.4, 0.2],
+              }}
+              transition={{
+                duration: 20,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: 1,
+              }}
+            />
+          </>
+        )}
+      </div>
 
-            {/* Email (Register only) */}
-            <AnimatePresence>
-              {mode === 'register' && (
+      {/* Main Content - Centered */}
+      <div className="flex-1 flex items-center justify-center pt-14 pb-8 px-6 relative z-10 window-no-drag">
+        <motion.div
+          initial={shouldAnimate ? { opacity: 0, y: 20, scale: 0.96 } : false}
+          animate={shouldAnimate ? { opacity: 1, y: 0, scale: 1 } : false}
+          transition={getAnimationProps({ duration: 0.6 })}
+          className="w-full max-w-[420px]"
+        >
+          {/* Card with Premium Design */}
+          <div className="relative">
+            {/* Subtle Glow */}
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-primary-500/20 via-primary-500/20 to-primary-500/20 rounded-3xl blur-xl opacity-60" />
+            
+            {/* Main Card */}
+            <div className="relative bg-surface-base/80 backdrop-blur-2xl rounded-3xl p-8 border border-white/10 shadow-2xl">
+              {/* Logo Section */}
+              <motion.div
+                initial={shouldAnimate ? { scale: 0.9, opacity: 0 } : false}
+                animate={shouldAnimate ? { scale: 1, opacity: 1 } : false}
+                transition={getAnimationProps({ duration: 0.4, delay: 0.2 })}
+                className="flex justify-center mb-8 mt-2"
+              >
+                <div className="relative">
+                  <div className="absolute inset-0 bg-primary-500/20 rounded-2xl blur-xl" />
+                  <div className="relative w-20 h-20 bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700 rounded-2xl flex items-center justify-center shadow-lg shadow-primary-500/30 border border-primary-400/20">
+                    <Gamepad2 className="text-white" size={32} strokeWidth={2.5} />
+                    {shouldAnimate && (
+                      <motion.div
+                        className="absolute -top-1 -right-1"
+                        animate={{ rotate: 360, scale: [1, 1.2, 1] }}
+                        transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                      >
+                        <Sparkles size={16} className="text-primary-300" fill="currentColor" />
+                      </motion.div>
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Title Section */}
+              <div className="text-center mb-8">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={mode}
+                    initial={shouldAnimate ? { opacity: 0, y: -10 } : false}
+                    animate={shouldAnimate ? { opacity: 1, y: 0 } : false}
+                    exit={shouldAnimate ? { opacity: 0, y: 10 } : false}
+                    transition={getAnimationProps({ duration: 0.3 })}
+                  >
+                    <h1 className="text-3xl font-bold mb-2 text-heading leading-tight">
+                      {mode === 'login' ? t('auth.welcomeBack') : t('auth.createAccount')}
+                    </h1>
+                    <p className="text-body-muted text-sm leading-relaxed">
+                      {mode === 'login' ? t('auth.signInToContinue') : t('auth.joinUs')}
+                    </p>
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+
+              {/* Form */}
+              <form id="login-form" onSubmit={handleSubmit} className="space-y-4" aria-label={mode === 'login' ? 'Login form' : 'Registration form'}>
+                {/* Username Field */}
                 <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.3 }}
+                  initial={shouldAnimate ? { opacity: 0, x: -20 } : false}
+                  animate={shouldAnimate ? { opacity: 1, x: 0 } : false}
+                  transition={getAnimationProps({ duration: 0.3, delay: 0.3 })}
                 >
-                  <label className="block text-sm font-medium text-gray-300 mb-2 flex items-center gap-2">
-                    <Mail size={16} />
-                    {t('auth.email')}
+                  <label htmlFor="username-input" className="block text-sm font-medium text-body leading-normal mb-2 text-left">
+                    {t('auth.username')}
                   </label>
-                  <div className="relative">
+                  <div className="relative group">
+                    <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-body-subtle pointer-events-none z-10 transition-colors group-focus-within:text-primary-400" aria-hidden="true">
+                      <User size={18} />
+                    </div>
                     <input
-                      type="email"
-                      value={email}
+                      id="username-input"
+                      type="text"
+                      value={username}
                       onChange={(e) => {
-                        setEmail(e.target.value);
-                        validateEmail(e.target.value, false);
+                        setUsername(e.target.value);
+                        validateUsername(e.target.value, false);
                       }}
                       onBlur={() => {
-                        if (email) {
-                          if (!validateEmail(email, false)) {
-                            validateEmail(email, true);
+                        if (username) {
+                          if (!validateUsername(username, false)) {
+                            validateUsername(username, true);
                           }
                         }
                       }}
-                      className={`w-full pl-12 pr-4 py-3.5 bg-[#1f1f1f] border rounded-lg text-white placeholder-gray-500 
-                        focus:outline-none focus:ring-2 focus:ring-[#6b8e23]/50 focus:border-[#6b8e23]/50 
-                        transition-all ${
-                        emailError ? 'border-red-500/50' : 'border-[#3d3d3d]'
+                      className={`w-full pl-11 pr-4 py-3 h-11 bg-surface-elevated/70 backdrop-blur-sm border rounded-xl text-heading placeholder-text-body-subtle text-sm
+                        focus:outline-none focus:border-primary-500 focus:bg-surface-elevated/90
+                        transition-all duration-200 ${
+                        usernameError 
+                          ? 'border-error-border pr-11' 
+                          : 'border-white/10 hover:border-white/20'
                       }`}
-                      placeholder="your@email.com"
+                      placeholder={t('auth.username')}
+                      aria-label={t('auth.username')}
+                      aria-required="true"
+                      aria-invalid={!!usernameError}
+                      aria-describedby={usernameError ? 'username-error' : undefined}
                       required
                     />
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
+                    {usernameError && (
+                      <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-10" aria-hidden="true">
+                        <AlertCircle className="text-error-400" size={18} />
+                      </div>
+                    )}
                   </div>
+                  {usernameError && (
+                    <motion.p
+                      id="username-error"
+                      role="alert"
+                      initial={shouldAnimate ? { opacity: 0, y: -5 } : false}
+                      animate={shouldAnimate ? { opacity: 1, y: 0 } : false}
+                      className="mt-1.5 text-xs text-error-400 flex items-center gap-1.5"
+                    >
+                      <AlertCircle size={12} aria-hidden="true" />
+                      {usernameError}
+                    </motion.p>
+                  )}
                 </motion.div>
-              )}
-            </AnimatePresence>
 
-            {/* Password */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: mode === 'register' ? 0.6 : 0.5 }}
-            >
-              <label className="block text-sm font-medium text-gray-300 mb-2 flex items-center gap-2">
-                <Lock size={16} />
-                {t('auth.password')}
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    validatePassword(e.target.value, false);
-                  }}
-                  onBlur={() => {
-                    if (password) {
-                      if (!validatePassword(password, false)) {
-                        validatePassword(password, true);
-                      }
-                    }
-                  }}
-                  className={`w-full pl-12 pr-12 py-3.5 bg-[#1f1f1f] border rounded-lg text-white placeholder-gray-500 
-                    focus:outline-none focus:ring-2 focus:ring-[#6b8e23]/50 focus:border-[#6b8e23]/50 
-                    transition-all ${
-                    passwordError ? 'border-red-500/50' : 'border-[#3d3d3d]'
-                  }`}
-                  placeholder={t('auth.password')}
-                  required
-                />
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500" size={18} />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors"
+                {/* Email Field (Register only) */}
+                <AnimatePresence>
+                  {mode === 'register' && (
+                    <motion.div
+                      initial={shouldAnimate ? { opacity: 0, height: 0 } : false}
+                      animate={shouldAnimate ? { opacity: 1, height: 'auto' } : false}
+                      exit={shouldAnimate ? { opacity: 0, height: 0 } : false}
+                      transition={getAnimationProps({ duration: 0.25 })}
+                    >
+                      <label htmlFor="email-input" className="block text-sm font-medium text-body leading-normal mb-2 text-left">
+                        {t('auth.email')}
+                      </label>
+                      <div className="relative group">
+                        <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-body-subtle pointer-events-none z-10 transition-colors group-focus-within:text-primary-400" aria-hidden="true">
+                          <Mail size={18} />
+                        </div>
+                        <input
+                          id="email-input"
+                          type="email"
+                          value={email}
+                          onChange={(e) => {
+                            setEmail(e.target.value);
+                            validateEmail(e.target.value, false);
+                          }}
+                          onBlur={() => {
+                            if (email) {
+                              if (!validateEmail(email, false)) {
+                                validateEmail(email, true);
+                              }
+                            }
+                          }}
+                          className={`w-full pl-11 pr-4 py-3 h-11 bg-surface-elevated/70 backdrop-blur-sm border rounded-xl text-heading placeholder-text-body-subtle text-sm
+                            focus:outline-none focus:border-primary-500 focus:bg-surface-elevated/90
+                            transition-all duration-200 ${
+                            emailError 
+                              ? 'border-error-border pr-11' 
+                              : 'border-white/10 hover:border-white/20'
+                          }`}
+                          placeholder="your@email.com"
+                          aria-label={t('auth.email')}
+                          aria-required="true"
+                          aria-invalid={!!emailError}
+                          aria-describedby={emailError ? 'email-error' : undefined}
+                          required
+                        />
+                        {emailError && (
+                          <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-10" aria-hidden="true">
+                            <AlertCircle className="text-error-400" size={18} />
+                          </div>
+                        )}
+                      </div>
+                      {emailError && (
+                        <motion.p
+                          id="email-error"
+                          role="alert"
+                          initial={shouldAnimate ? { opacity: 0, y: -5 } : false}
+                          animate={shouldAnimate ? { opacity: 1, y: 0 } : false}
+                          className="mt-1.5 text-xs text-error-400 flex items-center gap-1.5"
+                        >
+                          <AlertCircle size={12} aria-hidden="true" />
+                          {emailError}
+                        </motion.p>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Password Field */}
+                <motion.div
+                  initial={shouldAnimate ? { opacity: 0, x: -20 } : false}
+                  animate={shouldAnimate ? { opacity: 1, x: 0 } : false}
+                  transition={getAnimationProps({ duration: 0.3, delay: mode === 'register' ? 0.4 : 0.35 })}
                 >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-            </motion.div>
+                  <label htmlFor="password-input" className="block text-sm font-medium text-body leading-normal mb-2 text-left">
+                    {t('auth.password')}
+                  </label>
+                  <div className="relative group">
+                    <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-body-subtle pointer-events-none z-10 transition-colors group-focus-within:text-primary-400" aria-hidden="true">
+                      <Lock size={18} />
+                    </div>
+                    <input
+                      id="password-input"
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        validatePassword(e.target.value, false);
+                      }}
+                      onBlur={() => {
+                        if (password) {
+                          if (!validatePassword(password, false)) {
+                            validatePassword(password, true);
+                          }
+                        }
+                      }}
+                      className={`w-full pl-11 pr-11 py-3 h-11 bg-surface-elevated/70 backdrop-blur-sm border rounded-xl text-heading placeholder-text-body-subtle text-sm
+                        focus:outline-none focus:border-primary-500 focus:bg-surface-elevated/90
+                        transition-all duration-200 ${
+                        passwordError 
+                          ? 'border-error-border pr-16' 
+                          : 'border-white/10 hover:border-white/20'
+                      }`}
+                      placeholder={t('auth.password')}
+                      aria-label={t('auth.password')}
+                      aria-required="true"
+                      aria-invalid={!!passwordError}
+                      aria-describedby={passwordError ? 'password-error' : undefined}
+                      required
+                    />
+                    <motion.button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setShowPassword(!showPassword);
+                        }
+                      }}
+                      whileHover={shouldAnimate ? { scale: 1.1 } : undefined}
+                      whileTap={shouldAnimate ? { scale: 0.9 } : undefined}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-body-subtle hover:text-primary-400 transition-colors z-10 flex items-center justify-center w-7 h-7 rounded-lg hover:bg-interactive-hover-secondary focus:outline-none focus:ring-2 focus:ring-interactive-focus-primary"
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      aria-pressed={showPassword}
+                    >
+                      {showPassword ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
+                    </motion.button>
+                    {passwordError && (
+                      <div className="absolute right-12 top-1/2 -translate-y-1/2 pointer-events-none z-10" aria-hidden="true">
+                        <AlertCircle className="text-error-400" size={18} />
+                      </div>
+                    )}
+                  </div>
+                  {passwordError && (
+                    <motion.p
+                      id="password-error"
+                      role="alert"
+                      initial={shouldAnimate ? { opacity: 0, y: -5 } : false}
+                      animate={shouldAnimate ? { opacity: 1, y: 0 } : false}
+                      className="mt-1.5 text-xs text-error-400 flex items-center gap-1.5"
+                    >
+                      <AlertCircle size={12} aria-hidden="true" />
+                      {passwordError}
+                    </motion.p>
+                  )}
+                </motion.div>
 
-            {/* Submit Button */}
-            <motion.button
-              type="submit"
-              disabled={loading || !!usernameError || !!passwordError || (mode === 'register' && (!!emailError || !email))}
-              whileHover={{ scale: loading ? 1 : 1.01 }}
-              whileTap={{ scale: loading ? 1 : 0.99 }}
-              className="w-full px-6 py-3.5 bg-gradient-to-b from-[#6b8e23] to-[#556b2f] 
-                text-white font-semibold rounded-lg hover:from-[#7a9f35] hover:to-[#6b8e23] 
-                focus:outline-none focus:ring-2 focus:ring-[#6b8e23]/50 transition-all 
-                disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 
-                shadow-lg shadow-[#6b8e23]/20 border border-[#7a9f35]/30 relative overflow-hidden group"
-            >
-              {loading ? (
-                <>
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                  >
-                    <Lock size={18} />
-                  </motion.div>
-                  <span>Processing...</span>
-                </>
-              ) : (
-                <>
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-                  {mode === 'login' ? <LogIn size={18} /> : <UserPlus size={18} />}
-                  <span>{mode === 'login' ? t('auth.signIn') : t('auth.createAccount')}</span>
-                </>
-              )}
-            </motion.button>
-          </form>
+                {/* Submit Button */}
+                <motion.button
+                  type="submit"
+                  disabled={loading || !!usernameError || !!passwordError || (mode === 'register' && (!!emailError || !email))}
+                  initial={shouldAnimate ? { opacity: 0, y: 20 } : false}
+                  animate={shouldAnimate ? { opacity: 1, y: 0 } : false}
+                  transition={getAnimationProps({ duration: 0.3, delay: 0.5 })}
+                  whileHover={shouldAnimate && !loading ? { scale: 1.02 } : undefined}
+                  whileTap={shouldAnimate && !loading ? { scale: 0.98 } : undefined}
+                  className="relative w-full mx-auto px-6 py-3.5 bg-gradient-to-r from-primary-500 via-primary-600 to-primary-600 
+                    text-white font-semibold rounded-xl hover:from-primary-600 hover:via-primary-700 hover:to-primary-700
+                    focus:outline-none focus:ring-2 focus:ring-interactive-focus-primary focus:ring-offset-2 focus:ring-offset-surface-base
+                    transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed 
+                    flex items-center justify-center gap-2.5 shadow-lg shadow-primary-500/30 mt-6
+                    overflow-hidden group"
+                  aria-label={mode === 'login' ? t('auth.signIn') : t('auth.createAccount')}
+                  aria-busy={loading}
+                >
+                  {/* Shimmer Effect */}
+                  {shouldAnimate && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                  )}
+                  
+                  {loading ? (
+                    <>
+                      <motion.div
+                        animate={shouldAnimate ? { rotate: 360 } : false}
+                        transition={shouldAnimate ? { duration: 1, repeat: Infinity, ease: "linear" } : {}}
+                      >
+                        <Lock size={18} />
+                      </motion.div>
+                      <span className="text-sm">Processing...</span>
+                    </>
+                  ) : (
+                    <>
+                      {mode === 'login' ? <LogIn size={18} /> : <UserPlus size={18} />}
+                      <span className="text-sm">{mode === 'login' ? t('auth.signIn') : t('auth.createAccount')}</span>
+                      <ArrowRight size={16} className="opacity-80 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                    </>
+                  )}
+                </motion.button>
+              </form>
 
-          {/* Mode Switch */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.7 }}
-            className="mt-6 text-center"
-          >
-            <button
-              onClick={() => {
-                setMode(mode === 'login' ? 'register' : 'login');
-                setError('');
-                setSuccess('');
-                setUsernameError('');
-                setPasswordError('');
-                setEmailError('');
-              }}
-              className="text-sm text-gray-400 hover:text-[#6b8e23] transition-colors group"
-            >
+              {/* Mode Switch */}
+              <motion.div
+                initial={shouldAnimate ? { opacity: 0 } : false}
+                animate={shouldAnimate ? { opacity: 1 } : false}
+                transition={getAnimationProps({ duration: 0.3, delay: 0.6 })}
+                className="mt-6 text-center"
+              >
+                <motion.button
+                  onClick={() => {
+                    setMode(mode === 'login' ? 'register' : 'login');
+                    setError('');
+                    setSuccess('');
+                    setUsernameError('');
+                    setPasswordError('');
+                    setEmailError('');
+                  }}
+                  whileHover={shouldAnimate ? { scale: 1.02 } : undefined}
+                  whileTap={shouldAnimate ? { scale: 0.98 } : undefined}
+                  className="text-sm text-body-muted hover:text-primary-400 transition-colors duration-200 group"
+                >
                   {mode === 'login' ? (
                     <>
                       {t('auth.dontHaveAccount')}{' '}
-                      <span className="text-[#6b8e23] group-hover:text-[#7a9f35] font-medium">{t('auth.signUp')}</span>
+                      <span className="text-primary-400 font-semibold hover:text-primary-300 group-hover:underline transition-all">
+                        {t('auth.signUp')}
+                      </span>
                     </>
                   ) : (
                     <>
                       {t('auth.alreadyHaveAccount')}{' '}
-                      <span className="text-[#6b8e23] group-hover:text-[#7a9f35] font-medium">{t('auth.signIn')}</span>
+                      <span className="text-primary-400 font-semibold hover:text-primary-300 group-hover:underline transition-all">
+                        {t('auth.signIn')}
+                      </span>
                     </>
                   )}
-            </button>
-          </motion.div>
+                </motion.button>
+              </motion.div>
 
-          {/* Launcher Version */}
-          {launcherVersion && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.8 }}
-              className="mt-6 pt-6 border-t border-[#3d3d3d] flex items-center justify-center gap-2"
-            >
-              <Info size={14} className="text-gray-500" />
-              <span className="text-xs text-gray-500">
-                Launcher v{launcherVersion}
-              </span>
-            </motion.div>
-          )}
+              {/* Launcher Version */}
+              {launcherVersion && (
+                <motion.div
+                  initial={shouldAnimate ? { opacity: 0 } : false}
+                  animate={shouldAnimate ? { opacity: 1 } : false}
+                  transition={getAnimationProps({ duration: 0.3, delay: 0.7 })}
+                  className="mt-6 mb-0 pt-5 border-t border-white/5 flex items-center justify-center gap-2"
+                >
+                  <Info size={12} className="text-body-dim" />
+                  <span className="text-xs text-body-dim font-medium">
+                    Launcher v{launcherVersion}
+                  </span>
+                </motion.div>
+              )}
+            </div>
+          </div>
         </motion.div>
-      </motion.div>
+      </div>
 
       {/* Toast Container */}
       <ToastContainer toasts={toasts} onClose={removeToast} />

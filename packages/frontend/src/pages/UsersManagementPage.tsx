@@ -209,7 +209,7 @@ export default function UsersManagementPage() {
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="glass rounded-xl p-4 space-y-4"
+        className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl p-4 space-y-4 shadow-lg"
       >
         <div className="flex items-center gap-2 mb-2">
           <Filter size={18} className="text-gray-400" />
@@ -275,11 +275,23 @@ export default function UsersManagementPage() {
 
       {/* Users List */}
       {showInitialLoading ? (
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <Loader2 className="w-12 h-12 text-primary-500 animate-spin mx-auto mb-4" />
-            <p className="text-gray-400">Loading users...</p>
-          </div>
+        <div className="space-y-md">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.1 }}
+              className="flex items-center gap-base p-base bg-surface-elevated/90 border border-white/10 rounded-lg"
+            >
+              <div className="w-12 h-12 bg-gray-700/50 rounded-full animate-pulse" />
+              <div className="flex-1 space-y-sm">
+                <div className="h-5 w-32 bg-gray-700/50 rounded-lg animate-pulse" />
+                <div className="h-4 w-48 bg-gray-700/30 rounded-lg animate-pulse" />
+              </div>
+              <div className="h-8 w-20 bg-gray-700/50 rounded-lg animate-pulse" />
+            </motion.div>
+          ))}
         </div>
       ) : users.length === 0 ? (
         <div className="flex items-center justify-center h-64">
@@ -291,21 +303,29 @@ export default function UsersManagementPage() {
       ) : (
         <div className="relative">
           {isFetching && (
-            <div className="absolute top-0 right-0 z-10 p-2">
-              <Loader2 className="w-5 h-5 text-primary-500 animate-spin" />
-            </div>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="absolute top-0 right-0 z-10 p-2 bg-surface-elevated/90 border border-white/10 rounded-lg backdrop-blur-sm"
+            >
+              <div className="flex items-center gap-2">
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                >
+                  <Loader2 className="w-4 h-4 text-primary-500" />
+                </motion.div>
+                <span className="text-xs text-gray-400">Refreshing...</span>
+              </div>
+            </motion.div>
           )}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="space-y-2"
-          >
+          <div className="space-y-sm">
           {users.map((user) => (
             <motion.div
               key={user.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className={`glass rounded-xl p-4 hover:bg-white/5 transition-colors ${
+              initial={false}
+              animate={false}
+              className={`bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl p-4 hover:bg-white/5 transition-colors shadow-lg ${
                 user.banned ? 'border-l-4 border-red-500' : ''
               }`}
             >
@@ -420,7 +440,7 @@ export default function UsersManagementPage() {
               </div>
             </motion.div>
           ))}
-          </motion.div>
+          </div>
         </div>
       )}
 
@@ -430,7 +450,7 @@ export default function UsersManagementPage() {
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="glass rounded-2xl p-6 max-w-md w-full"
+            className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-2xl p-6 max-w-md w-full shadow-lg"
           >
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-2xl font-bold text-white">Ban User</h2>
@@ -498,7 +518,7 @@ export default function UsersManagementPage() {
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="glass rounded-2xl p-6 max-w-md w-full"
+            className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-2xl p-6 max-w-md w-full shadow-lg"
           >
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-2xl font-bold text-white">Edit User</h2>

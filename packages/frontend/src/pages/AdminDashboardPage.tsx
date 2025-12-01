@@ -167,7 +167,7 @@ export default function AdminDashboardPage() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="glass rounded-xl p-6 hover:bg-white/5 transition-colors"
+          className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl p-6 hover:bg-white/5 transition-colors shadow-lg"
         >
           <div className="flex items-center justify-between mb-4">
             <div className="p-3 bg-blue-500/20 rounded-lg">
@@ -187,7 +187,7 @@ export default function AdminDashboardPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="glass rounded-xl p-6 hover:bg-white/5 transition-colors"
+          className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl p-6 hover:bg-white/5 transition-colors shadow-lg"
         >
           <div className="flex items-center justify-between mb-4">
             <div className="p-3 bg-green-500/20 rounded-lg">
@@ -207,7 +207,7 @@ export default function AdminDashboardPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="glass rounded-xl p-6 hover:bg-white/5 transition-colors"
+          className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl p-6 hover:bg-white/5 transition-colors shadow-lg"
         >
           <div className="flex items-center justify-between mb-4">
             <div className="p-3 bg-purple-500/20 rounded-lg">
@@ -229,7 +229,7 @@ export default function AdminDashboardPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="glass rounded-xl p-6 hover:bg-white/5 transition-colors"
+          className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl p-6 hover:bg-white/5 transition-colors shadow-lg"
         >
           <div className="flex items-center justify-between mb-4">
             <div className="p-3 bg-red-500/20 rounded-lg">
@@ -251,7 +251,7 @@ export default function AdminDashboardPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
-        className="glass rounded-xl p-6"
+        className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl p-6 shadow-lg"
       >
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
@@ -350,7 +350,7 @@ export default function AdminDashboardPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
-            className="glass rounded-xl p-6"
+            className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl p-6 shadow-lg"
           >
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-white flex items-center gap-2">
@@ -406,7 +406,7 @@ export default function AdminDashboardPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
-            className="glass rounded-xl p-6"
+            className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl p-6 shadow-lg"
           >
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-white flex items-center gap-2">
@@ -451,7 +451,7 @@ export default function AdminDashboardPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7 }}
-            className="glass rounded-xl p-6"
+            className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl p-6 shadow-lg"
           >
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-white flex items-center gap-2">
@@ -494,7 +494,7 @@ export default function AdminDashboardPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.8 }}
-            className="glass rounded-xl p-6"
+            className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl p-6 shadow-lg"
           >
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-bold text-white flex items-center gap-2">
@@ -540,7 +540,7 @@ export default function AdminDashboardPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.9 }}
-            className="glass rounded-xl p-6"
+            className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl p-6 shadow-lg"
           >
             <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
               <Server className="w-5 h-5" />
@@ -577,7 +577,7 @@ export default function AdminDashboardPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1.0 }}
-            className="glass rounded-xl p-6"
+            className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl p-6 shadow-lg"
           >
             <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
               <Users className="w-5 h-5" />
@@ -615,7 +615,7 @@ export default function AdminDashboardPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1.1 }}
-          className="glass rounded-xl p-6"
+          className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl p-6 shadow-lg"
         >
           <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
             <Shield className="w-5 h-5" />
@@ -650,7 +650,7 @@ export default function AdminDashboardPage() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="glass rounded-xl p-12 text-center"
+          className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl p-12 text-center shadow-lg"
         >
           <BarChart3 className="w-16 h-16 text-gray-600 mx-auto mb-4" />
           <p className="text-gray-400 text-lg">No analytics data available</p>

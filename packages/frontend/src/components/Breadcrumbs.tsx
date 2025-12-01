@@ -4,6 +4,7 @@
  */
 
 import { Link, useLocation } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { ChevronRight, Home } from 'lucide-react';
 import { useTranslation } from '../hooks/useTranslation';
 
@@ -81,22 +82,26 @@ export default function Breadcrumbs({ items }: BreadcrumbsProps) {
         return (
           <div key={item.path} className="flex items-center gap-2">
             {index === 0 ? (
-              <Link
-                to={item.path}
-                className="flex items-center gap-1 text-gray-400 hover:text-[#6b8e23] transition-colors"
-              >
-                <Home size={16} />
-                <span>{item.label}</span>
-              </Link>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Link
+                  to={item.path}
+                  className="flex items-center gap-1.5 text-gray-400 hover:text-primary-500 transition-colors px-2 py-1 rounded-lg hover:bg-white/5"
+                >
+                  <Home size={16} />
+                  <span>{item.label}</span>
+                </Link>
+              </motion.div>
             ) : isLast ? (
-              <span className="text-white font-medium">{item.label}</span>
+              <span className="text-white font-medium px-2 py-1">{item.label}</span>
             ) : (
-              <Link
-                to={item.path}
-                className="text-gray-400 hover:text-[#6b8e23] transition-colors"
-              >
-                {item.label}
-              </Link>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Link
+                  to={item.path}
+                  className="text-gray-400 hover:text-primary-500 transition-colors px-2 py-1 rounded-lg hover:bg-white/5"
+                >
+                  {item.label}
+                </Link>
+              </motion.div>
             )}
             {!isLast && (
               <ChevronRight size={16} className="text-gray-500" />

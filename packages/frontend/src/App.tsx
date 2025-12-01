@@ -1,21 +1,24 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense, lazy } from 'react';
 import { useAuthStore } from './stores/authStore';
 import Layout from './components/Layout';
 import LoginPage from './pages/LoginPage';
-import HomePage from './pages/HomePage';
-import SettingsPage from './pages/SettingsPage';
-import ServerDetailsPage from './pages/ServerDetailsPage';
-import ProfilesManagementPage from './pages/ProfilesManagementPage';
-import CrashesManagementPage from './pages/CrashesManagementPage';
-import UsersManagementPage from './pages/UsersManagementPage';
-import ProfilePage from './pages/ProfilePage';
-import StatisticsPage from './pages/StatisticsPage';
-import AdminDashboardPage from './pages/AdminDashboardPage';
 import ErrorLoggerService from './services/errorLogger';
 import LauncherUpdateModal from './components/LauncherUpdateModal';
 import { useLauncherUpdate } from './hooks/useLauncherUpdate';
 import { API_CONFIG } from './config/api';
+import LoadingSpinner from './components/LoadingSpinner';
+
+// Lazy load pages for code splitting
+const HomePage = lazy(() => import('./pages/HomePage'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const ServerDetailsPage = lazy(() => import('./pages/ServerDetailsPage'));
+const ProfilesManagementPage = lazy(() => import('./pages/ProfilesManagementPage'));
+const CrashesManagementPage = lazy(() => import('./pages/CrashesManagementPage'));
+const UsersManagementPage = lazy(() => import('./pages/UsersManagementPage'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const StatisticsPage = lazy(() => import('./pages/StatisticsPage'));
+const AdminDashboardPage = lazy(() => import('./pages/AdminDashboardPage'));
 
 function AdminRoute({ children }: { children: React.ReactNode }) {
   const { isAdmin } = useAuthStore();
@@ -97,7 +100,9 @@ function App() {
         element={
           isAuthenticated ? (
             <Layout>
-              <HomePage />
+              <Suspense fallback={<LoadingSpinner fullScreen message="Loading..." />}>
+                <HomePage />
+              </Suspense>
             </Layout>
           ) : (
             <Navigate to="/login" replace />
@@ -109,7 +114,9 @@ function App() {
         element={
           isAuthenticated ? (
             <Layout>
-              <SettingsPage />
+              <Suspense fallback={<LoadingSpinner fullScreen message="Loading settings..." />}>
+                <SettingsPage />
+              </Suspense>
             </Layout>
           ) : (
             <Navigate to="/login" replace />
@@ -121,7 +128,9 @@ function App() {
         element={
           isAuthenticated ? (
             <Layout>
-              <ProfilePage />
+              <Suspense fallback={<LoadingSpinner fullScreen message="Loading profile..." />}>
+                <ProfilePage />
+              </Suspense>
             </Layout>
           ) : (
             <Navigate to="/login" replace />
@@ -133,7 +142,9 @@ function App() {
         element={
           isAuthenticated ? (
             <Layout>
-              <StatisticsPage />
+              <Suspense fallback={<LoadingSpinner fullScreen message="Loading statistics..." />}>
+                <StatisticsPage />
+              </Suspense>
             </Layout>
           ) : (
             <Navigate to="/login" replace />
@@ -149,7 +160,9 @@ function App() {
         element={
           isAuthenticated ? (
             <Layout>
-              <ServerDetailsPage />
+              <Suspense fallback={<LoadingSpinner fullScreen message="Loading server details..." />}>
+                <ServerDetailsPage />
+              </Suspense>
             </Layout>
           ) : (
             <Navigate to="/login" replace />
@@ -166,7 +179,9 @@ function App() {
           isAuthenticated ? (
             <AdminRoute>
               <Layout>
-                <ProfilesManagementPage />
+                <Suspense fallback={<LoadingSpinner fullScreen message="Loading profiles..." />}>
+                  <ProfilesManagementPage />
+                </Suspense>
               </Layout>
             </AdminRoute>
           ) : (
@@ -180,7 +195,9 @@ function App() {
           isAuthenticated ? (
             <AdminRoute>
               <Layout>
-                <CrashesManagementPage />
+                <Suspense fallback={<LoadingSpinner fullScreen message="Loading crashes..." />}>
+                  <CrashesManagementPage />
+                </Suspense>
               </Layout>
             </AdminRoute>
           ) : (
@@ -194,7 +211,9 @@ function App() {
           isAuthenticated ? (
             <AdminRoute>
               <Layout>
-                <UsersManagementPage />
+                <Suspense fallback={<LoadingSpinner fullScreen message="Loading users..." />}>
+                  <UsersManagementPage />
+                </Suspense>
               </Layout>
             </AdminRoute>
           ) : (
@@ -208,7 +227,9 @@ function App() {
           isAuthenticated ? (
             <AdminRoute>
               <Layout>
-                <AdminDashboardPage />
+                <Suspense fallback={<LoadingSpinner fullScreen message="Loading dashboard..." />}>
+                  <AdminDashboardPage />
+                </Suspense>
               </Layout>
             </AdminRoute>
           ) : (
