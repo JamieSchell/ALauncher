@@ -5,7 +5,7 @@
 import dotenv from 'dotenv';
 import path from 'path';
 
-dotenv.config();
+dotenv.config({ path: process.env.NODE_ENV === 'development' ? '.env.dev' : '.env' });
 
 export const config = {
   env: process.env.NODE_ENV || 'development',
@@ -58,7 +58,7 @@ export const config = {
   paths: {
     // Базовая директория, где backend ищет client.jar, libraries и т.п.
     // Можно переопределить через переменную окружения UPDATES_DIR,
-    // например: /opt/launcher/updates-hitech
+    // например: /opt/ALauncher/updates-hitech
     updates: process.env.UPDATES_DIR || path.join(process.cwd(), 'updates'),
     profiles: path.join(process.cwd(), 'profiles'),
     keys: path.join(process.cwd(), 'keys'),

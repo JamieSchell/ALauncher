@@ -6,7 +6,7 @@
 set -e
 
 ENVIRONMENT=${1:-production}
-PROJECT_DIR="/opt/launcher"
+PROJECT_DIR="/opt/ALauncher"
 BACKEND_DIR="$PROJECT_DIR/packages/backend"
 FRONTEND_DIR="$PROJECT_DIR/packages/frontend"
 

@@ -362,6 +362,7 @@ enum LauncherErrorType {
   JAVA_DETECTION_ERROR    // Ошибка определения Java
   CLIENT_LAUNCH_ERROR     // Ошибка запуска клиента
   UNKNOWN_ERROR           // Неизвестная ошибка
+  INFO_MESSAGE            // Информационное сообщение (для логирования)
 }
 
 // Game Launch - запись о каждом запуске игры

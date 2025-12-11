@@ -202,7 +202,7 @@ router.get('/download/:version', async (req: Request, res: Response, next: NextF
       join(__dirname, '../../frontend/release'), // Relative to compiled dist
       join(process.cwd(), 'packages/frontend/release'), // From project root
       join(process.cwd(), 'frontend/release'), // Alternative structure
-      '/opt/launcher/packages/frontend/release', // Absolute path (production)
+      '/opt/ALauncher/packages/frontend/release', // Absolute path (production)
     ];
     
     // Try different possible file names

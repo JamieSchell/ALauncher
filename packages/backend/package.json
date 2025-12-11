@@ -4,7 +4,7 @@
   "description": "Backend server for Modern Minecraft Launcher",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev": "NODE_ENV=development tsx watch src/index.ts",
     "dev:local": "bash ../../scripts/dev-backend.sh",
     "prod": "bash ../../scripts/prod-backend.sh",
     "build": "tsc",

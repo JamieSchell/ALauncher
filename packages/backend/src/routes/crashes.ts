@@ -244,10 +244,20 @@ router.post(
         throw new AppError(400, 'Validation failed: ' + errors.array().map(e => e.msg).join(', '));
       }
 
+      const errorType = req.body.errorType as LauncherErrorType;
+
+      // Не логируем информационные сообщения в базу данных
+      if (errorType === 'INFO_MESSAGE') {
+        return res.status(200).json({
+          success: true,
+          message: 'Info message received but not logged to database'
+        });
+      }
+
       const errorData = {
         userId: req.user?.userId || null,
         username: req.user?.username || req.body.username || null,
-        errorType: req.body.errorType as LauncherErrorType,
+        errorType: errorType,
         errorMessage: req.body.errorMessage,
         stackTrace: req.body.stackTrace || null,
         component: req.body.component || null,
@@ -306,6 +316,9 @@ router.get(
       const component = req.query.component as string | undefined;
 
       const where: any = {};
+      // Исключаем информационные сообщения из списка ошибок
+      where.errorType = { not: 'INFO_MESSAGE' };
+
       if (errorType) {
         where.errorType = errorType;
       }
