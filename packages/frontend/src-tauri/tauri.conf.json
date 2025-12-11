@@ -1,0 +1,64 @@
+{
+  "$schema": "https://schema.tauri.app/config/2.0.0",
+  "productName": "ALauncher",
+  "version": "1.0.0",
+  "identifier": "com.alauncher",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:5173",
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "ALauncher",
+        "width": 1200,
+        "height": 800,
+        "minWidth": 800,
+        "minHeight": 600,
+        "resizable": true,
+        "fullscreen": false,
+        "decorations": true,
+        "transparent": false,
+        "center": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "createUpdaterArtifacts": false,
+    "category": "Game",
+    "shortDescription": "Modern Minecraft Launcher",
+    "longDescription": "A modern Minecraft launcher with advanced features and capabilities."
+  },
+  "plugins": {
+    "shell": {
+      "open": true
+    },
+    "dialog": {
+      "all": true,
+      "ask": true,
+      "confirm": true,
+      "message": true,
+      "open": true,
+      "save": true
+    },
+    "fs": {
+      "all": true,
+      "readFile": true,
+      "writeFile": true,
+      "readDir": true,
+      "copyFile": true,
+      "createDir": true,
+      "removeDir": true,
+      "removeFile": true,
+      "renameFile": true,
+      "exists": true
+    }
+  }
+}

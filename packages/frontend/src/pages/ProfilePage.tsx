@@ -29,6 +29,7 @@ import SkinViewer3D from '../components/SkinViewer3D';
 import PlayerHead from '../components/PlayerHead';
 import { useTranslation } from '../hooks/useTranslation';
 import { useOptimizedAnimation } from '../hooks/useOptimizedAnimation';
+import { useFormatDate } from '../hooks/useFormatDate';
 import { API_CONFIG } from '../config/api';
 
 // Helper function to get base URL for static files
@@ -47,6 +48,7 @@ export default function ProfilePage() {
   const { playerProfile, setAuth, accessToken } = useAuthStore();
   const { t } = useTranslation();
   const { getAnimationProps, shouldAnimate } = useOptimizedAnimation();
+  const { formatDate, formatDateTime } = useFormatDate();
   
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -250,7 +252,6 @@ export default function ProfilePage() {
     );
   }
 
-  const { formatDate, formatDateTime } = useFormatDate();
   const joinedDate = formatDate(profile.createdAt);
   const lastLoginDisplay = profile.lastLogin
     ? formatDateTime(profile.lastLogin)

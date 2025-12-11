@@ -15,7 +15,7 @@ const getApiBaseUrl = (): string => {
   
   // Development fallback
   if (import.meta.env.DEV) {
-    return 'http://localhost:7240';
+    return 'http://5.188.119.206:7240';
   }
   
   // Production fallback - use default production server if not configured

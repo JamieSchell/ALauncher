@@ -66,6 +66,7 @@ export default function NotificationCenter({ className = '' }: NotificationCente
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { isAdmin } = useAuthStore();
   const { shouldAnimate, getAnimationProps } = useOptimizedAnimation();
+  const { formatRelativeTime, formatDate: formatDateLocalized } = useFormatDate();
 
   // Fetch notifications (максимум 10)
   const { data: notificationsData, isLoading } = useNotifications(
@@ -117,8 +118,6 @@ export default function NotificationCenter({ className = '' }: NotificationCente
   const handleDelete = (id: string) => {
     deleteMutation.mutate(id);
   };
-
-  const { formatRelativeTime, formatDate: formatDateLocalized } = useFormatDate();
 
   return (
     <div className={`relative ${className}`} ref={dropdownRef}>

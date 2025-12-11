@@ -7,7 +7,7 @@ import { crashesAPI } from '../api/crashes';
 import { useAuthStore } from '../stores/authStore';
 
 // LauncherErrorType enum (matching backend)
-type LauncherErrorType = 
+type LauncherErrorType =
   | 'PROFILE_LOAD_ERROR'
   | 'FILE_DOWNLOAD_ERROR'
   | 'API_ERROR'
@@ -18,7 +18,8 @@ type LauncherErrorType =
   | 'ELECTRON_ERROR'
   | 'JAVA_DETECTION_ERROR'
   | 'CLIENT_LAUNCH_ERROR'
-  | 'UNKNOWN_ERROR';
+  | 'UNKNOWN_ERROR'
+  | 'INFO_MESSAGE';
 
 interface ErrorContext {
   component?: string;
@@ -34,6 +35,9 @@ interface ErrorContext {
 class ErrorLoggerService {
   private static launcherVersion: string | null = null;
   private static osInfo: { os: string; osVersion: string } | null = null;
+  private static errorCounts: Map<string, number> = new Map();
+  private static lastErrors: Map<string, { timestamp: number; message: string }> = new Map();
+  private static isInitialized = false;
 
   /**
    * Initialize error logger
@@ -136,13 +140,22 @@ class ErrorLoggerService {
     context?: ErrorContext
   ): Promise<void> {
     try {
+      // Проверяем тип ошибки
+      const errorType = this.determineErrorType(error, context);
+      const message = error?.message || String(error);
+
+      // Проверка на флуд - не логируем более 10 одинаковых ошибок в минуту
+      if (this.isFlooding(errorType, message)) {
+        console.warn(`[ErrorLogger] Flooding detected for error type: ${errorType}`);
+        return;
+      }
+
       // Don't log if we're in development and it's a known error
       if ((import.meta as any).env?.DEV) {
         // Still log, but don't spam
         console.error('[ErrorLogger] Error occurred:', error, context);
       }
 
-      const errorType = this.determineErrorType(error, context);
       let errorMessage = error?.message || String(error);
       
       // Ensure errorMessage is not empty (backend validation requires it)
@@ -328,6 +341,142 @@ class ErrorLoggerService {
     }
 
     await this.logError(enhancedError, uiContext);
+  }
+
+  /**
+   * Логирование информационных сообщений (для отладки)
+   */
+  static async logInfo(action: string, context?: ErrorContext): Promise<void> {
+    try {
+      const { playerProfile } = useAuthStore.getState();
+
+      // Просто логируем в консоль, НЕ отправляем в базу данных
+      console.log(`[INFO] ${action}`, {
+        component: context?.component,
+        action,
+        userId: (playerProfile as any)?.id || playerProfile?.uuid || null,
+        username: playerProfile?.username || null,
+      });
+
+      // Если нужно отладочное логирование в разработке, можно раскомментировать:
+      // if ((import.meta as any).env?.DEV) {
+      //   console.log(`[ErrorLogger] Info logged: ${action}`);
+      // }
+    } catch (error) {
+      console.error('[ErrorLogger] Failed to log info:', error);
+    }
+  }
+
+  /**
+   * Получение статистики ошибок
+   */
+  static getErrorStats(): { [key: string]: number } {
+    return Object.fromEntries(this.errorCounts);
+  }
+
+  /**
+   * Очистка старых записей об ошибках
+   */
+  static cleanup(): void {
+    const now = Date.now();
+    const oneHour = 60 * 60 * 1000;
+
+    for (const [key, error] of this.lastErrors.entries()) {
+      if (now - error.timestamp > oneHour) {
+        this.lastErrors.delete(key);
+      }
+    }
+  }
+
+  /**
+   * Проверка на флуд ошибок (более 10 одинаковых ошибок в минуту)
+   */
+  private static isFlooding(errorType: string, message: string): boolean {
+    const key = `${errorType}:${message.substring(0, 100)}`;
+    const now = Date.now();
+    const lastError = this.lastErrors.get(key);
+
+    if (lastError && now - lastError.timestamp < 60000) {
+      this.errorCounts.set(key, (this.errorCounts.get(key) || 0) + 1);
+      return this.errorCounts.get(key)! > 10;
+    }
+
+    this.lastErrors.set(key, { timestamp: now, message });
+    this.errorCounts.set(key, 1);
+    return false;
+  }
+
+  /**
+   * Автоматическое логирование критических системных ошибок
+   */
+  static setupGlobalErrorHandlers(): void {
+    if (this.isInitialized) return;
+    this.isInitialized = true;
+
+    // Логирование непойманных ошибок JavaScript
+    window.onerror = (message, source, lineno, colno, error) => {
+      this.logError(error || new Error(String(message)), {
+        component: 'GlobalErrorHandler',
+        action: 'unhandled_error',
+        url: source,
+        statusCode: 500,
+      });
+      return false;
+    };
+
+    // Логирование отклоненных промисов
+    window.addEventListener('unhandledrejection', (event) => {
+      this.logError(event.reason, {
+        component: 'GlobalErrorHandler',
+        action: 'unhandled_promise_rejection',
+        statusCode: 500,
+      });
+    });
+
+    // Логирование ошибок загрузки ресурсов
+    window.addEventListener('error', (event) => {
+      if (event.target !== window) {
+        const element = event.target as HTMLElement;
+        this.logError(new Error(`Resource loading failed: ${element.tagName}`), {
+          component: 'ResourceLoader',
+          action: 'resource_load_error',
+          url: (element as any).src || (element as any).href,
+          statusCode: 404,
+        });
+      }
+    }, true);
+
+    // Периодическая очистка
+    setInterval(() => {
+      this.cleanup();
+    }, 5 * 60 * 1000); // Каждые 5 минут
+
+    console.log('[ErrorLogger] Global error handlers initialized');
+  }
+
+  /**
+   * Отслеживание производительности
+   */
+  static logPerformance(metricName: string, duration: number, context?: any): void {
+    if (duration > 5000) { // Если операция занимает больше 5 секунд
+      this.logError(new Error(`Performance warning: ${metricName} took ${duration}ms`), {
+        component: 'PerformanceMonitor',
+        action: metricName,
+        statusCode: 200,
+      });
+    }
+  }
+
+  /**
+   * Логирование сетевых ошибок
+   */
+  static logNetworkError(url: string, method: string, status: number, error?: Error): void {
+    this.logError(error || new Error(`Network error: ${method} ${url} - ${status}`), {
+      component: 'NetworkClient',
+      action: `${method} ${url}`,
+      url,
+      statusCode: status,
+    });
   }
 }
 

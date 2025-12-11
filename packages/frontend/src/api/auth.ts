@@ -37,8 +37,11 @@ export const authAPI = {
         error: translateError(backendError),
       };
     } catch (error: any) {
-      console.error('Login error:', error);
-      
+      // Only log unexpected errors, not 401 which are expected for invalid credentials
+      if (error.response?.status !== 401) {
+        console.error('Login error:', error);
+      }
+
       // Handle network errors
       if (error.code === 'ERR_NETWORK' || error.message === 'Network Error' || error.message?.includes('Network')) {
         return {
@@ -101,8 +104,11 @@ export const authAPI = {
       });
       return response.data;
     } catch (error: any) {
-      console.error('Registration error:', error);
-      
+      // Only log unexpected errors
+      if (error.response?.status !== 400 && error.response?.status !== 409) {
+        console.error('Registration error:', error);
+      }
+
       // Handle network errors
       if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
         return {

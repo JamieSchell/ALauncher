@@ -54,8 +54,13 @@ const issueTypeColors: Record<string, string> = {
 
 export default function CrashesManagementPage() {
   const { role } = useAuthStore();
+  const { formatDateTime } = useFormatDate();
+  const { shouldAnimate, getAnimationProps } = useOptimizedAnimation();
   const [activeTab, setActiveTab] = useState<TabType>('crashes');
-  
+  const [selectedCrash, setSelectedCrash] = useState<GameCrash | null>(null);
+  const [selectedIssue, setSelectedIssue] = useState<ServerConnectionIssue | null>(null);
+  const [selectedLauncherError, setSelectedLauncherError] = useState<LauncherError | null>(null);
+
   // Initialize page load time and mark all existing items as already notified
   useEffect(() => {
     pageLoadTimeRef.current = Date.now();
@@ -69,9 +74,6 @@ export default function CrashesManagementPage() {
     lastCrashIdRef.current = null;
     lastIssueIdRef.current = null;
   }, [role]);
-  const [selectedCrash, setSelectedCrash] = useState<GameCrash | null>(null);
-  const [selectedIssue, setSelectedIssue] = useState<ServerConnectionIssue | null>(null);
-  const [selectedLauncherError, setSelectedLauncherError] = useState<LauncherError | null>(null);
   const [filters, setFilters] = useState({
     profileId: '',
     serverAddress: '',
@@ -516,8 +518,6 @@ export default function CrashesManagementPage() {
       return () => element.removeEventListener('scroll', handleScroll);
     }
   }, [activeTab, handleScroll]);
-
-  const { formatDateTime } = useFormatDate();
 
   const getExitCodeColor = (code: number) => {
     if (code === 0) return 'text-green-400';

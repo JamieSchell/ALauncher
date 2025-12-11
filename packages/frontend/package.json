@@ -1,13 +1,12 @@
 {
   "name": "@modern-launcher/frontend",
   "version": "1.0.280",
-  "description": "Modern Minecraft Launcher - Electron Frontend",
+  "description": "Modern Minecraft Launcher - Tauri Frontend",
   "homepage": "https://github.com/modern-launcher/modern-launcher",
   "author": {
     "name": "Modern Launcher Team",
     "email": "team@modern-launcher.com"
   },
-  "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite",
     "dev:local": "bash ../../scripts/dev-frontend.sh",
@@ -19,21 +18,23 @@
     "typecheck": "tsc --noEmit",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
-    "build:portable": "node scripts/increment-version.js && node scripts/clean-release.js && node scripts/pre-build-installer.js && (vite build 2>&1 | grep -v 'CJS build of Vite' || true) && electron-builder --win portable && node scripts/update-launcher-version.js",
-    "build:installer": "npm run build:portable",
-    "update-launcher": "node scripts/update-launcher-full.js",
-    "update-launcher:win": "node scripts/update-launcher-full.js",
     "preview": "vite preview",
-    "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
-    "electron:build": "node scripts/increment-version.js && (vite build 2>&1 | grep -v 'CJS build of Vite' || true) && electron-builder",
-    "electron:build:win": "node scripts/increment-version.js && (vite build 2>&1 | grep -v 'CJS build of Vite' || true) && electron-builder --win",
-    "electron:build:win:installer": "node scripts/increment-version.js && (vite build 2>&1 | grep -v 'CJS build of Vite' || true) && electron-builder --win --config.win.target=nsis",
-    "electron:build:win:all": "npm run electron:build:win && npm run electron:build:win:installer",
-    "electron:build:linux": "node scripts/increment-version.js && (vite build 2>&1 | grep -v 'CJS build of Vite' || true) && electron-builder --linux"
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build",
+    "tauri:build:debug": "tauri build --debug",
+    "tauri:build:release": "tauri build",
+    "update-launcher": "node scripts/update-launcher-full.js",
+    "update-launcher:win": "node scripts/update-launcher-full.js"
   },
   "dependencies": {
     "@modern-launcher/shared": "*",
     "@tanstack/react-query": "^5.90.11",
+    "@tauri-apps/api": "^2.9.1",
+    "@tauri-apps/plugin-dialog": "^2.4.2",
+    "@tauri-apps/plugin-fs": "^2.4.4",
+    "@tauri-apps/plugin-process": "^2.3.1",
+    "@tauri-apps/plugin-shell": "^2.3.3",
     "adm-zip": "^0.5.16",
     "axios": "^1.13.2",
     "framer-motion": "^12.23.24",
@@ -45,90 +46,18 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.17",
+    "@tauri-apps/cli": "^2.9.6",
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.1",
-    "7zip-bin": "^5.2.0",
     "autoprefixer": "^10.4.22",
     "concurrently": "^9.2.1",
-    "electron": "^39.2.4",
-    "electron-builder": "^24.9.1",
-    "electron-packager": "^17.1.2",
     "mysql2": "^3.15.3",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.17",
     "typescript": "^5.9.3",
     "uuid": "^13.0.0",
-    "vite": "^7.2.4",
-    "vite-plugin-electron": "^0.29.0",
-    "vite-plugin-electron-renderer": "^0.14.6",
-    "wait-on": "^9.0.3"
-  },
-  "build": {
-    "appId": "com.launcher.modern",
-    "productName": "Modern Launcher",
-    "electronVersion": "39.2.4",
-    "extraMetadata": {
-      "name": "modern-launcher"
-    },
-    "directories": {
-      "output": "release",
-      "buildResources": "build"
-    },
-    "files": [
-      "dist/**/*",
-      "dist-electron/**/*",
-      "package.json",
-      ".env"
-    ],
-    "win": {
-      "target": [
-        "portable"
-      ],
-      "artifactName": "${productName}-${version}.${ext}",
-      "sign": false,
-      "signingHashAlgorithms": [],
-      "verifyUpdateCodeSignature": false,
-      "publisherName": "Modern Launcher Team"
-    },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "allowElevation": true,
-      "createDesktopShortcut": true,
-      "createStartMenuShortcut": true,
-      "shortcutName": "Modern Launcher",
-      "deleteAppDataOnUninstall": false,
-      "runAfterFinish": true,
-      "menuCategory": "Games",
-      "artifactName": "${productName}-${version}-Setup.${ext}",
-      "warningsAsErrors": false,
-      "unicode": true,
-      "differentialPackage": false,
-      "perMachine": false,
-      "installerLanguages": [
-        "en_US",
-        "ru_RU"
-      ]
-    },
-    "portable": {
-      "artifactName": "${productName}-${version}-portable.${ext}"
-    },
-    "linux": {
-      "target": [
-        "AppImage",
-        "deb"
-      ],
-      "category": "Game",
-      "maintainer": "Modern Launcher Team <team@modern-launcher.com>"
-    },
-    "mac": {
-      "target": [
-        "dmg",
-        "zip"
-      ],
-      "category": "public.app-category.games"
-    }
+    "vite": "^7.2.4"
   }
 }

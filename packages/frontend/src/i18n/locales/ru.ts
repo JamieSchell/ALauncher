@@ -284,6 +284,8 @@ export const ru = {
     autoDetectFail: 'Не удалось определить Java',
     browseFail: 'Не удалось выбрать файл Java',
     updateCheckElectronOnly: 'Проверка обновлений доступна только в приложении Electron',
+    updateCheckDesktopOnly: 'Проверка обновлений доступна только в десктопном приложении',
+    updateCheckNotImplemented: 'Проверка обновлений пока не реализована',
   },
 
   // Errors

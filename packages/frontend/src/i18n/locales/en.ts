@@ -284,6 +284,8 @@ export const en = {
     autoDetectFail: 'Failed to detect Java',
     browseFail: 'Failed to select Java file',
     updateCheckElectronOnly: 'Update check only available in Electron app',
+    updateCheckDesktopOnly: 'Update check only available in desktop app',
+    updateCheckNotImplemented: 'Update check not yet implemented',
   },
 
   // Errors

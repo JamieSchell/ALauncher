@@ -56,6 +56,7 @@ export default function ServerDetailsPage() {
   const { selectedProfile, ram, width, height, fullScreen, autoEnter, javaPath, workingDir, updateSettings } = useSettingsStore();
   const { t } = useTranslation();
   const { getAnimationProps, shouldAnimate } = useOptimizedAnimation();
+  const { formatTime } = useFormatDate();
   const [launching, setLaunching] = useState(false);
   const [launchError, setLaunchError] = useState<string | null>(null);
   const [checkingFiles, setCheckingFiles] = useState(false);
@@ -500,7 +501,6 @@ export default function ServerDetailsPage() {
   const javaRequirement = profile?.jvmVersion || '8';
   const StatusIcon = (serverStatus?.online ?? false) ? Wifi : WifiOff;
   const statusLabel = (serverStatus?.online ?? false) ? t('server.serverOnline') : t('server.serverOffline');
-  const { formatTime } = useFormatDate();
   const lastCheckedLabel = lastStatusUpdate ? formatTime(new Date(lastStatusUpdate)) : t('common.loading');
   const resolutionLabel = `${width}x${height}`;
 

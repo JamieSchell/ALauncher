@@ -1,7 +1,5 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import electron from 'vite-plugin-electron';
-import renderer from 'vite-plugin-electron-renderer';
 import path from 'path';
 import { cspReplace } from './vite-plugins/csp-replace';
 
@@ -11,44 +9,6 @@ export default defineConfig({
       jsxRuntime: 'automatic',
     }),
     cspReplace(),
-    electron([
-      {
-        entry: 'electron/main.ts',
-        onstart(options) {
-          // Only start Electron if DISPLAY is available (GUI environment)
-          if (process.env.DISPLAY) {
-          options.startup();
-          } else {
-            console.log('Skipping Electron startup (no DISPLAY available)');
-          }
-        },
-        vite: {
-          build: {
-            outDir: 'dist-electron',
-            rollupOptions: {
-              external: ['electron'],
-            },
-            format: 'cjs', // Main process should be CommonJS too
-          },
-        },
-      },
-      {
-        entry: 'electron/preload.ts',
-        onstart(options) {
-          options.reload();
-        },
-        vite: {
-          build: {
-            outDir: 'dist-electron',
-            rollupOptions: {
-              external: ['electron'],
-            },
-            format: 'cjs', // Preload must be CommonJS
-          },
-        },
-      },
-    ]),
-    renderer(),
   ],
   resolve: {
     alias: {
@@ -58,14 +18,14 @@ export default defineConfig({
     },
   },
   optimizeDeps: {
-    include: ['@modern-launcher/shared', 'gifuct-js'],
+    include: ['@modern-launcher/shared', 'gifuct-js', '@tauri-apps/api'],
     esbuildOptions: {
       target: 'es2020',
     },
     dedupe: ['react', 'react-dom'],
   },
   build: {
-    base: './', // Use relative paths for Electron
+    base: './', // Use relative paths for Tauri
     cssCodeSplit: false, // Ensure CSS is not split to prevent loading issues
     commonjsOptions: {
       include: [/node_modules/, /shared/],
@@ -73,6 +33,7 @@ export default defineConfig({
     },
     chunkSizeWarningLimit: 1000, // Increase limit to 1MB to suppress warnings
     rollupOptions: {
+      external: ['@tauri-apps/api', '@tauri-apps/plugin-process'],
       output: {
         manualChunks: (id) => {
           // Split vendor chunks for better code splitting
@@ -104,6 +65,10 @@ export default defineConfig({
             // Lucide icons
             if (id.includes('lucide-react')) {
               return 'lucide-icons';
+            }
+            // Tauri
+            if (id.includes('@tauri-apps')) {
+              return 'tauri';
             }
             // Large utility libraries
             if (id.includes('recharts') || id.includes('d3-')) {
@@ -145,4 +110,6 @@ export default defineConfig({
       'Expires': '0',
     },
   },
+  // Tauri expects a Vite dev server output by default
+  clearScreen: false,
 });

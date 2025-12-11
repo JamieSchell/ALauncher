@@ -3,9 +3,19 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+
+// Extend Window interface for Tauri
+declare global {
+  interface Window {
+    __TAURI__?: any;
+    electronAPI?: any;
+  }
+}
+
 import { API_CONFIG } from '../config/api';
 import { useAuthStore } from '../stores/authStore';
 import { useTranslation } from '../hooks/useTranslation';
+import { invoke } from '@tauri-apps/api/core';
 
 interface UpdateInfo {
   version: string;
@@ -33,18 +43,26 @@ export function useLauncherUpdate() {
   // Get current version
   useEffect(() => {
     const getVersion = async () => {
-      // Check if running in Electron
-      if (!window.electronAPI) {
-        console.log('[LauncherUpdate] Running in browser mode, skipping version check');
-        // In browser mode, use package.json version or default
-        setCurrentVersion('1.0.143'); // Default version for browser
-        return;
-      }
-      
       try {
-        const version = await window.electronAPI.getAppVersion();
-        console.log('[LauncherUpdate] Current version:', version);
-        setCurrentVersion(version);
+        // Check if running in Tauri
+        if (window.__TAURI__) {
+          const version = await invoke('get_app_version');
+          console.log('[LauncherUpdate] Current Tauri version:', version);
+          setCurrentVersion(version);
+          return;
+        }
+
+        // Check if running in Electron (legacy)
+        if (window.electronAPI) {
+          const version = await window.electronAPI.getAppVersion();
+          console.log('[LauncherUpdate] Current Electron version:', version);
+          setCurrentVersion(version);
+          return;
+        }
+
+        // In browser mode, use package.json version or default
+        console.log('[LauncherUpdate] Running in browser mode, using default version');
+        setCurrentVersion('1.0.143'); // Default version for browser
       } catch (error) {
         console.error('[LauncherUpdate] Failed to get app version:', error);
         // Fallback to default version
@@ -67,41 +85,53 @@ export function useLauncherUpdate() {
 
     console.log(`[LauncherUpdate] Checking for updates... (current: ${currentVersion}, API: ${API_CONFIG.baseUrl})`);
 
-    // In browser mode, skip update check (updates only work in Electron)
-    if (!window.electronAPI) {
-      console.log('[LauncherUpdate] Running in browser mode, skipping update check');
-      setUpdateCheckResult({
-        hasUpdate: false,
-        error: t('settings.updateCheckElectronOnly'),
-      });
-      if (!silent) {
-        setIsChecking(false);
-      }
-      return;
-    }
-
     try {
-      const result = await window.electronAPI.checkLauncherUpdate(currentVersion, API_CONFIG.baseUrl, accessToken || undefined);
-      
-      console.log('[LauncherUpdate] Update check result:', result);
-      
-      if (result.success) {
-        if (result.hasUpdate) {
-          console.log(`[LauncherUpdate] Update available! New version: ${result.updateInfo?.version}`);
-        } else {
-          console.log('[LauncherUpdate] No updates available');
-        }
-        
-        setUpdateCheckResult({
-          hasUpdate: result.hasUpdate || false,
-          updateInfo: result.updateInfo,
-          isRequired: result.isRequired,
-        });
-      } else {
-        console.error('[LauncherUpdate] Update check failed:', result.error);
+      // Check if running in Tauri
+      if (window.__TAURI__) {
+        // For Tauri, updates are handled differently - use Tauri's built-in updater
+        // For now, disable update checks in Tauri mode
+        console.log('[LauncherUpdate] Running in Tauri mode, update check not yet implemented');
         setUpdateCheckResult({
           hasUpdate: false,
-          error: result.error,
+          error: t('settings.updateCheckNotImplemented'),
+        });
+        if (!silent) {
+          setIsChecking(false);
+        }
+        return;
+      }
+
+      // Check if running in Electron (legacy)
+      if (window.electronAPI) {
+        const result = await window.electronAPI.checkLauncherUpdate(currentVersion, API_CONFIG.baseUrl, accessToken || undefined);
+
+        console.log('[LauncherUpdate] Update check result:', result);
+
+        if (result.success) {
+          if (result.hasUpdate) {
+            console.log(`[LauncherUpdate] Update available! New version: ${result.updateInfo?.version}`);
+          } else {
+            console.log('[LauncherUpdate] No updates available');
+          }
+
+          setUpdateCheckResult({
+            hasUpdate: result.hasUpdate || false,
+            updateInfo: result.updateInfo,
+            isRequired: result.isRequired,
+          });
+        } else {
+          console.error('[LauncherUpdate] Update check failed:', result.error);
+          setUpdateCheckResult({
+            hasUpdate: false,
+            error: result.error,
+          });
+        }
+      } else {
+        // In browser mode, skip update check
+        console.log('[LauncherUpdate] Running in browser mode, skipping update check');
+        setUpdateCheckResult({
+          hasUpdate: false,
+          error: t('settings.updateCheckDesktopOnly'),
         });
       }
     } catch (error) {
@@ -115,7 +145,7 @@ export function useLauncherUpdate() {
         setIsChecking(false);
       }
     }
-  }, [currentVersion]);
+  }, [currentVersion, t, accessToken]);
 
   // Auto-check on mount (silent)
   useEffect(() => {

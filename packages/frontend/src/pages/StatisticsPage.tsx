@@ -37,6 +37,7 @@ import {
 } from 'recharts';
 import { useTranslation } from '../hooks/useTranslation';
 import { useOptimizedAnimation } from '../hooks/useOptimizedAnimation';
+import { useFormatDate } from '../hooks/useFormatDate';
 import { useUserStatistics, useProfiles } from '../hooks/api';
 
 const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#3b82f6'];
@@ -56,6 +57,7 @@ export default function StatisticsPage() {
   const buttonRef = useRef<HTMLButtonElement>(null);
   const { t, language } = useTranslation();
   const { getAnimationProps, shouldAnimate } = useOptimizedAnimation();
+  const { formatDate, formatDateTime } = useFormatDate();
 
   // Calculate dropdown position and close when clicking outside
   useEffect(() => {
@@ -127,8 +129,6 @@ export default function StatisticsPage() {
     if (minutes > 0) return `${minutes}m ${secs}s`;
     return `${secs}s`;
   };
-
-  const { formatDate, formatDateTime } = useFormatDate();
 
   const getProfileName = (profileId: string | null) => {
     if (!profileId) return t('statistics.unknownProfile');

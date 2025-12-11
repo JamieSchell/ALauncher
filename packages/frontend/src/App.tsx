@@ -1,6 +1,7 @@
 import { Routes, Route } from 'react-router-dom';
 import { useEffect, useState, Suspense } from 'react';
 import ErrorLoggerService from './services/errorLogger';
+import AppInitializer from './services/appInitializer';
 import LauncherUpdateModal from './components/LauncherUpdateModal';
 import { useLauncherUpdate } from './hooks/useLauncherUpdate';
 import { API_CONFIG } from './config/api';
@@ -16,8 +17,11 @@ function App() {
   const { showError } = useToastContext();
 
   useEffect(() => {
-    // Initialize error logger
-    ErrorLoggerService.initialize();
+    // Initialize all app systems
+    AppInitializer.initialize().catch((error) => {
+      console.error('Failed to initialize app:', error);
+      showError('Failed to initialize application properly');
+    });
 
     // Global error handlers
     const handleError = (event: ErrorEvent) => {
