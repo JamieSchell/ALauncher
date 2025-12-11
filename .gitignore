@@ -67,3 +67,13 @@ scripts/config.sh
 *.iml
 buildnumber
 build-scripts/hitech.zip
+
+# Rust/Tauri
+target/
+Cargo.lock
+*.pdb
+*.dll
+*.exe
+*.so
+*.dylib
+packages/*/src-tauri/target/

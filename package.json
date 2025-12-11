@@ -1,41 +1,43 @@
 {
-  "name": "modern-minecraft-launcher",
+  "name": "alauncher",
   "version": "1.0.0",
-  "description": "Modern Minecraft Launcher with React and Electron",
+  "description": "ALauncher - Modern Minecraft Launcher with React and Tauri",
   "private": true,
   "workspaces": [
     "packages/*"
   ],
   "scripts": {
-    "dev": "node scripts/run-script.js dev",
-    "dev:backend": "node scripts/run-script.js dev-backend",
-    "dev:frontend": "node scripts/run-script.js dev-frontend",
-    "prod": "node scripts/run-script.js prod",
-    "prod:backend": "node scripts/run-script.js prod-backend",
-    "prod:frontend": "node scripts/run-script.js prod-frontend",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:web\"",
+    "dev:backend": "cd packages/backend && npm run dev",
+    "dev:web": "cd packages/frontend && npm run dev",
+    "dev:desktop": "concurrently \"npm run dev:backend\" \"npm run tauri:dev\"",
+    "prod": "npm run build:shared && npm run build --workspaces",
+    "prod:backend": "cd packages/backend && npm run prod",
+    "prod:frontend": "cd packages/frontend && npm run tauri:build",
     "build": "npm run build:shared && npm run build --workspaces",
     "build:shared": "cd packages/shared && npm run build",
+    "tauri": "cd packages/frontend && npm run tauri",
+    "tauri:dev": "bash scripts/tauri-dev.sh",
+    "tauri:build": "cd packages/frontend && npm run tauri:build",
+    "tauri:build:debug": "cd packages/frontend && npm run tauri:build:debug",
+    "tauri:build:release": "cd packages/frontend && npm run tauri:build:release",
     "lint": "npm run lint --workspaces --if-present",
     "lint:fix": "npm run lint:fix --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "format": "npm run format --workspaces --if-present",
-    "format:check": "npm run format:check --workspaces --if-present",
-    "prepare": "husky || true"
+    "format:check": "npm run format:check --workspaces --if-present"
   },
   "devDependencies": {
-    "7zip-bin": "^5.2.0",
+    "@tauri-apps/cli": "^2.9.6",
     "concurrently": "^9.2.1",
-    "electron-builder": "^26.0.12",
-    "typescript": "^5.9.3",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
     "eslint": "^9.0.0",
     "eslint-plugin-react": "^7.37.0",
     "eslint-plugin-react-hooks": "^5.1.0",
     "prettier": "^3.3.0",
-    "husky": "^9.0.0",
-    "lint-staged": "^15.2.0"
+    "typescript": "^5.9.3"
   },
   "engines": {
     "node": ">=20.0.0",

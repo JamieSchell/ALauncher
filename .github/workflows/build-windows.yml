@@ -1,0 +1,81 @@
+name: Build Windows Portable
+
+on:
+  push:
+    branches: [ main, develop ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [windows-latest]
+
+    runs-on: ${{ matrix.platform }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install dependencies (ubuntu only)
+      if: matrix.platform == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev libappindicator3-dev librsvg2-dev patchelf
+
+    - name: Rust setup
+      uses: dtolnay/rust-toolchain@stable
+
+    - name: Rust cache
+      uses: swatinem/rust-cache@v2
+      with:
+        workspaces: './packages/frontend/src-tauri -> target'
+
+    - name: Sync node version and setup cache
+      uses: actions/setup-node@v4
+      with:
+        node-version: 'lts/*'
+        cache: 'npm'
+
+    - name: Install frontend dependencies
+      run: npm ci
+      working-directory: packages/frontend
+
+    - name: Install backend dependencies
+      run: npm ci
+      working-directory: packages/backend
+
+    - name: Build frontend
+      run: npm run build
+      working-directory: packages/frontend
+
+    - name: Build the Tauri app
+      uses: tauri-apps/tauri-action@v0
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tauriScript: npm run tauri
+        includeDebug: false
+        includeRelease: true
+
+    - name: Create Windows Portable
+      if: matrix.platform == 'windows-latest'
+      run: |
+        cd packages/frontend/src-tauri/target/release/bundle
+        mkdir -p portable
+        cp -r msi/*.exe portable/ALauncher-Setup.exe
+        cd portable
+        7z a -tzip ../ALauncher-Windows-Portable.zip *
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: alauncher-${{ matrix.platform }}
+        path: |
+          packages/frontend/src-tauri/target/release/bundle/ALauncher-*.exe
+          packages/frontend/src-tauri/target/release/bundle/ALauncher-Windows-Portable.zip
+        if-no-files-found: error
