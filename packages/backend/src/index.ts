@@ -18,6 +18,7 @@ import { requestIdMiddleware } from './middleware/requestId';
 import { metricsMiddleware } from './middleware/metrics';
 import { auditMiddleware, cleanupOldAuditLogs } from './services/auditLog';
 import { metricsService } from './services/metrics';
+import { cacheService } from './services/cache';
 
 // Import routes
 import authRoutes from './routes/auth';
@@ -296,6 +297,56 @@ async function bootstrap() {
     return `${seconds}s`;
   }
 
+  // Cache management endpoint (admin only - for debugging/monitoring)
+  app.get('/api/cache/stats', (req, res) => {
+    const stats = cacheService.getStats();
+    res.json({
+      success: true,
+      data: {
+        ...stats,
+        sizeFormatted: formatBytes(stats.size),
+        topEntries: cacheService.getAllEntries().slice(0, 10),
+      },
+    });
+  });
+
+  // Clear cache endpoint
+  app.post('/api/cache/clear', (req, res) => {
+    cacheService.clear();
+    res.json({
+      success: true,
+      message: 'Cache cleared successfully',
+    });
+  });
+
+  // Invalidate cache by pattern
+  app.post('/api/cache/invalidate', (req, res) => {
+    const { pattern } = req.body;
+
+    if (!pattern) {
+      return res.status(400).json({
+        success: false,
+        error: 'Pattern is required',
+      });
+    }
+
+    const count = cacheService.invalidate(pattern);
+    res.json({
+      success: true,
+      message: `Invalidated ${count} cache entries`,
+      data: { count },
+    });
+  });
+
+  // Format bytes as readable string
+  function formatBytes(bytes: number): string {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+  }
+
   // Multer error handling middleware (must be before general error handler)
   app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
     if (err instanceof multer.MulterError) {
@@ -472,6 +523,19 @@ async function bootstrap() {
         error: error instanceof Error ? error : new Error(String(error))
       });
       logger.error('[Shutdown] Error closing database connection:', error);
+    }
+
+    try {
+      // Step 7: Destroy cache service
+      logger.info('[Shutdown] Destroying cache service...');
+      cacheService.destroy();
+      logger.info('[Shutdown] ✓ Cache service destroyed');
+    } catch (error) {
+      shutdownErrors.push({
+        component: 'Cache service',
+        error: error instanceof Error ? error : new Error(String(error))
+      });
+      logger.error('[Shutdown] Error destroying cache service:', error);
     }
 
     // Clear timeout
