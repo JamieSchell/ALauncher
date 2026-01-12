@@ -105,7 +105,7 @@ router.post(
 
 /**
  * POST /api/auth/logout
- * Revoke session
+ * Revoke current session
  */
 router.post('/logout', authenticateToken, async (req: AuthRequest, res, next) => {
   try {
@@ -119,6 +119,77 @@ router.post('/logout', authenticateToken, async (req: AuthRequest, res, next) =>
     res.json({
       success: true,
       message: 'Logged out successfully',
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * GET /api/auth/sessions
+ * Get all active sessions for current user
+ */
+router.get('/sessions', authenticateToken, async (req: AuthRequest, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    const currentToken = authHeader?.substring(7) || '';
+
+    const sessions = await AuthService.getUserSessions(req.user.userId);
+
+    res.json({
+      success: true,
+      data: {
+        sessions,
+        currentToken,
+        count: sessions.length,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * DELETE /api/auth/sessions/:id
+ * Revoke a specific session by ID
+ */
+router.delete('/sessions/:id', authenticateToken, async (req: AuthRequest, res, next) => {
+  try {
+    const { id } = req.params;
+    const deleted = await AuthService.revokeSessionById(id, req.user.userId);
+
+    if (!deleted) {
+      throw new AppError(404, 'Session not found or already revoked');
+    }
+
+    res.json({
+      success: true,
+      message: 'Session revoked successfully',
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * DELETE /api/auth/sessions
+ * Revoke all other sessions (except current)
+ */
+router.delete('/sessions', authenticateToken, async (req: AuthRequest, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    const currentToken = authHeader?.substring(7) || '';
+
+    if (!currentToken) {
+      throw new AppError(400, 'Invalid session token');
+    }
+
+    const count = await AuthService.revokeAllOtherSessions(req.user.userId, currentToken);
+
+    res.json({
+      success: true,
+      message: `Revoked ${count} other session(s)`,
+      data: { revokedCount: count },
     });
   } catch (error) {
     next(error);

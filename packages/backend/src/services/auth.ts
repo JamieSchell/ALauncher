@@ -220,13 +220,24 @@ export class AuthService {
       };
       const accessToken = this.generateToken(payload);
 
-      // Delete old sessions for this user (optional - or update existing)
-      const deletedCount = await prisma.session.deleteMany({
-        where: {
-          userId: user.id,
-        },
+      // Delete old sessions for this user if exceeding limit (max 5 concurrent sessions)
+      // Keep only the 4 most recent sessions, plus the new one we're about to create
+      const userSessions = await prisma.session.findMany({
+        where: { userId: user.id },
+        orderBy: { createdAt: 'desc' },
       });
-      console.log('[Auth] Deleted', deletedCount.count, 'old sessions for user:', user.username);
+
+      const MAX_CONCURRENT_SESSIONS = 5;
+      if (userSessions.length >= MAX_CONCURRENT_SESSIONS) {
+        // Delete oldest sessions beyond the limit
+        const sessionsToDelete = userSessions.slice(MAX_CONCURRENT_SESSIONS - 1);
+        const deletedCount = await prisma.session.deleteMany({
+          where: {
+            id: { in: sessionsToDelete.map(s => s.id) },
+          },
+        });
+        console.log(`[Auth] Deleted ${deletedCount.count} old session(s) for user: ${user.username} (limit: ${MAX_CONCURRENT_SESSIONS})`);
+      }
 
       // Create new session
       const session = await prisma.session.create({
@@ -235,6 +246,7 @@ export class AuthService {
           accessToken,
           expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
           ipAddress,
+          userAgent: undefined, // Can be added from request headers later
         },
       });
 
@@ -478,21 +490,152 @@ export class AuthService {
 
   /**
    * Revoke session by deleting it from database
-   * 
+   *
    * Side effects:
    * - Deletes session record from database
-   * 
+   *
    * @param token - Access token of session to revoke
-   * 
+   * @returns `true` if session was deleted, `false` if not found
+   *
    * @example
    * ```ts
-   * await AuthService.revokeSession(token);
-   * // Session is now invalid, user must re-authenticate
+   * const deleted = await AuthService.revokeSession(token);
+   * if (deleted) {
+   *   // Session is now invalid, user must re-authenticate
+   * }
    * ```
    */
-  static async revokeSession(token: string): Promise<void> {
-    await prisma.session.delete({
-      where: { accessToken: token },
+  static async revokeSession(token: string): Promise<boolean> {
+    try {
+      await prisma.session.delete({
+        where: { accessToken: token },
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Revoke a specific session by ID (for user's session management)
+   *
+   * Side effects:
+   * - Deletes session record from database if user owns it
+   *
+   * @param sessionId - ID of session to revoke
+   * @param userId - User ID who owns the session (for authorization)
+   * @returns `true` if session was deleted, `false` if not found or not owned
+   *
+   * @example
+   * ```ts
+   * const deleted = await AuthService.revokeSessionById('session-123', 'user-456');
+   * if (deleted) {
+   *   // Session revoked successfully
+   * }
+   * ```
+   */
+  static async revokeSessionById(sessionId: string, userId: string): Promise<boolean> {
+    try {
+      await prisma.session.deleteMany({
+        where: {
+          id: sessionId,
+          userId, // Only delete if user owns the session
+        },
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Revoke all sessions for a user except current one
+   *
+   * Side effects:
+   * - Deletes all session records for user except specified token
+   *
+   * @param userId - User ID whose sessions to revoke
+   * @param currentToken - Current session token to keep active
+   * @returns Number of sessions revoked
+   *
+   * @example
+   * ```ts
+   * const count = await AuthService.revokeAllOtherSessions('user-123', 'current-token');
+   * console.log(`Revoked ${count} other session(s)`);
+   * ```
+   */
+  static async revokeAllOtherSessions(userId: string, currentToken: string): Promise<number> {
+    const result = await prisma.session.deleteMany({
+      where: {
+        userId,
+        accessToken: { not: currentToken },
+      },
     });
+    return result.count;
+  }
+
+  /**
+   * Get all active sessions for a user
+   *
+   * Pure query: reads from database, no side effects.
+   *
+   * @param userId - User ID to get sessions for
+   * @returns Array of active sessions with device info
+   *
+   * @example
+   * ```ts
+   * const sessions = await AuthService.getUserSessions('user-123');
+   * sessions.forEach(s => console.log(s.ipAddress, s.lastUsedAt));
+   * ```
+   */
+  static async getUserSessions(userId: string): Promise<Array<{
+    id: string;
+    ipAddress: string | null;
+    lastUsedAt: Date | null;
+    createdAt: Date;
+    expiresAt: Date;
+    isCurrent: boolean;
+  }>> {
+    const sessions = await prisma.session.findMany({
+      where: { userId },
+      orderBy: { lastUsedAt: 'desc' },
+    });
+
+    return sessions.map(s => ({
+      id: s.id,
+      ipAddress: s.ipAddress,
+      lastUsedAt: s.lastUsedAt,
+      createdAt: s.createdAt,
+      expiresAt: s.expiresAt,
+      isCurrent: false, // Will be set by caller based on current token
+    }));
+  }
+
+  /**
+   * Clean up expired sessions from database
+   *
+   * Side effects:
+   * - Deletes expired session records from database
+   *
+   * Should be called periodically (e.g., every hour) to prevent database bloat.
+   *
+   * @returns Number of expired sessions deleted
+   *
+   * @example
+   * ```ts
+   * // Run periodically (e.g., via cron job)
+   * const deleted = await AuthService.cleanupExpiredSessions();
+   * console.log(`Cleaned up ${deleted} expired sessions`);
+   * ```
+   */
+  static async cleanupExpiredSessions(): Promise<number> {
+    const result = await prisma.session.deleteMany({
+      where: {
+        expiresAt: {
+          lt: new Date(),
+        },
+      },
+    });
+    return result.count;
   }
 }

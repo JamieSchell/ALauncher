@@ -170,6 +170,22 @@ async function bootstrap() {
     console.log('   ✅ File watcher ready');
   }
 
+  // Periodic session cleanup (expired sessions)
+  // Runs every hour to remove expired sessions from database
+  const SESSION_CLEANUP_INTERVAL = 60 * 60 * 1000; // 1 hour
+  const sessionCleanupInterval = setInterval(async () => {
+    try {
+      const { AuthService } = await import('./services/auth');
+      const deleted = await AuthService.cleanupExpiredSessions();
+      if (deleted > 0) {
+        console.log(`[Cleanup] Removed ${deleted} expired session(s) from database`);
+      }
+    } catch (error) {
+      console.error('[Cleanup] Failed to clean up expired sessions:', error);
+    }
+  }, SESSION_CLEANUP_INTERVAL);
+  console.log('   ✅ Session cleanup scheduled (every hour)');
+
   // CLI is now started separately via "npm run cli" command
   // Do not start CLI here to avoid conflicts with server startup
 
@@ -321,7 +337,19 @@ async function bootstrap() {
     }
 
     try {
-      // Step 3: Stop file watcher
+      // Step 3: Stop session cleanup interval
+      clearInterval(sessionCleanupInterval);
+      logger.info('[Shutdown] ✓ Session cleanup interval stopped');
+    } catch (error) {
+      shutdownErrors.push({
+        component: 'Session cleanup',
+        error: error instanceof Error ? error : new Error(String(error))
+      });
+      logger.error('[Shutdown] Error stopping session cleanup:', error);
+    }
+
+    try {
+      // Step 4: Stop file watcher
       if (fileWatcherInitialized) {
         logger.info('[Shutdown] Stopping file watcher...');
         const { stopFileWatcher } = await import('./services/fileSyncService');
@@ -337,7 +365,7 @@ async function bootstrap() {
     }
 
     try {
-      // Step 4: Close database connection
+      // Step 5: Close database connection
       logger.info('[Shutdown] Closing database connection...');
       await disconnectDatabase();
       logger.info('[Shutdown] ✓ Database connection closed');
