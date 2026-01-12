@@ -326,8 +326,8 @@ export class UUIDHelper {
           hash.substring(8, 12),
           // Set version to 4 (random UUID)
           '4' + hash.substring(12, 15),
-          // Set variant to 2 (RFC 4122)
-          ((parseInt(hash.substring(16, 17), 16) & 0x3f) | 0x80).toString(16) + hash.substring(17, 20),
+          // Set variant to RFC 4122 (10xx xxxx = 8-B in hex)
+          ((parseInt(hash.substring(16, 17), 16) & 0x3) | 0x8).toString(16) + hash.substring(17, 20),
           hash.substring(20, 32)
         ].join('-');
 
@@ -442,7 +442,9 @@ export class PathHelper {
    * @throws {PathError} If path is not a string
    */
   static normalize(path: string): string {
-    InputValidator.assertString(path, 'path');
+    if (typeof path !== 'string') {
+      throw new PathError(String(path), 'Path must be a string');
+    }
     return path.replace(/\\/g, '/');
   }
 
@@ -466,41 +468,43 @@ export class PathHelper {
       throw new PathError('', 'At least one path segment is required');
     }
 
+    // After filtering, if all segments are empty, throw error
+    const nonEmptyPaths = paths.filter(p => p && p.length > 0);
+    if (nonEmptyPaths.length === 0) {
+      throw new PathError(paths.join(','), 'At least one non-empty path segment is required');
+    }
+
     for (let i = 0; i < paths.length; i++) {
       const p = paths[i];
       if (typeof p !== 'string') {
         throw new PathError(String(p), `Path segment ${i} must be a string, got ${typeof p}`);
       }
 
-      // Check for suspicious patterns
+      // Check for suspicious patterns before any processing
       if (p.includes('\0')) {
         throw new PathError(p, 'Null byte detected in path');
       }
 
-      if (p.length === 0) {
-        throw new PathError(p, `Path segment ${i} is empty`);
+      // Check for path traversal patterns in original input
+      if (p.includes('..') || p.includes('./') || p.includes('.\\')) {
+        throw new PathError(p, 'Path traversal detected: ".." sequences are not allowed');
+      }
+
+      // Check for encoded traversal attempts
+      if (/%2e%2e|%252e|%5c|%255c|%2f|%252f/i.test(p)) {
+        throw new PathError(p, 'Encoded path traversal detected');
       }
     }
 
     // Normalize paths (convert backslashes to forward slashes, trim slashes)
     const normalized = paths
-      .map(p => p.replace(/^\\+|\/+|\\+$/g, ''))
+      .map(p => p.replace(/^[\\\/]+|[\\\/]+$/g, ''))
       .filter(p => p.length > 0)
       .join('/');
 
-    // Check for path traversal attempts
-    if (/\.\.[\/\\]/.test(normalized) || /[\/\\]\.\.[\/\\]/.test(normalized)) {
+    // Double-check for any path traversal that might have been constructed
+    if (normalized.includes('..')) {
       throw new PathError(normalized, 'Path traversal detected: ".." sequences are not allowed');
-    }
-
-    // Check for encoded traversal attempts
-    if (/%2e%2e|%252e|%5c|%255c|%2f|%252f/i.test(normalized)) {
-      throw new PathError(normalized, 'Encoded path traversal detected');
-    }
-
-    // Prevent absolute paths from breaking out
-    if (normalized.startsWith('..') || normalized.startsWith('../')) {
-      throw new PathError(normalized, 'Resulting path attempts to traverse outside base directory');
     }
 
     return normalized;
@@ -522,13 +526,32 @@ export class PathHelper {
    * ```
    */
   static joinSafe(basePath: string, ...paths: string[]): string {
-    InputValidator.assertNonEmptyString(basePath, 'basePath');
+    if (typeof basePath !== 'string') {
+      throw new PathError(String(basePath), 'Base path must be a string');
+    }
+    if (basePath.length === 0) {
+      throw new PathError(basePath, 'Base path cannot be empty');
+    }
 
-    const joined = this.join(basePath, ...paths);
+    // Normalize basePath but preserve leading slash if present
+    const normalizedBase = basePath.replace(/\\/g, '/');
 
-    // Additional safety check: ensure no absolute path override
-    if (paths.some(p => p.startsWith('/') || p.startsWith('\\'))) {
-      throw new PathError(joined, 'Absolute paths are not allowed in path segments');
+    // Check for absolute paths in segments
+    for (const p of paths) {
+      if (typeof p !== 'string') {
+        throw new PathError(String(p), 'Path segment must be a string');
+      }
+      if (p.startsWith('/') || p.startsWith('\\')) {
+        throw new PathError(p, 'Absolute paths are not allowed in path segments');
+      }
+    }
+
+    const segments = [normalizedBase, ...paths];
+    const joined = this.join(...segments);
+
+    // Preserve leading slash from base path
+    if (normalizedBase.startsWith('/')) {
+      return '/' + joined;
     }
 
     return joined;
@@ -720,16 +743,22 @@ export class SecurityHelper {
    * @returns Sanitized email in lowercase, or null if invalid
    */
   static sanitizeEmail(email: string): string | null {
-    InputValidator.assertString(email, 'email');
+    // Handle non-string input
+    if (typeof email !== 'string') {
+      return null;
+    }
+
+    // Trim whitespace first
+    const trimmed = email.trim();
 
     // Basic email validation
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    if (!emailRegex.test(email)) {
+    if (!emailRegex.test(trimmed)) {
       return null;
     }
 
     // Return lowercase version
-    return email.toLowerCase().trim();
+    return trimmed.toLowerCase();
   }
 
   /**

@@ -1,0 +1,26 @@
+{
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:@typescript-eslint/recommended-requiring-type-checking"
+  ],
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "ecmaVersion": 2022,
+    "project": "./tsconfig.json",
+    "sourceType": "module"
+  },
+  "plugins": ["@typescript-eslint"],
+  "rules": {
+    "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
+    "@typescript-eslint/explicit-function-return-type": ["off"],
+    "@typescript-eslint/explicit-module-boundary-types": ["off"],
+    "@typescript-eslint/no-explicit-any": ["warn"],
+    "@typescript-eslint/no-non-null-assertion": ["warn"],
+    "@typescript-eslint/prefer-nullish-coalescing": ["error"],
+    "@typescript-eslint/prefer-optional-chain": ["error"],
+    "@typescript-eslint/strict-boolean-expressions": ["off"],
+    "no-console": ["off"]
+  },
+  "ignorePatterns": ["dist", "node_modules", "*.js", "*.config.js", "*.config.ts"]
+}

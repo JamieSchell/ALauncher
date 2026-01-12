@@ -4,10 +4,37 @@
   "description": "Shared types and utilities",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "build:check": "tsc --noEmit",
+    "prebuild": "npm run build:check",
+    "postbuild": "npm run verify:exports",
+    "prepublishOnly": "npm run build && npm run test",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "pretest": "npm run build:check",
+    "typecheck": "tsc --noEmit",
+    "verify:exports": "node -e \"try { require('./dist/index.js'); console.log('✓ Exports verified'); } catch(e) { console.error('✗ Export verification failed:', e.message); process.exit(1); }\"",
+    "clean": "rm -rf dist",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
+    "format": "prettier --check \"src/**/*.ts\"",
+    "format:fix": "prettier --write \"src/**/*.ts\"",
+    "precommit": "npm run lint && npm run format && npm run build:check && npm run test"
   },
   "devDependencies": {
+    "@types/jest": "^29.5.14",
+    "@typescript-eslint/eslint-plugin": "^8.20.0",
+    "@typescript-eslint/parser": "^8.20.0",
+    "eslint": "^9.18.0",
+    "jest": "^29.7.0",
+    "prettier": "^3.4.2",
+    "ts-jest": "^29.2.5",
     "typescript": "^5.9.3"
   }
 }
