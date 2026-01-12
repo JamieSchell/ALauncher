@@ -15,29 +15,33 @@ model User {
   username  String   @unique
   password  String   // bcrypt hashed
   uuid      String   @unique // Minecraft UUID
-  
+
   // Profile data
   email     String?  @unique
   skinUrl   String?
   cloakUrl  String?
-  
+
   // Role
   role      UserRole @default(USER)
-  
+
   // Ban status
   banned    Boolean  @default(false)
   bannedAt  DateTime?
   banReason String?
-  
+
   // Metadata
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   lastLogin DateTime?
-  
+
   // Relations
   sessions      Session[]
   notifications Notification[]
-  
+
+  @@index([email])
+  @@index([banned])
+  @@index([role])
+  @@index([createdAt])
   @@map("users")
 }
 
@@ -98,7 +102,10 @@ model ClientProfile {
   enabled       Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-  
+
+  @@index([enabled])
+  @@index([sortIndex])
+  @@index([enabled, sortIndex])
   @@map("client_profiles")
 }
 
@@ -392,11 +399,12 @@ model GameLaunch {
   
   // Relations
   session       GameSession?
-  
+
   @@index([userId])
   @@index([profileId])
   @@index([serverAddress])
   @@index([createdAt])
+  @@index([userId, createdAt])
   @@map("game_launches")
 }
 

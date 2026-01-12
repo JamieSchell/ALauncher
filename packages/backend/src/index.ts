@@ -14,6 +14,7 @@ import { initializeWebSocket, closeWebSocketServer } from './websocket';
 import { initializeDatabase, disconnectDatabase } from './services/database';
 import { initializeKeys } from './services/crypto';
 import { apiLimiter } from './middleware/rateLimiter';
+import { requestIdMiddleware } from './middleware/requestId';
 
 // Import routes
 import authRoutes from './routes/auth';
@@ -88,6 +89,9 @@ async function bootstrap() {
     // For null origin, set to * (Electron will accept this)
     preflightContinue: false,
   }));
+
+  // Request ID middleware (must be early for tracing)
+  app.use(requestIdMiddleware);
 
   // Security middleware with enhanced headers
   app.use(helmet({
