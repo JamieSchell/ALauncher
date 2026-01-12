@@ -13,6 +13,7 @@ import { errorHandler } from './middleware/errorHandler';
 import { initializeWebSocket, closeWebSocketServer } from './websocket';
 import { initializeDatabase, disconnectDatabase } from './services/database';
 import { initializeKeys } from './services/crypto';
+import { apiLimiter } from './middleware/rateLimiter';
 
 // Import routes
 import authRoutes from './routes/auth';
@@ -88,11 +89,26 @@ async function bootstrap() {
     preflightContinue: false,
   }));
 
-  // Security middleware
+  // Security middleware with enhanced headers
   app.use(helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" },
     contentSecurityPolicy: false, // Disable CSP for static files, we handle it in Electron
+    hsts: {
+      maxAge: 31536000, // 1 year
+      includeSubDomains: true,
+      preload: false,
+    },
   }));
+
+  // Additional custom security headers
+  app.use((req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('X-XSS-Protection', '1; mode=block');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+    next();
+  });
 
   // Body parsing middleware
   app.use(express.json());
@@ -157,17 +173,18 @@ async function bootstrap() {
   // CLI is now started separately via "npm run cli" command
   // Do not start CLI here to avoid conflicts with server startup
 
-  // Routes
+  // Routes (with rate limiting)
+  // Note: auth routes have their own rate limiters applied in the route file
   app.use('/api/auth', authRoutes);
-  app.use('/api/profiles', profileRoutes);
-  app.use('/api/updates', updateRoutes);
-  app.use('/api/users', userRoutes);
-  app.use('/api/servers', serverRoutes);
-  app.use('/api/client-versions', clientVersionRoutes);
-  app.use('/api/crashes', crashRoutes);
-  app.use('/api/statistics', statisticsRoutes);
-  app.use('/api/notifications', notificationRoutes);
-  app.use('/api/launcher', launcherRoutes);
+  app.use('/api/profiles', apiLimiter, profileRoutes);
+  app.use('/api/updates', apiLimiter, updateRoutes);
+  app.use('/api/users', apiLimiter, userRoutes);
+  app.use('/api/servers', apiLimiter, serverRoutes);
+  app.use('/api/client-versions', apiLimiter, clientVersionRoutes);
+  app.use('/api/crashes', apiLimiter, crashRoutes);
+  app.use('/api/statistics', apiLimiter, statisticsRoutes);
+  app.use('/api/notifications', apiLimiter, notificationRoutes);
+  app.use('/api/launcher', apiLimiter, launcherRoutes);
 
   // Health check
   app.get('/health', (req, res) => {

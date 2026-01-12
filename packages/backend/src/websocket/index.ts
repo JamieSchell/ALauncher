@@ -4,18 +4,24 @@
 
 import { Server as HTTPServer } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
+import { URL } from 'url';
 import { logger } from '../utils/logger';
 import { AuthService } from '../services/auth';
 import { WSEvent, UpdateProgress, LaunchStatus } from '@modern-launcher/shared';
+import { prisma } from '../services/database';
 
 interface Client {
   ws: WebSocket;
   userId?: string;
   username?: string;
+  role?: 'USER' | 'ADMIN';
+  isAuthenticated: boolean;
   isAlive: boolean;
+  authTimeout?: NodeJS.Timeout;
 }
 
 const clients = new Map<string, Client>();
+const UNAUTHENTICATED_TIMEOUT = 30000; // 30 seconds to authenticate
 let wss: WebSocketServer | null = null;
 let heartbeatInterval: NodeJS.Timeout | null = null;
 
@@ -32,18 +38,35 @@ export function initializeWebSocket(server: HTTPServer) {
 
   wss.on('connection', (ws: WebSocket, req) => {
     const clientId = `${Date.now()}-${Math.random()}`;
-    const client: Client = { ws, isAlive: true };
+    const client: Client = { ws, isAlive: true, isAuthenticated: false };
     clients.set(clientId, client);
+
+    // Extract token from query params if provided during connection
+    const { searchParams } = new URL(req.url || '', `http://${req.headers.host}`);
+    const initialToken = searchParams.get('token');
+
+    // Set authentication timeout
+    client.authTimeout = setTimeout(() => {
+      if (!client.isAuthenticated) {
+        logger.warn(`[WebSocket] Client ${clientId} did not authenticate in time, disconnecting`);
+        ws.close(4001, 'Authentication timeout');
+      }
+    }, UNAUTHENTICATED_TIMEOUT);
 
     ws.on('message', async (message: Buffer) => {
       try {
         const data = JSON.parse(message.toString());
-        
+
         switch (data.event) {
           case WSEvent.AUTH:
             await handleAuth(clientId, data.token);
             break;
           default:
+            // Only allow messages after authentication
+            if (!client.isAuthenticated) {
+              ws.close(4003, 'Not authenticated');
+              return;
+            }
             logger.warn(`Unknown WS event: ${data.event}`);
         }
       } catch (error) {
@@ -59,10 +82,18 @@ export function initializeWebSocket(server: HTTPServer) {
     });
 
     ws.on('close', () => {
+      // Clear authentication timeout if exists
+      if (client.authTimeout) {
+        clearTimeout(client.authTimeout);
+      }
       clients.delete(clientId);
     });
 
     ws.on('error', (error) => {
+      // Clear authentication timeout if exists
+      if (client.authTimeout) {
+        clearTimeout(client.authTimeout);
+      }
       logger.error(`WebSocket error for ${clientId}:`, {
         error: error.message,
         stack: error.stack,
@@ -172,16 +203,67 @@ async function handleAuth(clientId: string, token: string) {
   const client = clients.get(clientId);
   if (!client) return;
 
-  const payload = await AuthService.validateSession(token);
-  
-  if (payload) {
-    client.userId = payload.userId;
-    client.username = payload.username;
-    
+  if (!token) {
     sendToClient(clientId, {
       event: WSEvent.AUTH,
-      data: { success: true, username: payload.username },
+      data: { success: false, error: 'Token is required' },
     });
+    return;
+  }
+
+  const payload = await AuthService.validateSession(token);
+
+  if (payload) {
+    // Check if user is banned
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: payload.userId },
+        select: { banned: true, username: true },
+      });
+
+      if (!user) {
+        sendToClient(clientId, {
+          event: WSEvent.AUTH,
+          data: { success: false, error: 'User not found' },
+        });
+        return;
+      }
+
+      if (user.banned) {
+        logger.warn(`[WebSocket] Banned user attempted to connect: ${user.username}`);
+        sendToClient(clientId, {
+          event: WSEvent.AUTH,
+          data: { success: false, error: 'User is banned' },
+        });
+        client.ws.close(4003, 'User is banned');
+        return;
+      }
+
+      // Authentication successful
+      client.isAuthenticated = true;
+      client.userId = payload.userId;
+      client.username = user.username;
+      client.role = payload.role;
+
+      // Clear authentication timeout
+      if (client.authTimeout) {
+        clearTimeout(client.authTimeout);
+        client.authTimeout = undefined;
+      }
+
+      sendToClient(clientId, {
+        event: WSEvent.AUTH,
+        data: { success: true, username: user.username, role: payload.role },
+      });
+
+      logger.info(`[WebSocket] Client authenticated: ${user.username} (${payload.role})`);
+    } catch (error) {
+      logger.error('[WebSocket] Error checking user ban status:', error);
+      sendToClient(clientId, {
+        event: WSEvent.AUTH,
+        data: { success: false, error: 'Authentication error' },
+      });
+    }
   } else {
     sendToClient(clientId, {
       event: WSEvent.AUTH,

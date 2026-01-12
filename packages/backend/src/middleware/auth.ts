@@ -83,3 +83,62 @@ export function requireAdmin(
 
   next();
 }
+
+/**
+ * Middleware to check if user has required role(s)
+ *
+ * @param roles - Array of allowed roles
+ * @returns Middleware function
+ *
+ * @example
+ * // Only admins can access
+ * app.get('/admin', authenticateToken, requireRole(['ADMIN']), handler)
+ *
+ * // Both users and admins can access
+ * app.get('/profile', authenticateToken, requireRole(['USER', 'ADMIN']), handler)
+ */
+export function requireRole(roles: Array<'USER' | 'ADMIN'>) {
+  return (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return next(new AppError(401, 'Authentication required'));
+    }
+
+    if (!roles.includes(req.user.role)) {
+      return next(new AppError(403, `Insufficient permissions. Required: ${roles.join(' or ')}, Provided: ${req.user.role}`));
+    }
+
+    next();
+  };
+}
+
+/**
+ * Middleware to check if user is the owner of a resource or has admin role
+ *
+ * @param getUserIdFn - Function to extract user ID from request params/body
+ * @returns Middleware function
+ *
+ * @example
+ * // User can only edit their own profile, admins can edit any
+ * app.put('/users/:id', authenticateToken, requireOwnership('id'), updateUserHandler)
+ */
+export function requireOwnership(getUserIdFn: (req: AuthRequest) => string) {
+  return (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return next(new AppError(401, 'Authentication required'));
+    }
+
+    // Admins can access any resource
+    if (req.user.role === 'ADMIN') {
+      return next();
+    }
+
+    // Check if user owns the resource
+    const resourceUserId = getUserIdFn(req);
+    if (req.user.userId !== resourceUserId) {
+      return next(new AppError(403, 'You can only access your own resources'));
+    }
+
+    next();
+  };
+}
+

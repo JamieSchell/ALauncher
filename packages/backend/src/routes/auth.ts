@@ -10,6 +10,7 @@ import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { validate } from '../validation';
 import { logger } from '../utils/logger';
 import { createAuthLogData } from '../utils/logSanitizer';
+import { authLimiter, registerLimiter } from '../middleware/rateLimiter';
 
 const router = Router();
 
@@ -35,18 +36,12 @@ const registerSchema = z.object({
  */
 router.post(
   '/login',
+  authLimiter,
   validate(loginSchema, 'body'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { login, password } = req.body;
       const ipAddress = req.ip || req.socket.remoteAddress || 'unknown';
-
-      // Check rate limit
-      const isRateLimited = await AuthService.checkRateLimit(ipAddress);
-      if (isRateLimited) {
-        logger.info('Authentication rate limit exceeded', createAuthLogData({ login, ipAddress }));
-        throw new AppError(429, 'Too many authentication attempts. Please try again later.');
-      }
 
       const result = await AuthService.authenticate(login, password, ipAddress);
 
@@ -63,7 +58,7 @@ router.post(
 
       // Decode token to get role
       const payload = AuthService.verifyToken(result.accessToken!);
-      
+
       res.json({
         success: true,
         data: {
@@ -84,6 +79,7 @@ router.post(
  */
 router.post(
   '/register',
+  registerLimiter,
   validate(registerSchema, 'body'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
