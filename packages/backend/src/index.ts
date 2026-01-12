@@ -110,10 +110,16 @@ async function bootstrap() {
     next();
   });
 
-  // Body parsing middleware
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: true }));
-  
+  // Body parsing middleware with size limits to prevent DoS attacks
+  app.use(express.json({
+    limit: '1mb', // Limit JSON body to 1MB
+    strict: true  // Only accept objects and arrays
+  }));
+  app.use(express.urlencoded({
+    extended: true,
+    limit: '1mb' // Limit URL-encoded body to 1MB
+  }));
+
   // Serve uploaded files (skins/cloaks) with explicit security headers
   app.use('/uploads', (req, res, next) => {
     const origin = req.headers.origin as string | undefined;

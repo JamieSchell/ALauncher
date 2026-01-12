@@ -26,7 +26,18 @@ const registerSchema = z.object({
     .max(16, 'Username must be 3-16 characters')
     .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores')
     .trim(),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  password: z
+    .string()
+    .min(8, 'Password must be at least 8 characters')
+    .max(128, 'Password must not exceed 128 characters')
+    .refine(
+      (password) => /[a-zA-Z0-9]/.test(password),
+      'Password must contain at least one letter or number'
+    )
+    .refine(
+      (password) => !/^(password|123456|qwerty|admin|letmein)$/i.test(password),
+      'Password is too common. Please choose a more secure password.'
+    ),
   email: z.string().email('Invalid email address').optional(),
 });
 
