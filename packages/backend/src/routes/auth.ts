@@ -8,6 +8,8 @@ import { AuthService } from '../services/auth';
 import { AppError } from '../middleware/errorHandler';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { validate } from '../validation';
+import { logger } from '../utils/logger';
+import { createAuthLogData } from '../utils/logSanitizer';
 
 const router = Router();
 
@@ -38,18 +40,22 @@ router.post(
     try {
       const { login, password } = req.body;
       const ipAddress = req.ip || req.socket.remoteAddress || 'unknown';
-      
-      console.log('Login attempt:', { login, ipAddress });
 
       // Check rate limit
       const isRateLimited = await AuthService.checkRateLimit(ipAddress);
       if (isRateLimited) {
+        logger.info('Authentication rate limit exceeded', createAuthLogData({ login, ipAddress }));
         throw new AppError(429, 'Too many authentication attempts. Please try again later.');
       }
 
       const result = await AuthService.authenticate(login, password, ipAddress);
-      
-      console.log('Authentication result:', { success: result.success, error: result.error });
+
+      // Log authentication attempt (without sensitive data)
+      if (result.success) {
+        logger.info('Authentication successful', createAuthLogData({ login, ipAddress, success: true }));
+      } else {
+        logger.warn('Authentication failed', createAuthLogData({ login, ipAddress, success: false }));
+      }
 
       if (!result.success) {
         throw new AppError(401, result.error || 'Authentication failed');

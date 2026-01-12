@@ -23,7 +23,43 @@ export const config = {
   },
   
   jwt: {
-    secret: process.env.JWT_SECRET || 'your-secret-key-change-in-production',
+    secret: (() => {
+      const secret = process.env.JWT_SECRET;
+
+      // Check if secret is set
+      if (!secret) {
+        throw new Error(
+          'JWT_SECRET environment variable is not set. ' +
+          'Please set a secure JWT secret in your .env file (minimum 32 characters).'
+        );
+      }
+
+      // Check minimum length
+      if (secret.length < 32) {
+        throw new Error(
+          `JWT_SECRET must be at least 32 characters long. Current length: ${secret.length}`
+        );
+      }
+
+      // Check for default/insecure values
+      const insecureSecrets = [
+        'your-secret-key-change-in-production',
+        'secret',
+        'jwt-secret',
+        'change-me',
+        'example-secret',
+        'test-secret'
+      ];
+
+      if (insecureSecrets.includes(secret.toLowerCase())) {
+        throw new Error(
+          'JWT_SECRET is using a default/insecure value. ' +
+          'Please generate a secure random secret (e.g., using: openssl rand -base64 64)'
+        );
+      }
+
+      return secret;
+    })(),
     expiry: process.env.JWT_EXPIRY || '24h',
   },
   

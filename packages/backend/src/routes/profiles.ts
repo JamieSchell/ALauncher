@@ -10,6 +10,7 @@ import { sign } from '../services/crypto';
 import { authenticateToken, requireAdmin, AuthRequest } from '../middleware/auth';
 import { EconomyLeaderboardConfig } from '@modern-launcher/shared';
 import { getEconomyLeaderboard } from '../services/economyLeaderboard';
+import { validateFilename, PathValidationError } from '../utils/pathValidation';
 
 const router = Router();
 
@@ -102,8 +103,16 @@ router.post(
       if (!clientDirectory) {
         clientDirectory = profileData.title.replace(/[^a-zA-Z0-9_.-]/g, '_');
       }
-      // Basic path traversal protection
-      clientDirectory = clientDirectory.replace(/\.\.\//g, '').replace(/\.\.\\/g, '');
+
+      // Validate clientDirectory for security
+      try {
+        clientDirectory = validateFilename(clientDirectory);
+      } catch (error) {
+        if (error instanceof PathValidationError) {
+          throw new AppError(400, `Invalid client directory: ${error.message}`);
+        }
+        throw error;
+      }
 
 
       // Ensure arrays are properly formatted
@@ -202,8 +211,15 @@ router.put(
       if (profileData.enabled !== undefined) updateData.enabled = profileData.enabled;
       if (profileData.economyConfig !== undefined) updateData.economyConfig = profileData.economyConfig;
       if (profileData.clientDirectory !== undefined) {
-        // Basic path traversal protection
-        updateData.clientDirectory = profileData.clientDirectory.replace(/\.\.\//g, '').replace(/\.\.\\/g, '');
+        // Validate clientDirectory for security
+        try {
+          updateData.clientDirectory = validateFilename(profileData.clientDirectory);
+        } catch (error) {
+          if (error instanceof PathValidationError) {
+            throw new AppError(400, `Invalid client directory: ${error.message}`);
+          }
+          throw error;
+        }
       }
 
     const profile = await prisma.clientProfile.update({

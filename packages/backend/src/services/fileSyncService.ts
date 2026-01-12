@@ -14,6 +14,7 @@ import { broadcastToAll } from '../websocket';
 import { WSEvent } from '@modern-launcher/shared';
 import { prisma } from './database';
 import { ProgressBar, formatBytes, formatDuration } from '../utils/progressBar';
+import { validateFilename, PathValidationError } from '../utils/pathValidation';
 
 // Store watcher instance for graceful shutdown
 let fileWatcher: FSWatcher | null = null;
@@ -121,6 +122,20 @@ async function scanDirectory(dirPath: string, basePath: string = dirPath): Promi
  * Синхронизировать файлы версии с базой данных
  */
 async function syncVersionFiles(version: string): Promise<{ added: number; updated: number; errors: number }> {
+  // Validate version parameter for security
+  try {
+    const validatedVersion = validateFilename(version);
+    if (validatedVersion !== version) {
+      logger.warn(`[FileSync] Version name sanitized: ${version} -> ${validatedVersion}`);
+    }
+  } catch (error) {
+    if (error instanceof PathValidationError) {
+      logger.error(`[FileSync] Invalid version name: ${version} - ${error.message}`);
+      return { added: 0, updated: 0, errors: 1 };
+    }
+    throw error;
+  }
+
   const versionDir = path.join(config.paths.updates, version);
   
   // Проверить существование директории
