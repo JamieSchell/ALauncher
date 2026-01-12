@@ -15,7 +15,9 @@ import { initializeDatabase, disconnectDatabase } from './services/database';
 import { initializeKeys } from './services/crypto';
 import { apiLimiter } from './middleware/rateLimiter';
 import { requestIdMiddleware } from './middleware/requestId';
+import { metricsMiddleware } from './middleware/metrics';
 import { auditMiddleware, cleanupOldAuditLogs } from './services/auditLog';
+import { metricsService } from './services/metrics';
 
 // Import routes
 import authRoutes from './routes/auth';
@@ -93,6 +95,9 @@ async function bootstrap() {
 
   // Request ID middleware (must be early for tracing)
   app.use(requestIdMiddleware);
+
+  // Metrics middleware (tracks requests and response times)
+  app.use(metricsMiddleware);
 
   // Security middleware with enhanced headers
   app.use(helmet({
@@ -243,8 +248,53 @@ async function bootstrap() {
       status: 'ok',
       timestamp: new Date().toISOString(),
       version: '1.0.0',
+      metrics: metricsService.getSummary(),
     });
   });
+
+  // Metrics endpoint (admin only - for monitoring)
+  app.get('/api/metrics', (req, res) => {
+    const metrics = metricsService.getMetrics();
+    res.json({
+      success: true,
+      data: {
+        uptime: Math.floor(metrics.uptime / 1000),
+        uptimeFormatted: formatUptime(metrics.uptime),
+        requests: {
+          total: metrics.requests.total,
+          byMethod: metrics.requests.byMethod,
+          byPath: Object.entries(metrics.requests.byPath)
+            .sort(([, a], [, b]) => b - a)
+            .slice(0, 20)
+            .reduce((acc, [path, count]) => ({ ...acc, [path]: count }), {}),
+          byStatus: metrics.requests.byStatus,
+        },
+        responseTimes: {
+          avg: Math.round(metrics.avgResponseTime),
+          min: metrics.responseTimes.min === Infinity ? 0 : metrics.responseTimes.min,
+          max: metrics.responseTimes.max,
+        },
+        errors: {
+          total: metrics.errors.total,
+          byType: metrics.errors.byType,
+        },
+        activeConnections: metrics.activeConnections,
+      },
+    });
+  });
+
+  // Format uptime as readable string
+  function formatUptime(ms: number): string {
+    const seconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+
+    if (days > 0) return `${days}d ${hours % 24}h`;
+    if (hours > 0) return `${hours}h ${minutes % 60}m`;
+    if (minutes > 0) return `${minutes}m ${seconds % 60}s`;
+    return `${seconds}s`;
+  }
 
   // Multer error handling middleware (must be before general error handler)
   app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

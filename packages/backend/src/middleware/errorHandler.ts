@@ -7,6 +7,7 @@ import { logger } from '../utils/logger';
 import { prisma } from '../services/database';
 import { LauncherErrorType } from '@prisma/client';
 import { ErrorCodeV1 } from '@modern-launcher/shared';
+import { metricsService } from '../services/metrics';
 import os from 'os';
 
 export class AppError extends Error {
@@ -158,11 +159,17 @@ export function errorHandler(
   const errorMessage = err.message || String(err);
   const errorCode =
     err instanceof AppError && err.code ? err.code : mapStatusToErrorCode(statusCode);
-  
+
+  // Determine error type for metrics
+  const errorType = determineErrorType(err, req);
+
+  // Record error in metrics
+  metricsService.recordError(errorType);
+
   // Skip logging for optional .blockmap files (they're not errors)
-  const isBlockmapError = errorMessage.includes('blockmap') && 
+  const isBlockmapError = errorMessage.includes('blockmap') &&
                           (errorMessage.includes('not found') || statusCode === 404);
-  
+
   // Log to console (only for non-4xx errors and not for optional .blockmap files)
   if (!isBlockmapError && statusCode >= 500) {
     if (err instanceof AppError) {
