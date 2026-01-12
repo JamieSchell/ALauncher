@@ -1488,14 +1488,15 @@ class AuthService {
 - [x] Implement WebSocket authentication - ✅ Commit 6aa0808
 - [x] Add security headers - ✅ Commit 6aa0808
 
-### Phase 3: Medium Priority (Month 2) - 🔄 IN PROGRESS
+### Phase 3: Medium Priority (Month 2) - 🔄 33% COMPLETE
 - [x] ~~Create health check endpoint~~ - Already exists (`/health`)
+- [x] Add request size limits - ✅ Commit 9cd0ee4
+- [x] Add password complexity requirements - ✅ Commit 9cd0ee4
 - [ ] Implement caching
 - [ ] Add comprehensive logging
 - [ ] Add metrics/monitoring
 - [ ] Implement audit logging
 - [ ] Add database indexes
-- [ ] Add request size limits
 
 ### Phase 4: Low Priority (Month 3)
 - [ ] Refactor to repository pattern
@@ -1548,6 +1549,19 @@ class AuthService {
 - Token rotation on refresh
 - POST /api/auth/refresh endpoint
 - Returns both access and refresh tokens
+
+**Request Size Limits (Phase 3.1):**
+- 1MB limit for JSON body
+- 1MB limit for URL-encoded body
+- Strict mode for JSON (objects/arrays only)
+- Prevents DoS via large payloads
+
+**Password Complexity (Phase 3.2):**
+- Minimum 8 characters (up from 6)
+- Maximum 128 characters
+- Requires at least one letter or number
+- Blocks common passwords (password, 123456, qwerty, admin, letmein)
+- Balanced for gaming audience
 
 ---
 
