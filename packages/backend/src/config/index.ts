@@ -61,6 +61,7 @@ export const config = {
       return secret;
     })(),
     expiry: process.env.JWT_EXPIRY || '24h',
+    refreshExpiry: process.env.JWT_REFRESH_EXPIRY || '30d',
   },
   
   rsa: {

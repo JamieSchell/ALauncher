@@ -64,6 +64,8 @@ router.post(
         data: {
           playerProfile: result.playerProfile,
           accessToken: result.accessToken,
+          refreshToken: result.refreshToken,
+          refreshExpiresIn: result.refreshExpiresIn,
           role: payload?.role || 'USER',
         },
       });
@@ -119,6 +121,37 @@ router.post('/logout', authenticateToken, async (req: AuthRequest, res, next) =>
     res.json({
       success: true,
       message: 'Logged out successfully',
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * POST /api/auth/refresh
+ * Refresh access token using refresh token
+ */
+router.post('/refresh', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      throw new AppError(400, 'Refresh token is required');
+    }
+
+    const result = await AuthService.refreshAccessToken(refreshToken);
+
+    if (!result.success) {
+      throw new AppError(401, result.error || 'Token refresh failed');
+    }
+
+    res.json({
+      success: true,
+      data: {
+        accessToken: result.accessToken,
+        refreshToken: result.refreshToken,
+        refreshExpiresIn: result.refreshExpiresIn,
+      },
     });
   } catch (error) {
     next(error);

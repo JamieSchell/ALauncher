@@ -100,13 +100,13 @@ export class AuthService {
 
   /**
    * Generate JWT access token for authenticated user
-   * 
+   *
    * Pure function: no side effects, generates token from payload.
    * Token expiration is controlled by `config.jwt.expiry`.
-   * 
+   *
    * @param payload - User data to encode in token (userId, username, uuid, role)
    * @returns Signed JWT token string
-   * 
+   *
    * @example
    * ```ts
    * const token = AuthService.generateToken({
@@ -121,6 +121,24 @@ export class AuthService {
     return jwt.sign(payload, config.jwt.secret, {
       expiresIn: String(config.jwt.expiry),
     } as jwt.SignOptions);
+  }
+
+  /**
+   * Generate refresh token for long-term session management
+   *
+   * Pure function: no side effects, generates cryptographically random token.
+   * Refresh tokens are longer-lived than access tokens (configurable, default 30 days).
+   *
+   * @returns Cryptographically random refresh token string
+   *
+   * @example
+   * ```ts
+   * const refreshToken = AuthService.generateRefreshToken();
+   * // Store in database with session
+   * ```
+   */
+  static generateRefreshToken(): string {
+    return crypto.randomBytes(64).toString('hex');
   }
 
   /**
@@ -174,6 +192,8 @@ export class AuthService {
     success: boolean;
     playerProfile?: PlayerProfile;
     accessToken?: string;
+    refreshToken?: string;
+    refreshExpiresIn?: number;
     error?: string;
   }> {
     try {
@@ -239,12 +259,20 @@ export class AuthService {
         console.log(`[Auth] Deleted ${deletedCount.count} old session(s) for user: ${user.username} (limit: ${MAX_CONCURRENT_SESSIONS})`);
       }
 
-      // Create new session
+      // Generate refresh token (long-lived, 30 days)
+      const refreshToken = this.generateRefreshToken();
+
+      // Calculate refresh token expiry (30 days from now)
+      const refreshExpiryDate = new Date();
+      refreshExpiryDate.setDate(refreshExpiryDate.getDate() + 30);
+
+      // Create new session with both access and refresh tokens
       const session = await prisma.session.create({
         data: {
           userId: user.id,
           accessToken,
-          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+          refreshToken,
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours for access token
           ipAddress,
           userAgent: undefined, // Can be added from request headers later
         },
@@ -273,6 +301,8 @@ export class AuthService {
         success: true,
         playerProfile,
         accessToken,
+        refreshToken,
+        refreshExpiresIn: 30 * 24 * 60 * 60, // 30 days in seconds
       };
     } catch (error: any) {
       console.error('Authentication error:', error);
@@ -637,5 +667,90 @@ export class AuthService {
       },
     });
     return result.count;
+  }
+
+  /**
+   * Refresh access token using refresh token (with token rotation)
+   *
+   * Side effects:
+   * - Validates refresh token exists and belongs to a valid user
+   * - Generates new access token
+   * - Rotates refresh token (invalidates old, issues new)
+   * - Updates session in database
+   *
+   * @param refreshToken - Refresh token to validate
+   * @returns New tokens pair on success, error on failure
+   *
+   * @example
+   * ```ts
+   * const result = await AuthService.refreshAccessToken('refresh-token-123');
+   * if (result.success) {
+   *   // Use result.accessToken and result.refreshToken (new tokens)
+   * }
+   * ```
+   */
+  static async refreshAccessToken(refreshToken: string): Promise<{
+    success: boolean;
+    accessToken?: string;
+    refreshToken?: string;
+    refreshExpiresIn?: number;
+    error?: string;
+  }> {
+    try {
+      // Find session with this refresh token
+      const session = await prisma.session.findUnique({
+        where: { refreshToken },
+        include: { user: true },
+      });
+
+      if (!session) {
+        return { success: false, error: 'Invalid refresh token' };
+      }
+
+      // Check if user is banned
+      if (session.user.banned) {
+        // Delete session for banned user
+        await prisma.session.delete({
+          where: { id: session.id },
+        });
+        return { success: false, error: 'User is banned' };
+      }
+
+      // Generate new access token
+      const payload: JWTPayload = {
+        userId: session.user.id,
+        username: session.user.username,
+        uuid: session.user.uuid,
+        role: session.user.role,
+      };
+      const newAccessToken = this.generateToken(payload);
+
+      // Generate new refresh token (token rotation)
+      const newRefreshToken = this.generateRefreshToken();
+
+      // Update session with new tokens
+      await prisma.session.update({
+        where: { id: session.id },
+        data: {
+          accessToken: newAccessToken,
+          refreshToken: newRefreshToken,
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
+          lastUsedAt: new Date(),
+        },
+      });
+
+      return {
+        success: true,
+        accessToken: newAccessToken,
+        refreshToken: newRefreshToken,
+        refreshExpiresIn: 30 * 24 * 60 * 60, // 30 days in seconds
+      };
+    } catch (error: any) {
+      console.error('Refresh token error:', error);
+      return {
+        success: false,
+        error: error.message || 'Token refresh failed',
+      };
+    }
   }
 }
