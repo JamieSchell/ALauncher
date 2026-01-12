@@ -1,775 +1,314 @@
 /**
- * Login Page - Premium Professional UI/UX Design
- * Senior UX/UI Designer Implementation 2025
+ * Cyberpunk Login Page - Full Design from /desing
+ * Techno-Magic Design System
  */
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  LogIn, 
-  UserPlus, 
-  Minus, 
-  Square, 
-  X, 
-  ChevronDown, 
-  Info,
-  User,
-  Lock,
-  Mail,
-  Eye,
-  EyeOff,
-  AlertCircle,
-  Gamepad2,
-  ArrowRight,
-  Sparkles
-} from 'lucide-react';
+import { Shield, Zap, Lock, Fingerprint, Hexagon, ScanLine, Minus, Square, X } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { authAPI } from '../api/auth';
 import { useToast } from '../hooks/useToast';
 import { ToastContainer } from '../components/Toast';
 import { useTranslation } from '../hooks/useTranslation';
-import LanguageSwitcher from '../components/LanguageSwitcher';
-import { useOptimizedAnimation } from '../hooks/useOptimizedAnimation';
+import Input from '../components/ui/Input';
+import Button from '../components/ui/Button';
+
+const SAVED_USERNAME_KEY = 'alauncher-saved-username';
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const { setAuth } = useAuthStore();
-  const { toasts, showInfo, showError, showSuccess, removeToast } = useToast();
+  const { toasts, showError, showSuccess, removeToast } = useToast();
   const { t } = useTranslation();
-  const { getAnimationProps, shouldAnimate } = useOptimizedAnimation();
-  
-  const [mode, setMode] = useState<'login' | 'register'>('login');
-  const [username, setUsername] = useState('');
+
+  // Load saved username on mount
+  const [username, setUsername] = useState(() => {
+    try {
+      return localStorage.getItem(SAVED_USERNAME_KEY) || '';
+    } catch {
+      return '';
+    }
+  });
   const [password, setPassword] = useState('');
-  const [email, setEmail] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+  const [stage, setStage] = useState<'IDLE' | 'SCANNING' | 'GRANTED' | 'ERROR'>('IDLE');
+
+  // Generate unique IDs for form fields
+  const usernameId = 'login-username';
+  const passwordId = 'login-password';
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
-  const [launcherVersion, setLauncherVersion] = useState<string | null>(null);
-  
-  // Validation states
   const [usernameError, setUsernameError] = useState('');
   const [passwordError, setPasswordError] = useState('');
-  const [emailError, setEmailError] = useState('');
 
-  // Real-time validation with toast notifications
-  const validateUsername = (value: string, showToastNotification = false) => {
-    if (mode === 'register') {
-      if (value.length > 0 && value.length < 3) {
-        setUsernameError(t('validation.usernameMinLength'));
-        if (showToastNotification) {
-          showInfo(t('validation.usernameMinLength'));
-        }
-        return false;
-      }
-      if (value.length > 16) {
-        setUsernameError(t('validation.usernameMaxLength16'));
-        if (showToastNotification) {
-          showInfo(t('validation.usernameMaxLength16'));
-        }
-        return false;
-      }
-      if (value.length > 0 && !/^[a-zA-Z0-9_]+$/.test(value)) {
-        setUsernameError(t('validation.usernameInvalidChars'));
-        if (showToastNotification) {
-          showInfo(t('validation.usernameInvalidChars'));
-        }
-        return false;
-      }
+  const validateUsername = (value: string): boolean => {
+    if (!value || value.trim().length === 0) {
+      setUsernameError('Username is required');
+      return false;
+    }
+    if (value.length < 3) {
+      setUsernameError('Username must be at least 3 characters');
+      return false;
+    }
+    if (value.length > 20) {
+      setUsernameError('Username must be less than 20 characters');
+      return false;
+    }
+    if (!/^[a-zA-Z0-9_-]+$/.test(value)) {
+      setUsernameError('Username can only contain letters, numbers, underscore and dash');
+      return false;
     }
     setUsernameError('');
     return true;
   };
 
-  const validatePassword = (value: string, showToastNotification = false) => {
-    if (mode === 'register' && value.length > 0 && value.length < 6) {
-      setPasswordError(t('validation.passwordMinLength'));
-      if (showToastNotification) {
-        showInfo(t('validation.passwordMinLength'));
-      }
+  const validatePassword = (value: string): boolean => {
+    if (!value || value.trim().length === 0) {
+      setPasswordError('Password is required');
+      return false;
+    }
+    if (value.length < 6) {
+      setPasswordError('Password must be at least 6 characters');
       return false;
     }
     setPasswordError('');
     return true;
   };
 
-  const validateEmail = (value: string, showToastNotification = false) => {
-    if (!value || value.trim() === '') {
-      setEmailError(t('validation.emailRequired'));
-      if (showToastNotification) {
-        showInfo(t('validation.required') + '. ' + t('validation.emailRequired'));
-      }
-      return false;
-    }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-      setEmailError(t('validation.emailInvalid'));
-      if (showToastNotification) {
-        showInfo(t('validation.emailInvalid'));
-      }
-      return false;
-    }
-    setEmailError('');
-    return true;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleLogin = async () => {
     setError('');
     setSuccess('');
-    
-    // Check for empty required fields and show toast
-    if (!username) {
-      setUsernameError(t('validation.usernameRequired'));
-      showInfo(t('validation.fillOutField') + '. ' + t('validation.usernameRequired'));
-      return;
-    }
-    
-    if (!password) {
-      setPasswordError(t('validation.passwordRequired'));
-      showInfo(t('validation.fillOutField') + '. ' + t('validation.passwordRequired'));
-      return;
-    }
-    
-    if (mode === 'register' && !email) {
-      setEmailError(t('validation.emailRequired'));
-      showInfo(t('validation.fillOutField') + '. ' + t('validation.emailRequired'));
-      return;
-    }
-    
-    // Validate with toast notifications
-    const isUsernameValid = validateUsername(username, false);
-    const isPasswordValid = validatePassword(password, false);
-    const isEmailValid = mode === 'register' ? validateEmail(email, false) : true;
 
-    // Show toast notifications for invalid fields
-    if (!isUsernameValid) {
-      validateUsername(username, true);
-    }
-    if (!isPasswordValid) {
-      validatePassword(password, true);
-    }
-    if (mode === 'register' && !isEmailValid) {
-      validateEmail(email, true);
-    }
+    const isUsernameValid = validateUsername(username);
+    const isPasswordValid = validatePassword(password);
 
-    if (!isUsernameValid || !isPasswordValid || !isEmailValid) {
-      // Show general validation error toast
-      if (mode === 'register') {
-        showInfo(t('validation.fillAllRequiredFields'));
-      } else {
-        showInfo(t('validation.fillAllFields'));
-      }
+    if (!isUsernameValid || !isPasswordValid) {
       return;
     }
 
+    setStage('SCANNING');
     setLoading(true);
 
     try {
-      if (mode === 'login') {
-        const result = await authAPI.login(username, password);
+      const result = await authAPI.login(username, password);
+
+      // Simulate scanning effect
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      if (result.success && result.accessToken && result.playerProfile) {
+        setStage('GRANTED');
+        setAuth(result.accessToken, result.playerProfile, result.role || 'USER');
         
-        if (result.success && result.accessToken && result.playerProfile) {
-          showSuccess(t('auth.welcomeBack') + '!');
-          setTimeout(() => {
-            setAuth(result.accessToken, result.playerProfile, result.role || 'USER');
-            navigate('/');
-          }, 500);
-        } else {
-          const errorMsg = result.error || t('errors.loginFailed');
-          setError(errorMsg);
-          showError(errorMsg);
+        // Automatically save username for next time
+        try {
+          localStorage.setItem(SAVED_USERNAME_KEY, username);
+        } catch (error) {
+          console.warn('Failed to save username:', error);
         }
+        
+        await showSuccess('Login successful! Redirecting...');
+        setTimeout(() => {
+          navigate('/');
+        }, 1000);
       } else {
-        const result = await authAPI.register(username, password, email);
-        if (result.success) {
-          showSuccess(t('validation.registrationSuccessful'));
-          setSuccess(t('validation.registrationSuccessful'));
-          setTimeout(() => {
-            setMode('login');
-            setError('');
-            setSuccess('');
-            setUsername('');
-            setPassword('');
-            setEmail('');
-          }, 2000);
-        } else {
-          const errorMsg = result.error || t('errors.registrationFailed');
-          setError(errorMsg);
-          showError(errorMsg);
-        }
+        setStage('ERROR');
+        setError(result.error || 'Login failed. Please check your credentials.');
+        await showError(result.error || 'Login failed');
+        setTimeout(() => setStage('IDLE'), 2000);
       }
-    } catch (err: any) {
-      console.error('Auth error:', err);
-      const errorMsg = err.response?.data?.error || err.message || t('errors.anErrorOccurred');
-      setError(errorMsg);
-      showError(errorMsg);
+    } catch (error: any) {
+      console.error('Login error:', error);
+      setStage('ERROR');
+      const errorMessage = error.message || 'An unexpected error occurred';
+      setError(errorMessage);
+      await showError(errorMessage);
+      setTimeout(() => setStage('IDLE'), 2000);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleMinimize = () => {
-    if (window.electronAPI) {
-      window.electronAPI.minimizeWindow();
-    }
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    handleLogin();
   };
-
-  const handleMaximize = () => {
-    if (window.electronAPI) {
-      window.electronAPI.maximizeWindow();
-    }
-  };
-
-  const handleClose = () => {
-    if (window.electronAPI) {
-      window.electronAPI.closeWindow();
-    }
-  };
-
-  const handleMinimizeToTray = () => {
-    if (window.electronAPI) {
-      window.electronAPI.minimizeToTray();
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent, action: () => void) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      action();
-    }
-  };
-
-  // Get launcher version
-  useEffect(() => {
-    const getVersion = async () => {
-      if (window.electronAPI) {
-        try {
-          const version = await window.electronAPI.getAppVersion();
-          setLauncherVersion(version);
-        } catch (error) {
-          console.error('Failed to get launcher version:', error);
-        }
-      } else {
-        setLauncherVersion('1.0.143');
-      }
-    };
-    
-    getVersion();
-    
-    const interval = setInterval(() => {
-      getVersion();
-    }, 30000);
-    
-    return () => {
-      clearInterval(interval);
-    };
-  }, []);
-
-  // Clear errors when switching modes
-  useEffect(() => {
-    setError('');
-    setSuccess('');
-    setUsernameError('');
-    setPasswordError('');
-    setEmailError('');
-  }, [mode]);
 
   return (
-    <div className="flex flex-col min-h-screen relative window-drag overflow-hidden bg-gradient-to-br from-background-primary via-background-secondary to-background-primary">
-      {/* Skip Link for Accessibility */}
-      <a
-        href="#login-form"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-base focus:left-base focus:z-[9999] focus:px-base focus:py-sm focus:bg-primary-500 focus:text-white focus:rounded-lg focus:font-semibold focus:outline-none focus:ring-2 focus:ring-interactive-focus-primary focus:ring-offset-2 focus:ring-offset-background-primary"
-        aria-label="Skip to login form"
-      >
-        Skip to login form
-      </a>
+    <div className="h-screen w-full flex flex-col bg-dark-primary relative overflow-hidden font-mono text-white">
+      {/* Window Title Bar */}
+      <header className="h-14 flex items-center justify-between px-6 z-50 select-none bg-dark-secondary/80 backdrop-blur-md border-b border-white/10">
+        <div className="flex items-center gap-3">
+          <div className="flex space-x-1">
+            <div className="w-1 h-6 bg-techno-cyan animate-pulse" />
+            <div className="w-1 h-4 bg-magic-purple mt-2" />
+            <div className="w-1 h-5 bg-white/50 mt-1" />
+          </div>
+          <span className="font-display font-bold tracking-[0.2em] text-sm text-white">
+            || ALAUNCHER <span className="text-techno-cyan">OS</span>
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <button className="w-8 h-8 flex items-center justify-center hover:bg-white/10 text-white border border-white/20 hover:border-white/40 transition-all duration-200 rounded">
+            <Minus className="w-4 h-4" />
+          </button>
+          <button className="w-8 h-8 flex items-center justify-center hover:bg-white/10 text-white border border-white/20 hover:border-white/40 transition-all duration-200 rounded">
+            <Square className="w-3 h-3" />
+          </button>
+          <button className="w-8 h-8 flex items-center justify-center hover:bg-status-error hover:text-white text-white border border-white/20 hover:border-status-error transition-all duration-200 rounded">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      </header>
 
-      {/* Premium Top Bar - Window Controls */}
-      <motion.header
-        initial={shouldAnimate ? { opacity: 0, y: -20 } : false}
-        animate={shouldAnimate ? { opacity: 1, y: 0 } : false}
-        transition={getAnimationProps({ duration: 0.4 })}
-        className="relative z-50 window-no-drag"
-        role="banner"
-        aria-label="Application title bar"
-      >
-        <div className="absolute top-0 left-0 right-0 h-14 bg-gradient-to-b from-surface-elevated/95 via-surface-base/90 to-surface-elevated/80 backdrop-blur-xl border-b border-white/10 shadow-lg">
-          <div className="flex items-center justify-between h-full px-4">
-            {/* Left side - Logo/Brand */}
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center shadow-md shadow-primary-500/30" aria-hidden="true">
-                <Gamepad2 className="text-white" size={18} strokeWidth={2.5} />
+      {/* Immersive Background */}
+      <div className="flex-1 relative flex items-center justify-center">
+        <div className="absolute inset-0 bg-cyber-grid" />
+        <div className="absolute inset-0 scanlines opacity-20" />
+
+        {/* Rotating Runes/Rings */}
+        <div className="absolute w-[800px] h-[800px] border border-white/5 rounded-full animate-spin-slow opacity-20" style={{ borderStyle: 'dashed' }} />
+        <div className="absolute w-[600px] h-[600px] border border-techno-cyan/10 rounded-full animate-spin-slow opacity-30 animation-direction-reverse" style={{ animationDuration: '20s' }} />
+
+        {/* Main Terminal Container */}
+        <div className="relative z-10 w-full max-w-lg px-4">
+          <div className="bg-dark-panel/90 backdrop-blur-xl border border-white/10 clip-cyber-corner p-1 shadow-2xl">
+          {/* Inner Content */}
+          <div className="bg-dark-primary clip-cyber-corner p-8 relative overflow-hidden">
+
+            {/* Header */}
+            <div className="flex items-center justify-between mb-8 border-b border-white/10 pb-4">
+              <div className="flex items-center gap-3">
+                <Hexagon className="w-8 h-8 text-techno-cyan animate-pulse" />
+                <div>
+                  <h1 className="text-sm font-display font-bold tracking-widest">
+                    GATEWAY<span className="text-techno-cyan">_01</span>
+                  </h1>
+                  <div className="text-[10px] text-gray-500">SECURE CONNECTION REQUIRED</div>
+                </div>
               </div>
-              <span className="text-sm font-semibold text-heading">Modern Launcher</span>
+              <div className="text-right">
+                <div className="text-xs text-white">SYSTEM LOCKED</div>
+                <div className="text-[10px] text-gray-600">v2.0</div>
+              </div>
             </div>
 
-            {/* Right side - Controls */}
-            <div className="flex items-center gap-1" role="toolbar" aria-label="Window controls">
-              <LanguageSwitcher />
-              <motion.button
-                onClick={handleMinimize}
-                onKeyDown={(e) => handleKeyDown(e, handleMinimize)}
-                whileHover={shouldAnimate ? { scale: 1.05, backgroundColor: 'rgba(255, 255, 255, 0.1)' } : undefined}
-                whileTap={shouldAnimate ? { scale: 0.95 } : undefined}
-                className="p-2 rounded-lg hover:bg-white/10 active:bg-white/15 transition-all duration-200 group focus:outline-none focus:ring-2 focus:ring-interactive-focus-primary focus:ring-offset-2 focus:ring-offset-surface-base"
-                aria-label="Minimize window"
-                type="button"
-              >
-                <Minus size={16} className="text-white/80 group-hover:text-white transition-colors" aria-hidden="true" />
-              </motion.button>
-              <motion.button
-                onClick={handleMaximize}
-                onKeyDown={(e) => handleKeyDown(e, handleMaximize)}
-                whileHover={shouldAnimate ? { scale: 1.05, backgroundColor: 'rgba(255, 255, 255, 0.1)' } : undefined}
-                whileTap={shouldAnimate ? { scale: 0.95 } : undefined}
-                className="p-2 rounded-lg hover:bg-white/10 active:bg-white/15 transition-all duration-200 group focus:outline-none focus:ring-2 focus:ring-interactive-focus-primary focus:ring-offset-2 focus:ring-offset-surface-base"
-                aria-label="Maximize window"
-                type="button"
-              >
-                <Square size={14} className="text-white/80 group-hover:text-white transition-colors" aria-hidden="true" />
-              </motion.button>
-              <motion.button
-                onClick={handleMinimizeToTray}
-                onKeyDown={(e) => handleKeyDown(e, handleMinimizeToTray)}
-                whileHover={shouldAnimate ? { scale: 1.05, backgroundColor: 'rgba(255, 255, 255, 0.1)' } : undefined}
-                whileTap={shouldAnimate ? { scale: 0.95 } : undefined}
-                className="p-2 rounded-lg hover:bg-white/10 active:bg-white/15 transition-all duration-200 group focus:outline-none focus:ring-2 focus:ring-interactive-focus-primary focus:ring-offset-2 focus:ring-offset-surface-base"
-                aria-label="Minimize to system tray"
-                type="button"
-              >
-                <ChevronDown size={16} className="text-white/80 group-hover:text-white transition-colors" aria-hidden="true" />
-              </motion.button>
-              <motion.button
-                onClick={handleClose}
-                onKeyDown={(e) => handleKeyDown(e, handleClose)}
-                whileHover={shouldAnimate ? { scale: 1.05, backgroundColor: 'rgba(239, 68, 68, 0.2)' } : undefined}
-                whileTap={shouldAnimate ? { scale: 0.95 } : undefined}
-                className="p-2 rounded-lg hover:bg-red-500/20 active:bg-red-500/30 transition-all duration-200 group focus:outline-none focus:ring-2 focus:ring-interactive-focus-error focus:ring-offset-2 focus:ring-offset-surface-base"
-                aria-label="Close window"
-                type="button"
-              >
-                <X size={16} className="text-white/80 group-hover:text-red-300 transition-colors" aria-hidden="true" />
-              </motion.button>
-            </div>
+            {/* Login Form */}
+            {stage === 'IDLE' && (
+              <form onSubmit={handleSubmit} className="space-y-6 animate-fade-in-up">
+                {error && (
+                  <div className="p-4 border border-status-error/30 bg-status-error/5 clip-cyber-corner flex items-center gap-3 mb-4">
+                    <div className="w-2 h-2 bg-status-error rounded-full animate-pulse" />
+                    <span className="text-xs text-status-error">{error}</span>
+                  </div>
+                )}
+
+                {success && (
+                  <div className="p-4 border border-status-success/30 bg-status-success/5 clip-cyber-corner flex items-center gap-3 mb-4">
+                    <div className="w-2 h-2 bg-status-success rounded-full animate-pulse" />
+                    <span className="text-xs text-status-success">{success}</span>
+                  </div>
+                )}
+
+                <div className="space-y-4">
+                  <Input
+                    id={usernameId}
+                    name="username"
+                    type="text"
+                    autoComplete="username"
+                    label="NEURAL LINK ID *"
+                    placeholder="R-77334-X"
+                    leftIcon={<Fingerprint className="w-5 h-5" />}
+                    required
+                    value={username}
+                    onChange={(e) => {
+                      setUsername(e.target.value);
+                      setUsernameError('');
+                    }}
+                    onBlur={(e) => validateUsername(e.target.value)}
+                    error={usernameError}
+                    disabled={loading}
+                  />
+                  <Input
+                    id={passwordId}
+                    name="password"
+                    type="password"
+                    autoComplete="current-password"
+                    label="ACCESS KEY *"
+                    placeholder="••••••••••••"
+                    leftIcon={<Lock className="w-5 h-5" />}
+                    required
+                    value={password}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      setPasswordError('');
+                    }}
+                    onBlur={(e) => validatePassword(e.target.value)}
+                    error={passwordError}
+                    disabled={loading}
+                  />
+                </div>
+
+                <div className="pt-4">
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    className="w-full shadow-[0_0_20px_rgba(0,245,255,0.4)]"
+                    disabled={loading}
+                    isLoading={loading}
+                    leftIcon={!loading ? <Zap className="w-4 h-4" /> : undefined}
+                  >
+                    {loading ? t('login.processing') : t('login.initiateHandshake')}
+                  </Button>
+                </div>
+
+              </form>
+            )}
+
+            {/* Scanning Animation State */}
+            {stage === 'SCANNING' && (
+              <div className="py-12 flex flex-col items-center justify-center text-center space-y-6">
+                <div className="relative w-32 h-32">
+                  <div className="absolute inset-0 border-4 border-techno-cyan/20 rounded-full animate-ping" />
+                  <div className="absolute inset-0 border-t-4 border-techno-cyan rounded-full animate-spin" />
+                  <ScanLine className="absolute inset-0 m-auto w-12 h-12 text-techno-cyan animate-pulse" />
+                </div>
+                <div>
+                  <h2 className="text-xs font-bold text-white animate-pulse">VERIFYING BIOMETRICS...</h2>
+                  <p className="text-xs text-techno-cyan font-mono mt-2">Analyzing neural patterns</p>
+                </div>
+                <div className="w-full h-1 bg-dark-secondary rounded-full overflow-hidden">
+                  <div className="h-full bg-techno-cyan animate-[scan_2s_ease-in-out_infinite]" style={{ width: '100%' }} />
+                </div>
+              </div>
+            )}
+
+            {/* Granted State */}
+            {stage === 'GRANTED' && (
+              <div className="py-12 flex flex-col items-center justify-center text-center space-y-4">
+                <Shield className="w-24 h-24 text-status-success animate-bounce" />
+                <h2 className="text-2xl font-bold text-status-success tracking-widest">ACCESS GRANTED</h2>
+                <p className="text-xs text-gray-400">Welcome back, Operator.</p>
+              </div>
+            )}
+
+            {/* Error State */}
+            {stage === 'ERROR' && (
+              <div className="py-12 flex flex-col items-center justify-center text-center space-y-4">
+                <X className="w-24 h-24 text-status-error animate-pulse" />
+                <h2 className="text-2xl font-bold text-status-error tracking-widest">ACCESS DENIED</h2>
+                <p className="text-xs text-gray-400">{error}</p>
+              </div>
+            )}
+
+            {/* Footer Decor */}
+            <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-techno-cyan/50 to-transparent" />
           </div>
         </div>
-      </motion.header>
-
-      {/* Beautiful Animated Background */}
-      <div className="absolute inset-0 overflow-hidden pt-14">
-        {/* Soft Gradient Background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-background-primary via-background-secondary to-background-primary" />
-        
-        {/* Gentle Animated Orbs */}
-        {shouldAnimate && (
-          <>
-            <motion.div
-              className="absolute top-20 left-10 w-96 h-96 bg-primary-500/8 rounded-full blur-3xl"
-              animate={{
-                x: [0, 50, 0],
-                y: [0, 30, 0],
-                scale: [1, 1.1, 1],
-                opacity: [0.3, 0.5, 0.3],
-              }}
-              transition={{
-                duration: 15,
-                repeat: Infinity,
-                ease: "easeInOut",
-              }}
-            />
-            <motion.div
-              className="absolute bottom-20 right-10 w-[500px] h-[500px] bg-primary-500/6 rounded-full blur-3xl"
-              animate={{
-                x: [0, -40, 0],
-                y: [0, -50, 0],
-                scale: [1, 1.15, 1],
-                opacity: [0.2, 0.4, 0.2],
-              }}
-              transition={{
-                duration: 20,
-                repeat: Infinity,
-                ease: "easeInOut",
-                delay: 1,
-              }}
-            />
-          </>
-        )}
       </div>
 
-      {/* Main Content - Centered */}
-      <div className="flex-1 flex items-center justify-center pt-14 pb-8 px-6 relative z-10 window-no-drag">
-        <motion.div
-          initial={shouldAnimate ? { opacity: 0, y: 20, scale: 0.96 } : false}
-          animate={shouldAnimate ? { opacity: 1, y: 0, scale: 1 } : false}
-          transition={getAnimationProps({ duration: 0.6 })}
-          className="w-full max-w-[420px]"
-        >
-          {/* Card with Premium Design */}
-          <div className="relative">
-            {/* Subtle Glow */}
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-primary-500/20 via-primary-500/20 to-primary-500/20 rounded-3xl blur-xl opacity-60" />
-            
-            {/* Main Card */}
-            <div className="relative bg-surface-base/80 backdrop-blur-2xl rounded-3xl p-8 border border-white/10 shadow-2xl">
-              {/* Logo Section */}
-              <motion.div
-                initial={shouldAnimate ? { scale: 0.9, opacity: 0 } : false}
-                animate={shouldAnimate ? { scale: 1, opacity: 1 } : false}
-                transition={getAnimationProps({ duration: 0.4, delay: 0.2 })}
-                className="flex justify-center mb-8 mt-2"
-              >
-                <div className="relative">
-                  <div className="absolute inset-0 bg-primary-500/20 rounded-2xl blur-xl" />
-                  <div className="relative w-20 h-20 bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700 rounded-2xl flex items-center justify-center shadow-lg shadow-primary-500/30 border border-primary-400/20">
-                    <Gamepad2 className="text-white" size={32} strokeWidth={2.5} />
-                    {shouldAnimate && (
-                      <motion.div
-                        className="absolute -top-1 -right-1"
-                        animate={{ rotate: 360, scale: [1, 1.2, 1] }}
-                        transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                      >
-                        <Sparkles size={16} className="text-primary-300" fill="currentColor" />
-                      </motion.div>
-                    )}
-                  </div>
-                </div>
-              </motion.div>
-
-              {/* Title Section */}
-              <div className="text-center mb-8">
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={mode}
-                    initial={shouldAnimate ? { opacity: 0, y: -10 } : false}
-                    animate={shouldAnimate ? { opacity: 1, y: 0 } : false}
-                    exit={shouldAnimate ? { opacity: 0, y: 10 } : false}
-                    transition={getAnimationProps({ duration: 0.3 })}
-                  >
-                    <h1 className="text-3xl font-bold mb-2 text-heading leading-tight">
-                      {mode === 'login' ? t('auth.welcomeBack') : t('auth.createAccount')}
-                    </h1>
-                    <p className="text-body-muted text-sm leading-relaxed">
-                      {mode === 'login' ? t('auth.signInToContinue') : t('auth.joinUs')}
-                    </p>
-                  </motion.div>
-                </AnimatePresence>
-              </div>
-
-              {/* Form */}
-              <form id="login-form" onSubmit={handleSubmit} className="space-y-4" aria-label={mode === 'login' ? 'Login form' : 'Registration form'}>
-                {/* Username Field */}
-                <motion.div
-                  initial={shouldAnimate ? { opacity: 0, x: -20 } : false}
-                  animate={shouldAnimate ? { opacity: 1, x: 0 } : false}
-                  transition={getAnimationProps({ duration: 0.3, delay: 0.3 })}
-                >
-                  <label htmlFor="username-input" className="block text-sm font-medium text-body leading-normal mb-2 text-left">
-                    {t('auth.username')}
-                  </label>
-                  <div className="relative group">
-                    <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-body-subtle pointer-events-none z-10 transition-colors group-focus-within:text-primary-400" aria-hidden="true">
-                      <User size={18} />
-                    </div>
-                    <input
-                      id="username-input"
-                      type="text"
-                      value={username}
-                      onChange={(e) => {
-                        setUsername(e.target.value);
-                        validateUsername(e.target.value, false);
-                      }}
-                      onBlur={() => {
-                        if (username) {
-                          if (!validateUsername(username, false)) {
-                            validateUsername(username, true);
-                          }
-                        }
-                      }}
-                      className={`w-full pl-11 pr-4 py-3 h-11 bg-surface-elevated/70 backdrop-blur-sm border rounded-xl text-heading placeholder-text-body-subtle text-sm
-                        focus:outline-none focus:border-primary-500 focus:bg-surface-elevated/90
-                        transition-all duration-200 ${
-                        usernameError 
-                          ? 'border-error-border pr-11' 
-                          : 'border-white/10 hover:border-white/20'
-                      }`}
-                      placeholder={t('auth.username')}
-                      aria-label={t('auth.username')}
-                      aria-required="true"
-                      aria-invalid={!!usernameError}
-                      aria-describedby={usernameError ? 'username-error' : undefined}
-                      required
-                    />
-                    {usernameError && (
-                      <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-10" aria-hidden="true">
-                        <AlertCircle className="text-error-400" size={18} />
-                      </div>
-                    )}
-                  </div>
-                  {usernameError && (
-                    <motion.p
-                      id="username-error"
-                      role="alert"
-                      initial={shouldAnimate ? { opacity: 0, y: -5 } : false}
-                      animate={shouldAnimate ? { opacity: 1, y: 0 } : false}
-                      className="mt-1.5 text-xs text-error-400 flex items-center gap-1.5"
-                    >
-                      <AlertCircle size={12} aria-hidden="true" />
-                      {usernameError}
-                    </motion.p>
-                  )}
-                </motion.div>
-
-                {/* Email Field (Register only) */}
-                <AnimatePresence>
-                  {mode === 'register' && (
-                    <motion.div
-                      initial={shouldAnimate ? { opacity: 0, height: 0 } : false}
-                      animate={shouldAnimate ? { opacity: 1, height: 'auto' } : false}
-                      exit={shouldAnimate ? { opacity: 0, height: 0 } : false}
-                      transition={getAnimationProps({ duration: 0.25 })}
-                    >
-                      <label htmlFor="email-input" className="block text-sm font-medium text-body leading-normal mb-2 text-left">
-                        {t('auth.email')}
-                      </label>
-                      <div className="relative group">
-                        <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-body-subtle pointer-events-none z-10 transition-colors group-focus-within:text-primary-400" aria-hidden="true">
-                          <Mail size={18} />
-                        </div>
-                        <input
-                          id="email-input"
-                          type="email"
-                          value={email}
-                          onChange={(e) => {
-                            setEmail(e.target.value);
-                            validateEmail(e.target.value, false);
-                          }}
-                          onBlur={() => {
-                            if (email) {
-                              if (!validateEmail(email, false)) {
-                                validateEmail(email, true);
-                              }
-                            }
-                          }}
-                          className={`w-full pl-11 pr-4 py-3 h-11 bg-surface-elevated/70 backdrop-blur-sm border rounded-xl text-heading placeholder-text-body-subtle text-sm
-                            focus:outline-none focus:border-primary-500 focus:bg-surface-elevated/90
-                            transition-all duration-200 ${
-                            emailError 
-                              ? 'border-error-border pr-11' 
-                              : 'border-white/10 hover:border-white/20'
-                          }`}
-                          placeholder="your@email.com"
-                          aria-label={t('auth.email')}
-                          aria-required="true"
-                          aria-invalid={!!emailError}
-                          aria-describedby={emailError ? 'email-error' : undefined}
-                          required
-                        />
-                        {emailError && (
-                          <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-10" aria-hidden="true">
-                            <AlertCircle className="text-error-400" size={18} />
-                          </div>
-                        )}
-                      </div>
-                      {emailError && (
-                        <motion.p
-                          id="email-error"
-                          role="alert"
-                          initial={shouldAnimate ? { opacity: 0, y: -5 } : false}
-                          animate={shouldAnimate ? { opacity: 1, y: 0 } : false}
-                          className="mt-1.5 text-xs text-error-400 flex items-center gap-1.5"
-                        >
-                          <AlertCircle size={12} aria-hidden="true" />
-                          {emailError}
-                        </motion.p>
-                      )}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                {/* Password Field */}
-                <motion.div
-                  initial={shouldAnimate ? { opacity: 0, x: -20 } : false}
-                  animate={shouldAnimate ? { opacity: 1, x: 0 } : false}
-                  transition={getAnimationProps({ duration: 0.3, delay: mode === 'register' ? 0.4 : 0.35 })}
-                >
-                  <label htmlFor="password-input" className="block text-sm font-medium text-body leading-normal mb-2 text-left">
-                    {t('auth.password')}
-                  </label>
-                  <div className="relative group">
-                    <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-body-subtle pointer-events-none z-10 transition-colors group-focus-within:text-primary-400" aria-hidden="true">
-                      <Lock size={18} />
-                    </div>
-                    <input
-                      id="password-input"
-                      type={showPassword ? 'text' : 'password'}
-                      value={password}
-                      onChange={(e) => {
-                        setPassword(e.target.value);
-                        validatePassword(e.target.value, false);
-                      }}
-                      onBlur={() => {
-                        if (password) {
-                          if (!validatePassword(password, false)) {
-                            validatePassword(password, true);
-                          }
-                        }
-                      }}
-                      className={`w-full pl-11 pr-11 py-3 h-11 bg-surface-elevated/70 backdrop-blur-sm border rounded-xl text-heading placeholder-text-body-subtle text-sm
-                        focus:outline-none focus:border-primary-500 focus:bg-surface-elevated/90
-                        transition-all duration-200 ${
-                        passwordError 
-                          ? 'border-error-border pr-16' 
-                          : 'border-white/10 hover:border-white/20'
-                      }`}
-                      placeholder={t('auth.password')}
-                      aria-label={t('auth.password')}
-                      aria-required="true"
-                      aria-invalid={!!passwordError}
-                      aria-describedby={passwordError ? 'password-error' : undefined}
-                      required
-                    />
-                    <motion.button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          setShowPassword(!showPassword);
-                        }
-                      }}
-                      whileHover={shouldAnimate ? { scale: 1.1 } : undefined}
-                      whileTap={shouldAnimate ? { scale: 0.9 } : undefined}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-body-subtle hover:text-primary-400 transition-colors z-10 flex items-center justify-center w-7 h-7 rounded-lg hover:bg-interactive-hover-secondary focus:outline-none focus:ring-2 focus:ring-interactive-focus-primary"
-                      aria-label={showPassword ? 'Hide password' : 'Show password'}
-                      aria-pressed={showPassword}
-                    >
-                      {showPassword ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
-                    </motion.button>
-                    {passwordError && (
-                      <div className="absolute right-12 top-1/2 -translate-y-1/2 pointer-events-none z-10" aria-hidden="true">
-                        <AlertCircle className="text-error-400" size={18} />
-                      </div>
-                    )}
-                  </div>
-                  {passwordError && (
-                    <motion.p
-                      id="password-error"
-                      role="alert"
-                      initial={shouldAnimate ? { opacity: 0, y: -5 } : false}
-                      animate={shouldAnimate ? { opacity: 1, y: 0 } : false}
-                      className="mt-1.5 text-xs text-error-400 flex items-center gap-1.5"
-                    >
-                      <AlertCircle size={12} aria-hidden="true" />
-                      {passwordError}
-                    </motion.p>
-                  )}
-                </motion.div>
-
-                {/* Submit Button */}
-                <motion.button
-                  type="submit"
-                  disabled={loading || !!usernameError || !!passwordError || (mode === 'register' && (!!emailError || !email))}
-                  initial={shouldAnimate ? { opacity: 0, y: 20 } : false}
-                  animate={shouldAnimate ? { opacity: 1, y: 0 } : false}
-                  transition={getAnimationProps({ duration: 0.3, delay: 0.5 })}
-                  whileHover={shouldAnimate && !loading ? { scale: 1.02 } : undefined}
-                  whileTap={shouldAnimate && !loading ? { scale: 0.98 } : undefined}
-                  className="relative w-full mx-auto px-6 py-3.5 bg-gradient-to-r from-primary-500 via-primary-600 to-primary-600 
-                    text-white font-semibold rounded-xl hover:from-primary-600 hover:via-primary-700 hover:to-primary-700
-                    focus:outline-none focus:ring-2 focus:ring-interactive-focus-primary focus:ring-offset-2 focus:ring-offset-surface-base
-                    transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed 
-                    flex items-center justify-center gap-2.5 shadow-lg shadow-primary-500/30 mt-6
-                    overflow-hidden group"
-                  aria-label={mode === 'login' ? t('auth.signIn') : t('auth.createAccount')}
-                  aria-busy={loading}
-                >
-                  {/* Shimmer Effect */}
-                  {shouldAnimate && (
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-                  )}
-                  
-                  {loading ? (
-                    <>
-                      <motion.div
-                        animate={shouldAnimate ? { rotate: 360 } : false}
-                        transition={shouldAnimate ? { duration: 1, repeat: Infinity, ease: "linear" } : {}}
-                      >
-                        <Lock size={18} />
-                      </motion.div>
-                      <span className="text-sm">Processing...</span>
-                    </>
-                  ) : (
-                    <>
-                      {mode === 'login' ? <LogIn size={18} /> : <UserPlus size={18} />}
-                      <span className="text-sm">{mode === 'login' ? t('auth.signIn') : t('auth.createAccount')}</span>
-                      <ArrowRight size={16} className="opacity-80 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
-                    </>
-                  )}
-                </motion.button>
-              </form>
-
-              {/* Mode Switch */}
-              <motion.div
-                initial={shouldAnimate ? { opacity: 0 } : false}
-                animate={shouldAnimate ? { opacity: 1 } : false}
-                transition={getAnimationProps({ duration: 0.3, delay: 0.6 })}
-                className="mt-6 text-center"
-              >
-                <motion.button
-                  onClick={() => {
-                    setMode(mode === 'login' ? 'register' : 'login');
-                    setError('');
-                    setSuccess('');
-                    setUsernameError('');
-                    setPasswordError('');
-                    setEmailError('');
-                  }}
-                  whileHover={shouldAnimate ? { scale: 1.02 } : undefined}
-                  whileTap={shouldAnimate ? { scale: 0.98 } : undefined}
-                  className="text-sm text-body-muted hover:text-primary-400 transition-colors duration-200 group"
-                >
-                  {mode === 'login' ? (
-                    <>
-                      {t('auth.dontHaveAccount')}{' '}
-                      <span className="text-primary-400 font-semibold hover:text-primary-300 group-hover:underline transition-all">
-                        {t('auth.signUp')}
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      {t('auth.alreadyHaveAccount')}{' '}
-                      <span className="text-primary-400 font-semibold hover:text-primary-300 group-hover:underline transition-all">
-                        {t('auth.signIn')}
-                      </span>
-                    </>
-                  )}
-                </motion.button>
-              </motion.div>
-
-              {/* Launcher Version */}
-              {launcherVersion && (
-                <motion.div
-                  initial={shouldAnimate ? { opacity: 0 } : false}
-                  animate={shouldAnimate ? { opacity: 1 } : false}
-                  transition={getAnimationProps({ duration: 0.3, delay: 0.7 })}
-                  className="mt-6 mb-0 pt-5 border-t border-white/5 flex items-center justify-center gap-2"
-                >
-                  <Info size={12} className="text-body-dim" />
-                  <span className="text-xs text-body-dim font-medium">
-                    Launcher v{launcherVersion}
-                  </span>
-                </motion.div>
-              )}
-            </div>
-          </div>
-        </motion.div>
-      </div>
-
-      {/* Toast Container */}
       <ToastContainer toasts={toasts} onClose={removeToast} />
+      </div>
     </div>
   );
 }

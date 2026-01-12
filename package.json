@@ -7,36 +7,13 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:web\"",
-    "dev:backend": "cd packages/backend && npm run dev",
-    "dev:web": "cd packages/frontend && npm run dev",
-    "dev:desktop": "concurrently \"npm run dev:backend\" \"npm run tauri:dev\"",
-    "prod": "npm run build:shared && npm run build --workspaces",
-    "prod:backend": "cd packages/backend && npm run prod",
-    "prod:frontend": "cd packages/frontend && npm run tauri:build",
     "build": "npm run build:shared && npm run build --workspaces",
     "build:shared": "cd packages/shared && npm run build",
-    "tauri": "cd packages/frontend && npm run tauri",
-    "tauri:dev": "bash scripts/tauri-dev.sh",
     "tauri:build": "cd packages/frontend && npm run tauri:build",
-    "tauri:build:debug": "cd packages/frontend && npm run tauri:build:debug",
-    "tauri:build:release": "cd packages/frontend && npm run tauri:build:release",
-    "lint": "npm run lint --workspaces --if-present",
-    "lint:fix": "npm run lint:fix --workspaces --if-present",
-    "test": "npm run test --workspaces --if-present",
-    "typecheck": "npm run typecheck --workspaces --if-present",
-    "format": "npm run format --workspaces --if-present",
-    "format:check": "npm run format:check --workspaces --if-present"
+    "clean": "rm -rf dist-builds packages/frontend/dist packages/backend/dist packages/shared dist node_modules"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.9.6",
-    "concurrently": "^9.2.1",
-    "@typescript-eslint/eslint-plugin": "^8.0.0",
-    "@typescript-eslint/parser": "^8.0.0",
-    "eslint": "^9.0.0",
-    "eslint-plugin-react": "^7.37.0",
-    "eslint-plugin-react-hooks": "^5.1.0",
-    "prettier": "^3.3.0",
     "typescript": "^5.9.3"
   },
   "engines": {

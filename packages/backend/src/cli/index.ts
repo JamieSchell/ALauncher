@@ -104,7 +104,7 @@ export class CLI {
       try {
         const command = this.registry.getCommand(commandName);
         if (command) {
-          await command.execute(args, this.rl);
+          await command.execute(args, this.rl, commandName);
         } else {
           this.printError(`Unknown command: ${commandName}`);
           this.printInfo('Type "help" to see available commands');
@@ -151,6 +151,44 @@ export class CLI {
     console.log(`\x1b[36mℹ ${message}\x1b[0m`);
   }
 
+  async executeCommand(commandLine: string): Promise<void> {
+    // Initialize database connection if not already done
+    try {
+      await initializeDatabase();
+      logger.info('✅ Database connected for CLI');
+    } catch (error) {
+      logger.error('Failed to initialize database:', error);
+      this.printError('Failed to connect to database. Please check your configuration.');
+      throw error;
+    }
+
+    const trimmed = commandLine.trim();
+    if (!trimmed) {
+      this.printError('No command provided');
+      return;
+    }
+
+    // Parse command
+    const parts = trimmed.split(/\s+/);
+    const commandName = parts[0].toLowerCase();
+    const args = parts.slice(1);
+
+    
+    try {
+      const command = this.registry.getCommand(commandName);
+      if (command) {
+        await command.execute(args, this.rl, commandName);
+      } else {
+        this.printError(`Unknown command: ${commandName}`);
+        this.printInfo('Type "help" to see available commands');
+      }
+    } catch (error: any) {
+      this.printError(`Error executing command: ${error.message}`);
+      logger.error('CLI command error:', error);
+      throw error;
+    }
+  }
+
   private async shutdown() {
     if (!this.isRunning) return;
     this.isRunning = false;
@@ -173,9 +211,26 @@ export class CLI {
 // Start CLI if this file is run directly
 if (require.main === module) {
   const cli = new CLI();
-  cli.start().catch((error) => {
-    logger.error('Failed to start CLI:', error);
-    process.exit(1);
-  });
+
+  // Check if command line arguments are provided for non-interactive mode
+  const args = process.argv.slice(2);
+
+  if (args.length > 0) {
+    // Execute command directly and exit
+    cli.executeCommand(args.join(' '))
+      .then(() => {
+        process.exit(0);
+      })
+      .catch((error) => {
+        logger.error('Failed to execute command:', error);
+        process.exit(1);
+      });
+  } else {
+    // Start interactive mode
+    cli.start().catch((error) => {
+      logger.error('Failed to start CLI:', error);
+      process.exit(1);
+    });
+  }
 }
 

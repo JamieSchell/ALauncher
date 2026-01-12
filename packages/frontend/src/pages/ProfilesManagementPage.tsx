@@ -3,13 +3,18 @@
  */
 
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Plus, Edit, Trash2, AlertCircle, Loader2, RefreshCw } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Plus, Edit, Trash2, AlertCircle, Loader2, RefreshCw, ArrowLeft } from 'lucide-react';
 import { ClientProfile } from '@modern-launcher/shared';
 import ProfileFormModal from '../components/ProfileFormModal';
 import { useProfiles, useCreateProfile, useUpdateProfile, useDeleteProfile } from '../hooks/api';
+import { Card, Button } from '../components/ui';
+import { useTranslation } from '../hooks/useTranslation';
+import { tauriApi } from '../api/tauri';
 
 export default function ProfilesManagementPage() {
+  const navigate = useNavigate();
+  const { t } = useTranslation();
   const [showFormModal, setShowFormModal] = useState(false);
   const [editingProfile, setEditingProfile] = useState<ClientProfile | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -30,7 +35,13 @@ export default function ProfilesManagementPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this profile? This action cannot be undone.')) {
+    const confirmed = await tauriApi.showConfirmDialog({
+      title: 'ALauncher - Confirm Deletion',
+      message: 'Are you sure you want to delete this profile? This action cannot be undone.',
+      type: 'warning',
+    });
+
+    if (!confirmed) {
       return;
     }
 
@@ -40,10 +51,18 @@ export default function ProfilesManagementPage() {
       if (result.success) {
         await refetch();
       } else {
-        alert(result.error || 'Failed to delete profile');
+        await tauriApi.showMessageBox({
+          title: 'ALauncher - Error',
+          message: result.error || 'Failed to delete profile',
+          type: 'error',
+        });
       }
     } catch (error: any) {
-      alert(error.response?.data?.error || error.message || 'An error occurred');
+      await tauriApi.showMessageBox({
+        title: 'ALauncher - Error',
+        message: error.response?.data?.error || error.message || 'An error occurred',
+        type: 'error',
+      });
     } finally {
       setDeletingId(null);
     }
@@ -55,38 +74,38 @@ export default function ProfilesManagementPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-lg">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
         {/* Header Skeleton */}
-        <div className="flex items-center justify-between">
-          <div className="space-y-sm">
-            <div className="h-10 w-64 bg-gray-700/50 rounded-lg animate-pulse" />
-            <div className="h-6 w-96 bg-gray-700/30 rounded-lg animate-pulse" />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <div style={{ height: '40px', width: '256px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px', animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }} />
+            <div style={{ height: '24px', width: '384px', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '8px', animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }} />
           </div>
-          <div className="flex gap-base">
-            <div className="h-10 w-24 bg-gray-700/50 rounded-lg animate-pulse" />
-            <div className="h-10 w-32 bg-gray-700/50 rounded-lg animate-pulse" />
+          <div style={{ display: 'flex', gap: '16px' }}>
+            <div style={{ height: '40px', width: '96px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px', animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }} />
+            <div style={{ height: '40px', width: '128px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px', animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }} />
           </div>
         </div>
 
         {/* Profiles Grid Skeleton */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-base">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="bg-surface-elevated/90 border border-white/15 rounded-xl p-lg space-y-base">
-              <div className="flex items-start justify-between">
-                <div className="space-y-sm flex-1">
-                  <div className="h-6 w-3/4 bg-gray-700/50 rounded-lg animate-pulse" />
-                  <div className="h-4 w-1/2 bg-gray-700/30 rounded-lg animate-pulse" />
+            <div key={i} style={{ background: 'rgba(255, 255, 255, 0.02)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
+                  <div style={{ height: '24px', width: '75%', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px', animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }} />
+                  <div style={{ height: '16px', width: '50%', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '8px', animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }} />
                 </div>
-                <div className="h-6 w-16 bg-gray-700/50 rounded-lg animate-pulse" />
+                <div style={{ height: '24px', width: '64px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px', animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }} />
               </div>
-              <div className="space-y-sm">
-                <div className="h-4 w-full bg-gray-700/30 rounded-lg animate-pulse" />
-                <div className="h-4 w-full bg-gray-700/30 rounded-lg animate-pulse" />
-                <div className="h-4 w-3/4 bg-gray-700/30 rounded-lg animate-pulse" />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ height: '16px', width: '100%', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '8px', animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }} />
+                <div style={{ height: '16px', width: '100%', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '8px', animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }} />
+                <div style={{ height: '16px', width: '75%', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '8px', animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }} />
               </div>
-              <div className="flex gap-sm pt-sm">
-                <div className="h-9 w-20 bg-gray-700/50 rounded-lg animate-pulse" />
-                <div className="h-9 w-20 bg-gray-700/50 rounded-lg animate-pulse" />
+              <div style={{ display: 'flex', gap: '8px', paddingTop: '8px' }}>
+                <div style={{ height: '36px', width: '80px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px', animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }} />
+                <div style={{ height: '36px', width: '80px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px', animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }} />
               </div>
             </div>
           ))}
@@ -98,39 +117,45 @@ export default function ProfilesManagementPage() {
   const profileList = profiles?.map(item => item.profile) || [];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in-up">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-bold text-white mb-2">Manage Profiles</h1>
-          <p className="text-gray-400">Create, edit, and delete Minecraft profiles</p>
+          <button 
+            onClick={() => navigate('/admin/dashboard')} 
+            className="flex items-center gap-2 text-gray-400 hover:text-white mb-2 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" /> {t('ui.backToDashboard')}
+          </button>
+          <h1 className="text-base font-display font-bold text-white">{t('admin.manageProfiles')}</h1>
+          <p className="text-gray-400 text-xs">{t('ui.createEditDelete')}</p>
         </div>
-        <div className="flex items-center gap-4">
-          <button
+        <div className="flex items-center gap-2">
+          <Button
+            variant="secondary"
+            leftIcon={<RefreshCw className="w-4 h-4" />}
             onClick={() => refetch()}
-            className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg transition-colors flex items-center gap-2"
           >
-            <RefreshCw size={18} />
-            <span>Refresh</span>
-          </button>
-          <button
+            Refresh
+          </Button>
+          <Button
+            variant="primary"
+            leftIcon={<Plus className="w-4 h-4" />}
             onClick={handleCreate}
-            className="px-6 py-2 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white rounded-lg transition-all flex items-center gap-2"
           >
-            <Plus size={20} />
-            <span>Create Profile</span>
-          </button>
+            Create Profile
+          </Button>
         </div>
       </div>
 
       {profileList.length === 0 ? (
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <AlertCircle className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-white mb-2">No Profiles Found</h2>
-            <p className="text-gray-400 mb-6">Create your first profile to get started</p>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '256px' }}>
+          <div style={{ textAlign: 'center' }}>
+            <AlertCircle size={64} style={{ color: 'rgba(234, 179, 8, 1)', margin: '0 auto 16px' }} />
+            <h2 style={{ fontSize: '24px', fontWeight: 700, marginBottom: '8px' }}>No Profiles Found</h2>
+            <p style={{ fontSize: '14px', marginBottom: '24px' }}>Create your first profile to get started</p>
             <button
               onClick={handleCreate}
-              className="px-6 py-2 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white rounded-lg transition-all flex items-center gap-2 mx-auto"
+              style={{ padding: '8px 24px', background: 'linear-gradient(to right, rgba(99, 102, 241, 1), rgba(99, 102, 241, 1))', border: 'none', borderRadius: '8px', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', margin: '0 auto' }}
             >
               <Plus size={20} />
               <span>Create Profile</span>
@@ -140,51 +165,66 @@ export default function ProfilesManagementPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {profileList.map((profile) => (
-            <motion.div
+            <div
               key={profile.id}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl p-6 relative shadow-lg transition-all"
+              style={{
+                background: 'rgba(255, 255, 255, 0.02)',
+                backdropFilter: 'blur(24px)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '12px',
+                padding: '24px',
+                position: 'relative',
+                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+              }}
             >
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <h3 className="text-xl font-bold text-white mb-1">{profile.title}</h3>
-                  <p className="text-sm text-gray-400">Minecraft {profile.version}</p>
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '16px' }}>
+                <div style={{ flex: 1 }}>
+                  <h3 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '4px' }}>{profile.title}</h3>
+                  <p style={{ fontSize: '14px' }}>Minecraft {profile.version}</p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className={`px-2 py-1 rounded text-xs font-medium ${
-                    profile.enabled 
-                      ? 'bg-green-500/20 text-green-400' 
-                      : 'bg-red-500/20 text-red-400'
-                  }`}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{
+                    padding: '4px 8px',
+                    borderRadius: '4px',
+                    fontSize: '12px',
+                    fontWeight: 500,
+                    background: profile.enabled ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                    color: profile.enabled ? 'rgba(74, 222, 128, 1)' : 'rgba(248, 113, 113, 1)'
+                  }}>
                     {profile.enabled ? 'Enabled' : 'Disabled'}
                   </span>
                 </div>
               </div>
 
-              <div className="space-y-2 mb-4 text-sm">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-400">Server:</span>
-                  <span className="text-white">{profile.serverAddress}:{profile.serverPort}</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px', fontSize: '14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span>Server:</span>
+                  <span>{profile.serverAddress}:{profile.serverPort}</span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-400">Main Class:</span>
-                  <span className="text-white font-mono text-xs truncate max-w-[200px]" title={profile.mainClass}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span>Main Class:</span>
+                  <span style={{ fontFamily: 'monospace', fontSize: '12px', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={profile.mainClass}>
                     {profile.mainClass}
                   </span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-400">Sort Index:</span>
-                  <span className="text-white">{profile.sortIndex}</span>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span>Sort Index:</span>
+                  <span>{profile.sortIndex}</span>
                 </div>
               </div>
 
               {profile.tags && profile.tags.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mb-4">
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '16px' }}>
                   {profile.tags.map((tag, index) => (
                     <span
                       key={index}
-                      className="px-2 py-1 bg-primary-500/20 text-primary-300 rounded text-xs"
+                      style={{
+                        padding: '4px 8px',
+                        background: 'rgba(99, 102, 241, 0.2)',
+                        color: 'rgba(167, 139, 250, 1)',
+                        borderRadius: '4px',
+                        fontSize: '12px'
+                      }}
                     >
                       {tag}
                     </span>
@@ -192,10 +232,22 @@ export default function ProfilesManagementPage() {
                 </div>
               )}
 
-              <div className="flex items-center gap-2 pt-4 border-t border-white/10">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingTop: '16px', borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
                 <button
                   onClick={() => handleEdit(profile)}
-                  className="flex-1 px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg transition-colors flex items-center justify-center gap-2"
+                  style={{
+                    flex: 1,
+                    padding: '8px 16px',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    border: 'none',
+                    borderRadius: '8px',
+                    color: 'white',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px'
+                  }}
                 >
                   <Edit size={16} />
                   <span>Edit</span>
@@ -203,16 +255,28 @@ export default function ProfilesManagementPage() {
                 <button
                   onClick={() => handleDelete(profile.id)}
                   disabled={deletingId === profile.id}
-                  className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                  style={{
+                    padding: '8px 16px',
+                    background: 'rgba(239, 68, 68, 0.2)',
+                    border: 'none',
+                    borderRadius: '8px',
+                    color: 'rgba(248, 113, 113, 1)',
+                    cursor: deletingId === profile.id ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    opacity: deletingId === profile.id ? 0.5 : 1
+                  }}
                 >
                   {deletingId === profile.id ? (
-                    <Loader2 size={16} className="animate-spin" />
+                    <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
                   ) : (
                     <Trash2 size={16} />
                   )}
                 </button>
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
       )}
@@ -229,4 +293,3 @@ export default function ProfilesManagementPage() {
     </div>
   );
 }
-

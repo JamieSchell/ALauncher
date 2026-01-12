@@ -1,19 +1,17 @@
 /**
- * User Profile Page - Premium Design 2025
- * Senior UX/UI Designer Implementation
+ * User Profile Page - Functionality Only
  */
 
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
-import { 
-  User, 
-  Mail, 
-  Lock, 
-  Upload, 
-  Save, 
-  Eye, 
-  EyeOff, 
+import {
+  User,
+  Mail,
+  Lock,
+  Upload,
+  Save,
+  Eye,
+  EyeOff,
   Loader2,
   Image as ImageIcon,
   Shield,
@@ -21,16 +19,21 @@ import {
   CheckCircle,
   XCircle,
   Clock3,
-  Activity
+  Activity,
+  Zap,
+  Award,
+  MessageSquare,
+  User as UserIcon
 } from 'lucide-react';
 import { usersAPI, UserProfile } from '../api/users';
 import { useAuthStore } from '../stores/authStore';
 import SkinViewer3D from '../components/SkinViewer3D';
 import PlayerHead from '../components/PlayerHead';
 import { useTranslation } from '../hooks/useTranslation';
-import { useOptimizedAnimation } from '../hooks/useOptimizedAnimation';
 import { useFormatDate } from '../hooks/useFormatDate';
 import { API_CONFIG } from '../config/api';
+import { Card, Button, Input, Badge } from '../components/ui';
+import { ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, Tooltip } from 'recharts';
 
 // Helper function to get base URL for static files
 const getBaseUrl = () => {
@@ -47,13 +50,12 @@ const getTextureUrl = (url: string | null): string | null => {
 export default function ProfilePage() {
   const { playerProfile, setAuth, accessToken } = useAuthStore();
   const { t } = useTranslation();
-  const { getAnimationProps, shouldAnimate } = useOptimizedAnimation();
   const { formatDate, formatDateTime } = useFormatDate();
-  
+
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  
+
   // Form states
   const [email, setEmail] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
@@ -63,7 +65,7 @@ export default function ProfilePage() {
   const [cloakFile, setCloakFile] = useState<File | null>(null);
   const skinInputRef = React.useRef<HTMLInputElement>(null);
   const cloakInputRef = React.useRef<HTMLInputElement>(null);
-  
+
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -81,10 +83,10 @@ export default function ProfilePage() {
 
   const handleUpdateEmail = async () => {
     if (!profile) return;
-    
+
     setSaving(true);
     setMessage(null);
-    
+
     try {
       const result = await usersAPI.updateProfile({ email: email || undefined });
       if (result.success) {
@@ -96,9 +98,9 @@ export default function ProfilePage() {
         await refetch();
       }
     } catch (error: any) {
-      setMessage({ 
-        type: 'error', 
-        text: error.response?.data?.error || error.message || t('profile.updateEmailError') 
+      setMessage({
+        type: 'error',
+        text: error.response?.data?.error || error.message || t('profile.updateEmailError')
       });
     } finally {
       setSaving(false);
@@ -118,13 +120,13 @@ export default function ProfilePage() {
 
     setSaving(true);
     setMessage(null);
-    
+
     try {
       const result = await usersAPI.changePassword({
         currentPassword,
         newPassword,
       });
-      
+
       if (result.success) {
         setMessage({ type: 'success', text: t('profile.passwordChanged') });
         setCurrentPassword('');
@@ -132,9 +134,9 @@ export default function ProfilePage() {
         setConfirmPassword('');
       }
     } catch (error: any) {
-      setMessage({ 
-        type: 'error', 
-        text: error.response?.data?.error || error.message || t('profile.changePasswordError') 
+      setMessage({
+        type: 'error',
+        text: error.response?.data?.error || error.message || t('profile.changePasswordError')
       });
     } finally {
       setSaving(false);
@@ -158,7 +160,7 @@ export default function ProfilePage() {
 
     setSaving(true);
     setMessage(null);
-    
+
     try {
       const result = await usersAPI.uploadSkin(skinFile, playerProfile?.username);
       if (result.success) {
@@ -171,9 +173,9 @@ export default function ProfilePage() {
         await refetch();
       }
     } catch (error: any) {
-      setMessage({ 
-        type: 'error', 
-        text: error.response?.data?.error || error.message || t('profile.skinUploadError') 
+      setMessage({
+        type: 'error',
+        text: error.response?.data?.error || error.message || t('profile.skinUploadError')
       });
     } finally {
       setSaving(false);
@@ -186,7 +188,7 @@ export default function ProfilePage() {
     // Validate file type - PNG or GIF for cloaks
     const isValidType = cloakFile.type.includes('image/png') || cloakFile.type.includes('image/gif');
     const isValidExtension = cloakFile.name.toLowerCase().endsWith('.png') || cloakFile.name.toLowerCase().endsWith('.gif');
-    
+
     if (!isValidType && !isValidExtension) {
       setMessage({ type: 'error', text: t('profile.cloakInvalidType') });
       return;
@@ -200,7 +202,7 @@ export default function ProfilePage() {
 
     setSaving(true);
     setMessage(null);
-    
+
     try {
       const result = await usersAPI.uploadCloak(cloakFile, playerProfile?.username);
       if (result.success) {
@@ -213,9 +215,9 @@ export default function ProfilePage() {
         await refetch();
       }
     } catch (error: any) {
-      setMessage({ 
-        type: 'error', 
-        text: error.response?.data?.error || error.message || t('profile.cloakUploadError') 
+      setMessage({
+        type: 'error',
+        text: error.response?.data?.error || error.message || t('profile.cloakUploadError')
       });
     } finally {
       setSaving(false);
@@ -225,12 +227,7 @@ export default function ProfilePage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <motion.div
-          animate={shouldAnimate ? { rotate: 360 } : false}
-          transition={shouldAnimate ? { duration: 1, repeat: Infinity, ease: "linear" } : {}}
-        >
-          <Loader2 className="w-8 h-8 text-primary-400" />
-        </motion.div>
+        <Loader2 className="w-8 h-8 text-techno-cyan animate-spin" />
       </div>
     );
   }
@@ -238,16 +235,11 @@ export default function ProfilePage() {
   if (!profile) {
     return (
       <div className="flex items-center justify-center h-full">
-        <motion.div
-          initial={shouldAnimate ? { opacity: 0, scale: 0.8 } : false}
-          animate={shouldAnimate ? { opacity: 1, scale: 1 } : false}
-          transition={getAnimationProps({ duration: 0.3 })}
-          className="text-center"
-        >
-          <XCircle className="w-16 h-16 text-error-400 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-heading mb-2">{t('errors.userNotFound')}</h2>
-          <p className="text-body-muted">{t('errors.unknownError')}</p>
-        </motion.div>
+        <Card className="text-center">
+          <XCircle className="w-16 h-16 text-status-error mx-auto mb-4" />
+          <h2 className="text-sm font-bold mb-2">{t('errors.userNotFound')}</h2>
+          <p className="text-gray-400">{t('errors.unknownError')}</p>
+        </Card>
       </div>
     );
   }
@@ -282,235 +274,417 @@ export default function ProfilePage() {
   ];
 
   return (
-    <div className="space-y-xl" style={{ paddingBottom: '32px' }}>
-      {/* Hero Section - Premium Design */}
-      <motion.section
-        initial={shouldAnimate ? { opacity: 0, y: 20 } : false}
-        animate={shouldAnimate ? { opacity: 1, y: 0 } : false}
-        transition={getAnimationProps({ duration: 0.3 })}
-        className="relative overflow-hidden bg-gradient-to-br from-surface-elevated/90 to-surface-base/70 rounded-3xl p-8 lg:p-10 border border-white/10 shadow-lg backdrop-blur-sm"
-        style={{ marginBottom: '48px' }}
-      >
-        {/* Background Pattern */}
-        <div className="absolute inset-0 opacity-[0.03] bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDAgTCA0MCAwIEwgNDAgNDAgTCAwIDQwIFoiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')]" />
+    <div className="space-y-6 animate-fade-in-up pb-8">
+      {/* Header Banner */}
+      <div className="relative h-48 rounded-xl overflow-hidden border border-techno-cyan/20 group">
+        <div className="absolute inset-0 bg-gradient-to-r from-magic-purple/20 to-techno-cyan/20 z-0" />
+        <div className="absolute inset-0 bg-rune-pattern opacity-30 z-0" />
         
-        {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 to-transparent" />
-        
-        <div className="relative z-10 space-y-8 lg:space-y-10">
+        <div className="absolute bottom-0 left-0 w-full p-6 bg-gradient-to-t from-dark-primary via-dark-primary/80 to-transparent z-10 flex items-end gap-6">
+          <div className="relative">
+            <div className="w-24 h-24 rounded-full p-1 bg-gradient-to-br from-techno-cyan to-magic-purple shadow-[0_0_20px_rgba(0,245,255,0.4)]">
+              <PlayerHead
+                skinUrl={getTextureUrl(profile.skinUrl)}
+                username={profile.username}
+                size={88}
+              />
+            </div>
+            <div className="absolute -bottom-2 -right-2 bg-dark-panel border border-techno-cyan rounded-full p-1.5 shadow-neon-cyan">
+               <Shield className="w-5 h-5 text-techno-cyan" />
+            </div>
+          </div>
+          
+          <div className="mb-2">
+            <h1 className="text-base font-display font-bold text-white tracking-wider flex items-center gap-3">
+              {profile.username}
+              <span className="text-[10px] px-2 py-0.5 rounded border border-magic-purple text-magic-purple bg-magic-purple/10 font-mono align-middle">
+                {roleLabel}
+              </span>
+            </h1>
+            <p className="text-techno-cyan font-mono text-xs mt-1 flex items-center gap-4">
+              <span>{t('profile.joinedLabel')}: {joinedDate}</span>
+              <span className="text-gray-500">|</span>
+              <span>ID: #{profile.uuid.slice(0, 8)}</span>
+            </p>
+          </div>
+          
+          <div className="ml-auto flex gap-3 mb-2">
+            <Button variant="secondary" leftIcon={<MessageSquare className="w-4 h-4" />}>
+              {t('profile.message') || 'Message'}
+            </Button>
+            <Button variant="primary" leftIcon={<UserIcon className="w-4 h-4" />}>
+              {t('profile.editProfile') || 'Edit Profile'}
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column: Stats */}
+        <div className="lg:col-span-1 space-y-6">
+          <Card>
+            <h3 className="text-techno-cyan font-bold uppercase tracking-wider text-xs mb-4 flex items-center gap-2">
+              <Zap className="w-3 h-3" /> Neural Statistics
+            </h3>
+            <div className="h-64 w-full -ml-4">
+              <ResponsiveContainer width="100%" height="100%">
+                <RadarChart cx="50%" cy="50%" outerRadius="70%" data={[
+                  { subject: 'Combat', A: 120, fullMark: 150 },
+                  { subject: 'Tech', A: 98, fullMark: 150 },
+                  { subject: 'Magic', A: 86, fullMark: 150 },
+                  { subject: 'Explore', A: 99, fullMark: 150 },
+                  { subject: 'Social', A: 85, fullMark: 150 },
+                  { subject: 'Build', A: 65, fullMark: 150 },
+                ]}>
+                  <PolarGrid stroke="rgba(255,255,255,0.05)" />
+                  <PolarAngleAxis dataKey="subject" tick={{ fill: '#6B7280', fontSize: 10 }} />
+                  <PolarRadiusAxis angle={30} domain={[0, 150]} tick={false} axisLine={false} />
+                  <Radar
+                    name="Skills"
+                    dataKey="A"
+                    stroke="#00F5FF"
+                    strokeWidth={2}
+                    fill="#00F5FF"
+                    fillOpacity={0.3}
+                  />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: '#1A2332', border: '1px solid rgba(0,245,255,0.3)', borderRadius: '4px', color: '#fff' }}
+                    labelStyle={{ color: '#fff' }}
+                    itemStyle={{ color: '#00F5FF' }}
+                  />
+                </RadarChart>
+              </ResponsiveContainer>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-3 mt-2">
+              <div className="bg-dark-panel p-3 rounded border border-white/5">
+                <div className="text-gray-400 text-xs uppercase">Play Time</div>
+                <div className="text-white font-mono text-sm font-bold flex items-center gap-2">
+                  <Clock3 className="w-3 h-3 text-magic-purple" /> {accountAgeDays}d
+                </div>
+              </div>
+              <div className="bg-dark-panel p-3 rounded border border-white/5">
+                <div className="text-gray-400 text-[10px] uppercase">Rank</div>
+                <div className="text-white font-mono text-sm font-bold flex items-center gap-2">
+                  <Award className="w-3 h-3 text-status-warning" /> {roleLabel}
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Middle Column: Achievements & Activity */}
+        <div className="lg:col-span-2 space-y-6">
+          <Card>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-magic-purple font-bold uppercase tracking-wider text-xs flex items-center gap-2">
+                <Award className="w-3 h-3" /> Recent Achievements
+              </h3>
+              <span className="text-[10px] text-gray-500 hover:text-white cursor-pointer transition-colors">View All</span>
+            </div>
+            
+            <div className="space-y-4">
+              {heroStats.map((stat, idx) => {
+                const Icon = stat.icon;
+                return (
+                  <div key={stat.label} className="group flex items-center gap-4 p-3 rounded-lg bg-dark-panel border border-white/5 hover:border-techno-cyan/30 transition-all duration-300">
+                    <div className="w-12 h-12 rounded-lg flex items-center justify-center shrink-0 bg-techno-cyan/10 text-techno-cyan">
+                      <Icon className="w-6 h-6" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-1">
+                        <h4 className="text-xs font-bold text-white group-hover:text-techno-cyan transition-colors">{stat.label}</h4>
+                        <span className="text-[10px] font-mono text-gray-500">{stat.value}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+
+          <Card>
+            <h3 className="text-status-success font-bold uppercase tracking-wider text-xs mb-4 flex items-center gap-2">
+              <UserIcon className="w-3 h-3" /> Account Information
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="flex items-center justify-between p-3 rounded bg-dark-panel border border-white/5">
+                <div className="flex items-center gap-3">
+                  <Mail className="w-5 h-5 text-techno-cyan" />
+                  <div>
+                    <div className="font-bold text-xs text-white">Email</div>
+                    <div className="text-[10px] font-mono text-gray-500">{profile.email || 'Not set'}</div>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center justify-between p-3 rounded bg-dark-panel border border-white/5">
+                <div className="flex items-center gap-3">
+                  <User className="w-4 h-4 text-techno-cyan" />
+                  <div>
+                    <div className="font-bold text-xs text-white">UUID</div>
+                    <div className="text-[10px] font-mono text-gray-500 truncate">{profile.uuid.slice(0, 8)}...</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
+      </div>
+
+      {/* Old Hero Section - Keeping for compatibility */}
+      <div style={{
+        position: 'relative',
+        overflow: 'hidden',
+        backgroundColor: 'rgba(17, 24, 39, 0.9)',
+        borderRadius: '24px',
+        padding: '32px',
+        border: '1px solid rgba(255,255,255,0.1)',
+        marginBottom: '48px',
+        display: 'none'
+      }}>
+        <div style={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', gap: '32px' }}>
           {/* Player Head & Info */}
-          <div className="flex items-center gap-6 lg:gap-8">
-            <motion.div
-              initial={shouldAnimate ? { scale: 0, rotate: -180 } : false}
-              animate={shouldAnimate ? { scale: 1, rotate: 0 } : false}
-              transition={getAnimationProps({ duration: 0.5, delay: 0.1 })}
-              className="w-32 h-32 lg:w-36 lg:h-36 rounded-3xl bg-gradient-to-br from-surface-base/90 to-surface-elevated/70 border border-white/15 flex items-center justify-center shadow-xl shadow-primary-500/20"
-            >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+            <div style={{
+              width: '128px',
+              height: '128px',
+              borderRadius: '24px',
+              backgroundColor: 'rgba(17, 24, 39, 0.9)',
+              border: '1px solid rgba(255,255,255,0.15)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
               <PlayerHead
                 skinUrl={getTextureUrl(profile.skinUrl)}
                 username={profile.username}
                 size={96}
-                className="rounded-2xl border border-white/10"
               />
-            </motion.div>
-            <div className="space-y-3 lg:space-y-4">
-              <motion.span
-                initial={shouldAnimate ? { opacity: 0, x: -20 } : false}
-                animate={shouldAnimate ? { opacity: 1, x: 0 } : false}
-                transition={getAnimationProps({ duration: 0.3, delay: 0.2 })}
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs uppercase tracking-[0.3em] text-body-subtle border border-white/20 bg-surface-base/50"
-              >
-                <Shield size={14} className="text-primary-400" />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '6px 12px',
+                borderRadius: '20px',
+                fontSize: '12px',
+                textTransform: 'uppercase',
+                letterSpacing: '1px',
+                border: '1px solid rgba(255,255,255,0.2)',
+                backgroundColor: 'rgba(17, 24, 39, 0.5)'
+              }}>
+                <Shield size={14} style={{ color: '#818cf8' }} />
                 {t('profile.heroTag')}
-              </motion.span>
-              <div>
-                <motion.h1
-                  initial={shouldAnimate ? { opacity: 0, x: -20 } : false}
-                  animate={shouldAnimate ? { opacity: 1, x: 0 } : false}
-                  transition={getAnimationProps({ duration: 0.4, delay: 0.3 })}
-                  className="text-4xl lg:text-5xl font-black text-heading leading-tight tracking-tight"
-                >
-                  {t('profile.pageTitle')}
-                </motion.h1>
-                <motion.p
-                  initial={shouldAnimate ? { opacity: 0, x: -20 } : false}
-                  animate={shouldAnimate ? { opacity: 1, x: 0 } : false}
-                  transition={getAnimationProps({ duration: 0.4, delay: 0.4 })}
-                  className="text-body-muted text-lg lg:text-xl leading-relaxed mt-2"
-                >
-                  {t('profile.pageSubtitle')}
-                </motion.p>
               </div>
-              <div className="flex flex-wrap gap-3">
-                <motion.span
-                  initial={shouldAnimate ? { opacity: 0, scale: 0.8 } : false}
-                  animate={shouldAnimate ? { opacity: 1, scale: 1 } : false}
-                  transition={getAnimationProps({ duration: 0.3, delay: 0.5 })}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-white/15 bg-gradient-to-br from-primary-500/20 to-primary-600/15 text-heading text-sm font-semibold shadow-sm shadow-primary-500/10"
-                >
-                  <User size={16} className="text-primary-400" />
+              <div>
+                <h1 style={{ fontSize: '36px', fontWeight: '900', letterSpacing: '-0.5px' }}>
+                  {t('profile.pageTitle')}
+                </h1>
+                <p style={{ fontSize: '18px', marginTop: '8px' }}>
+                  {t('profile.pageSubtitle')}
+                </p>
+              </div>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <div style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '8px 16px',
+                  borderRadius: '12px',
+                  border: '1px solid rgba(255,255,255,0.15)',
+                  fontSize: '14px',
+                  fontWeight: '600'
+                }}>
+                  <User size={16} style={{ color: '#818cf8' }} />
                   {roleLabel}
-                </motion.span>
-                <motion.span
-                  initial={shouldAnimate ? { opacity: 0, scale: 0.8 } : false}
-                  animate={shouldAnimate ? { opacity: 1, scale: 1 } : false}
-                  transition={getAnimationProps({ duration: 0.3, delay: 0.6 })}
-                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-semibold ${
-                    profile.banned
-                      ? 'text-error-400 border-error-500/40 bg-error-500/10'
-                      : 'text-success-400 border-success-500/30 bg-success-500/10'
-                  }`}
-                >
+                </div>
+                <div style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '8px 16px',
+                  borderRadius: '12px',
+                  border: profile.banned ? '1px solid rgba(248, 113, 113, 0.4)' : '1px solid rgba(74, 222, 128, 0.3)',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  color: profile.banned ? '#f87171' : '#4ade80'
+                }}>
                   {statusLabel}
-                </motion.span>
+                </div>
               </div>
             </div>
           </div>
-          
+
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3" style={{ gap: '24px', rowGap: '24px', columnGap: '24px' }}>
-            {heroStats.map((stat, index) => {
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
+            {heroStats.map((stat) => {
               const Icon = stat.icon;
               return (
-                <motion.div
+                <div
                   key={stat.label}
-                  initial={shouldAnimate ? { opacity: 0, y: 20 } : false}
-                  animate={shouldAnimate ? { opacity: 1, y: 0 } : false}
-                  transition={getAnimationProps({ duration: 0.3, delay: 0.7 + index * 0.1 })}
-                  whileHover={shouldAnimate ? { y: -4, scale: 1.02 } : undefined}
-                  className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-surface-base/90 to-surface-elevated/70 p-6 backdrop-blur hover:border-primary-500/30 transition-all duration-300 group"
+                  style={{
+                    position: 'relative',
+                    overflow: 'hidden',
+                    borderRadius: '16px',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    backgroundColor: 'rgba(17, 24, 39, 0.9)',
+                    padding: '24px'
+                  }}
                 >
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  <div className="relative z-10 flex items-center gap-4">
-                    <motion.div
-                      className="p-3 bg-gradient-to-br from-primary-500/20 to-primary-600/15 rounded-xl border border-primary-500/30 shadow-sm shadow-primary-500/10"
-                      whileHover={shouldAnimate ? { scale: 1.1, rotate: 5 } : undefined}
-                    >
-                      <Icon size={20} className="text-primary-400" strokeWidth={2.5} />
-                    </motion.div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <div style={{
+                      padding: '12px',
+                      borderRadius: '12px',
+                      border: '1px solid rgba(99, 102, 241, 0.3)',
+                      backgroundColor: 'rgba(99, 102, 241, 0.2)'
+                    }}>
+                      <Icon size={20} style={{ color: '#818cf8' }} strokeWidth={2.5} />
+                    </div>
                     <div>
-                      <p className="text-xs uppercase tracking-[0.25em] text-body-subtle font-semibold mb-1">{stat.label}</p>
-                      <p className="text-heading font-bold text-lg">{stat.value}</p>
+                      <p style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>{stat.label}</p>
+                      <p style={{ fontSize: '18px', fontWeight: 'bold' }}>{stat.value}</p>
                     </div>
                   </div>
-                </motion.div>
+                </div>
               );
             })}
           </div>
         </div>
-        
+
         {/* Email & UUID Info */}
-        <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-base lg:gap-lg pt-8 lg:pt-10 border-t border-white/10" style={{ marginTop: '32px' }}>
-          <motion.div
-            initial={shouldAnimate ? { opacity: 0, x: -20 } : false}
-            animate={shouldAnimate ? { opacity: 1, x: 0 } : false}
-            transition={getAnimationProps({ duration: 0.3, delay: 0.7 })}
-            className="flex items-center gap-4"
-          >
-            <motion.div
-              className="p-3 bg-gradient-to-br from-primary-500/20 to-primary-600/15 rounded-xl border border-primary-500/30 shadow-sm shadow-primary-500/10"
-              whileHover={shouldAnimate ? { scale: 1.1, rotate: 5 } : undefined}
-            >
-              <Mail size={20} className="text-primary-400" strokeWidth={2.5} />
-            </motion.div>
+        <div style={{
+          position: 'relative',
+          zIndex: 10,
+          display: 'grid',
+          gridTemplateColumns: 'repeat(2, 1fr)',
+          gap: '24px',
+          paddingTop: '32px',
+          borderTop: '1px solid rgba(255,255,255,0.1)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{
+              padding: '12px',
+              borderRadius: '12px',
+              border: '1px solid rgba(99, 102, 241, 0.3)',
+              backgroundColor: 'rgba(99, 102, 241, 0.2)'
+            }}>
+              <Mail size={20} style={{ color: '#818cf8' }} strokeWidth={2.5} />
+            </div>
             <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-body-subtle font-semibold mb-1">{t('profile.emailSectionTitle')}</p>
-              <p className="text-heading font-semibold">{profile.email || t('profile.emailStatusMissing')}</p>
+              <p style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>{t('profile.emailSectionTitle')}</p>
+              <p style={{ fontWeight: '600' }}>{profile.email || t('profile.emailStatusMissing')}</p>
             </div>
-          </motion.div>
-          <motion.div
-            initial={shouldAnimate ? { opacity: 0, x: 20 } : false}
-            animate={shouldAnimate ? { opacity: 1, x: 0 } : false}
-            transition={getAnimationProps({ duration: 0.3, delay: 0.8 })}
-            className="flex items-center gap-4"
-          >
-            <motion.div
-              className="p-3 bg-gradient-to-br from-primary-500/20 to-primary-600/15 rounded-xl border border-primary-500/30 shadow-sm shadow-primary-500/10"
-              whileHover={shouldAnimate ? { scale: 1.1, rotate: 5 } : undefined}
-            >
-              <User size={20} className="text-primary-400" strokeWidth={2.5} />
-            </motion.div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs uppercase tracking-[0.3em] text-body-subtle font-semibold mb-1">UUID</p>
-              <p className="text-heading font-semibold break-all text-sm">{profile.uuid}</p>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{
+              padding: '12px',
+              borderRadius: '12px',
+              border: '1px solid rgba(99, 102, 241, 0.3)',
+              backgroundColor: 'rgba(99, 102, 241, 0.2)'
+            }}>
+              <User size={20} style={{ color: '#818cf8' }} strokeWidth={2.5} />
             </div>
-          </motion.div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>UUID</p>
+              <p style={{ fontWeight: '600', wordBreak: 'break-all', fontSize: '14px' }}>{profile.uuid}</p>
+            </div>
+          </div>
         </div>
-      </motion.section>
+      </div>
 
       {/* Message Toast */}
       {message && (
-        <motion.div
-          initial={shouldAnimate ? { opacity: 0, y: -10 } : false}
-          animate={shouldAnimate ? { opacity: 1, y: 0 } : false}
-          exit={shouldAnimate ? { opacity: 0, y: -10 } : false}
-          transition={getAnimationProps({ duration: 0.2 })}
-          className={`rounded-2xl border px-6 py-4 flex items-center gap-3 shadow-lg ${
-            message.type === 'success'
-              ? 'border-success-border bg-success-bg text-success-400'
-              : 'border-error-border bg-error-bg text-error-400'
-          }`}
-        >
+        <div style={{
+          borderRadius: '16px',
+          border: message.type === 'success' ? '1px solid rgba(74, 222, 128, 0.3)' : '1px solid rgba(248, 113, 113, 0.3)',
+          padding: '16px 24px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          backgroundColor: message.type === 'success' ? 'rgba(74, 222, 128, 0.1)' : 'rgba(248, 113, 113, 0.1)',
+          marginBottom: '32px'
+        }}>
           {message.type === 'success' ? (
-            <CheckCircle size={20} className="flex-shrink-0" strokeWidth={2.5} />
+            <CheckCircle size={20} strokeWidth={2.5} />
           ) : (
-            <XCircle size={20} className="flex-shrink-0" strokeWidth={2.5} />
+            <XCircle size={20} strokeWidth={2.5} />
           )}
-          <span className="text-sm font-medium">{message.text}</span>
-        </motion.div>
+          <span style={{ fontSize: '14px', fontWeight: '500' }}>{message.text}</span>
+        </div>
       )}
 
       {/* Email & Password Sections */}
-      <div className="grid grid-cols-1 xl:grid-cols-2" style={{ gap: '32px', rowGap: '32px', columnGap: '32px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '32px' }}>
         {/* Email Section */}
-        <motion.section
-          initial={shouldAnimate ? { opacity: 0, y: 20 } : false}
-          animate={shouldAnimate ? { opacity: 1, y: 0 } : false}
-          transition={getAnimationProps({ duration: 0.3, delay: 0.1 })}
-          className="relative overflow-hidden bg-gradient-to-br from-surface-elevated/90 to-surface-base/70 rounded-3xl p-6 lg:p-8 border border-white/10 shadow-lg backdrop-blur-sm"
-          style={{ marginBottom: '32px' }}
-        >
-          {/* Background Pattern */}
-          <div className="absolute inset-0 opacity-[0.03] bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDAgTCA0MCAwIEwgNDAgNDAgTCAwIDQwIFoiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')]" />
-          <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 to-transparent" />
-          
-          <div className="relative z-10 space-y-6">
-            <div className="flex items-center gap-4">
-              <motion.div
-                className="p-3 bg-gradient-to-br from-primary-500/20 to-primary-600/15 rounded-xl border border-primary-500/30 shadow-sm shadow-primary-500/10"
-                whileHover={shouldAnimate ? { scale: 1.1, rotate: 5 } : undefined}
-              >
-                <Mail size={22} className="text-primary-400" strokeWidth={2.5} />
-              </motion.div>
+        <div style={{
+          position: 'relative',
+          overflow: 'hidden',
+          backgroundColor: 'rgba(17, 24, 39, 0.9)',
+          borderRadius: '24px',
+          padding: '24px 32px',
+          border: '1px solid rgba(255,255,255,0.1)',
+          marginBottom: '32px'
+        }}>
+          <div style={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{
+                padding: '12px',
+                borderRadius: '12px',
+                border: '1px solid rgba(99, 102, 241, 0.3)',
+                backgroundColor: 'rgba(99, 102, 241, 0.2)'
+              }}>
+                <Mail size={22} style={{ color: '#818cf8' }} strokeWidth={2.5} />
+              </div>
               <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-body-subtle font-semibold">{t('profile.emailSectionTitle')}</p>
-                <h2 className="text-2xl font-bold text-heading leading-tight mt-1">{t('profile.contactHeading')}</h2>
-                <p className="text-body-muted text-sm mt-1">{t('profile.emailSectionDescription')}</p>
+                <p style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px' }}>{t('profile.emailSectionTitle')}</p>
+                <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginTop: '4px' }}>{t('profile.contactHeading')}</h2>
+                <p style={{ fontSize: '14px', marginTop: '4px' }}>{t('profile.emailSectionDescription')}</p>
               </div>
             </div>
-            <div className="space-y-4">
-              <label className="block text-sm font-semibold text-heading">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <label style={{ display: 'block', fontSize: '14px', fontWeight: '600' }}>
                 {t('profile.email')}
               </label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 lg:px-6 py-3 lg:py-4 bg-surface-base/80 border border-white/10 rounded-xl text-heading placeholder-text-body-subtle focus:outline-none focus:border-primary-500 focus:bg-surface-elevated/90 transition-all duration-200"
+                style={{
+                  width: '100%',
+                  padding: '12px 24px',
+                  backgroundColor: 'rgba(17, 24, 39, 0.8)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: '12px',
+                  outline: 'none'
+                }}
                 placeholder={t('profile.emailPlaceholder')}
               />
-              <p className="text-xs text-body-dim">{t('profile.emailHint')}</p>
+              <p style={{ fontSize: '12px' }}>{t('profile.emailHint')}</p>
             </div>
-            <motion.button
+            <button
               onClick={handleUpdateEmail}
               disabled={saving || email === (profile.email || '')}
-              whileHover={shouldAnimate && !saving && email !== (profile.email || '') ? { scale: 1.02 } : undefined}
-              whileTap={shouldAnimate && !saving && email !== (profile.email || '') ? { scale: 0.98 } : undefined}
-              className="w-full justify-center px-6 lg:px-8 py-4 lg:py-5 bg-gradient-to-r from-primary-500 via-primary-600 to-primary-600 text-white font-bold rounded-xl hover:from-primary-600 hover:via-primary-700 hover:to-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center gap-3 shadow-lg shadow-primary-500/30 border border-primary-500/40"
+              style={{
+                width: '100%',
+                justifyContent: 'center',
+                padding: '16px 32px',
+                backgroundColor: '#6366f1',
+                color: '#fff',
+                fontWeight: 'bold',
+                borderRadius: '12px',
+                opacity: saving || email === (profile.email || '') ? 0.5 : 1,
+                cursor: saving || email === (profile.email || '') ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                border: 'none'
+              }}
             >
               {saving ? (
                 <>
-                  <Loader2 size={20} className="animate-spin" />
+                  <Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} />
                   <span>{t('profile.saving')}</span>
                 </>
               ) : (
@@ -519,98 +693,122 @@ export default function ProfilePage() {
                   <span>{t('profile.saveEmail')}</span>
                 </>
               )}
-            </motion.button>
+            </button>
           </div>
-        </motion.section>
+        </div>
 
         {/* Password Section */}
-        <motion.section
-          initial={shouldAnimate ? { opacity: 0, y: 20 } : false}
-          animate={shouldAnimate ? { opacity: 1, y: 0 } : false}
-          transition={getAnimationProps({ duration: 0.3, delay: 0.2 })}
-          className="relative overflow-hidden bg-gradient-to-br from-surface-elevated/90 to-surface-base/70 rounded-3xl p-6 lg:p-8 border border-white/10 shadow-lg backdrop-blur-sm"
-          style={{ marginBottom: '32px' }}
-        >
-          {/* Background Pattern */}
-          <div className="absolute inset-0 opacity-[0.03] bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDAgTCA0MCAwIEwgNDAgNDAgTCAwIDQwIFoiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')]" />
-          <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 to-transparent" />
-          
-          <div className="relative z-10 space-y-6">
-            <div className="flex items-center gap-4">
-              <motion.div
-                className="p-3 bg-gradient-to-br from-primary-500/20 to-primary-600/15 rounded-xl border border-primary-500/30 shadow-sm shadow-primary-500/10"
-                whileHover={shouldAnimate ? { scale: 1.1, rotate: 5 } : undefined}
-              >
-                <Lock size={22} className="text-primary-400" strokeWidth={2.5} />
-              </motion.div>
+        <div style={{
+          position: 'relative',
+          overflow: 'hidden',
+          backgroundColor: 'rgba(17, 24, 39, 0.9)',
+          borderRadius: '24px',
+          padding: '24px 32px',
+          border: '1px solid rgba(255,255,255,0.1)',
+          marginBottom: '32px'
+        }}>
+          <div style={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{
+                padding: '12px',
+                borderRadius: '12px',
+                border: '1px solid rgba(99, 102, 241, 0.3)',
+                backgroundColor: 'rgba(99, 102, 241, 0.2)'
+              }}>
+                <Lock size={22} style={{ color: '#818cf8' }} strokeWidth={2.5} />
+              </div>
               <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-body-subtle font-semibold">{t('profile.passwordSectionTitle')}</p>
-                <h2 className="text-2xl font-bold text-heading leading-tight mt-1">{t('profile.securityHeadline')}</h2>
-                <p className="text-body-muted text-sm mt-1">{t('profile.passwordHint')}</p>
+                <p style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px' }}>{t('profile.passwordSectionTitle')}</p>
+                <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginTop: '4px' }}>{t('profile.securityHeadline')}</h2>
+                <p style={{ fontSize: '14px', marginTop: '4px' }}>{t('profile.passwordHint')}</p>
               </div>
             </div>
 
-            <div className="space-y-4">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div>
-                <label className="block text-sm font-semibold text-heading mb-2">
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>
                   {t('profile.currentPassword')}
                 </label>
-                <div className="relative">
+                <div style={{ position: 'relative' }}>
                   <input
                     type={showCurrentPassword ? 'text' : 'password'}
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
-                    className="w-full px-4 lg:px-6 py-3 lg:py-4 bg-surface-base/80 border border-white/10 rounded-xl text-heading placeholder-text-body-subtle focus:outline-none focus:border-primary-500 focus:bg-surface-elevated/90 transition-all duration-200 pr-12"
+                    style={{
+                      width: '100%',
+                      padding: '12px 24px',
+                      paddingRight: '48px',
+                      backgroundColor: 'rgba(17, 24, 39, 0.8)',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                      borderRadius: '12px',
+                      outline: 'none'
+                    }}
                     placeholder={t('profile.currentPasswordPlaceholder')}
                   />
                   <button
                     type="button"
                     onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-body-muted hover:text-heading transition-colors"
+                    style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', backgroundColor: 'transparent', border: 'none', cursor: 'pointer' }}
                   >
                     {showCurrentPassword ? <EyeOff size={20} strokeWidth={2} /> : <Eye size={20} strokeWidth={2} />}
                   </button>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
                 <div>
-                  <label className="block text-sm font-semibold text-heading mb-2">
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>
                     {t('profile.newPassword')}
                   </label>
-                  <div className="relative">
+                  <div style={{ position: 'relative' }}>
                     <input
                       type={showNewPassword ? 'text' : 'password'}
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
-                      className="w-full px-4 lg:px-6 py-3 lg:py-4 bg-surface-base/80 border border-white/10 rounded-xl text-heading placeholder-text-body-subtle focus:outline-none focus:border-primary-500 focus:bg-surface-elevated/90 transition-all duration-200 pr-12"
+                      style={{
+                        width: '100%',
+                        padding: '12px 24px',
+                        paddingRight: '48px',
+                        backgroundColor: 'rgba(17, 24, 39, 0.8)',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        borderRadius: '12px',
+                        outline: 'none'
+                      }}
                       placeholder={t('profile.newPasswordPlaceholder')}
                     />
                     <button
                       type="button"
                       onClick={() => setShowNewPassword(!showNewPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-body-muted hover:text-heading transition-colors"
+                      style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', backgroundColor: 'transparent', border: 'none', cursor: 'pointer' }}
                     >
                       {showNewPassword ? <EyeOff size={20} strokeWidth={2} /> : <Eye size={20} strokeWidth={2} />}
                     </button>
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-heading mb-2">
+                  <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>
                     {t('profile.confirmPassword')}
                   </label>
-                  <div className="relative">
+                  <div style={{ position: 'relative' }}>
                     <input
                       type={showConfirmPassword ? 'text' : 'password'}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="w-full px-4 lg:px-6 py-3 lg:py-4 bg-surface-base/80 border border-white/10 rounded-xl text-heading placeholder-text-body-subtle focus:outline-none focus:border-primary-500 focus:bg-surface-elevated/90 transition-all duration-200 pr-12"
+                      style={{
+                        width: '100%',
+                        padding: '12px 24px',
+                        paddingRight: '48px',
+                        backgroundColor: 'rgba(17, 24, 39, 0.8)',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        borderRadius: '12px',
+                        outline: 'none'
+                      }}
                       placeholder={t('profile.confirmPasswordPlaceholder')}
                     />
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-body-muted hover:text-heading transition-colors"
+                      style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', backgroundColor: 'transparent', border: 'none', cursor: 'pointer' }}
                     >
                       {showConfirmPassword ? <EyeOff size={20} strokeWidth={2} /> : <Eye size={20} strokeWidth={2} />}
                     </button>
@@ -619,16 +817,28 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            <motion.button
+            <button
               onClick={handleChangePassword}
               disabled={saving || !currentPassword || !newPassword || !confirmPassword}
-              whileHover={shouldAnimate && !saving && currentPassword && newPassword && confirmPassword ? { scale: 1.02 } : undefined}
-              whileTap={shouldAnimate && !saving && currentPassword && newPassword && confirmPassword ? { scale: 0.98 } : undefined}
-              className="w-full justify-center px-6 lg:px-8 py-4 lg:py-5 bg-gradient-to-r from-success-500 via-success-600 to-success-600 text-white font-bold rounded-xl hover:from-success-600 hover:via-success-700 hover:to-success-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center gap-3 shadow-lg shadow-success-500/30 border border-success-500/40"
+              style={{
+                width: '100%',
+                justifyContent: 'center',
+                padding: '16px 32px',
+                backgroundColor: '#22c55e',
+                color: '#fff',
+                fontWeight: 'bold',
+                borderRadius: '12px',
+                opacity: saving || !currentPassword || !newPassword || !confirmPassword ? 0.5 : 1,
+                cursor: saving || !currentPassword || !newPassword || !confirmPassword ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                border: 'none'
+              }}
             >
               {saving ? (
                 <>
-                  <Loader2 size={20} className="animate-spin" />
+                  <Loader2 size={20} style={{ animation: 'spin 1s linear infinite' }} />
                   <span>{t('profile.changing')}</span>
                 </>
               ) : (
@@ -637,182 +847,248 @@ export default function ProfilePage() {
                   <span>{t('profile.changePasswordButton')}</span>
                 </>
               )}
-            </motion.button>
+            </button>
           </div>
-        </motion.section>
+        </div>
       </div>
 
       {/* Textures Section */}
-      <motion.section
-        initial={shouldAnimate ? { opacity: 0, y: 20 } : false}
-        animate={shouldAnimate ? { opacity: 1, y: 0 } : false}
-        transition={getAnimationProps({ duration: 0.3, delay: 0.3 })}
-        className="relative overflow-hidden bg-gradient-to-br from-surface-elevated/90 to-surface-base/70 rounded-3xl p-6 lg:p-8 border border-white/10 shadow-lg backdrop-blur-sm"
-      >
-        {/* Background Pattern */}
-        <div className="absolute inset-0 opacity-[0.03] bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDAgTCA0MCAwIEwgNDAgNDAgTCAwIDQwIFoiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')]" />
-        <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 to-transparent" />
-        
-        <div className="relative z-10 space-y-6 lg:space-y-8">
-          <div className="flex items-center gap-4">
-            <motion.div
-              className="p-3 bg-gradient-to-br from-primary-500/20 to-primary-600/15 rounded-xl border border-primary-500/30 shadow-sm shadow-primary-500/10"
-              whileHover={shouldAnimate ? { scale: 1.1, rotate: 5 } : undefined}
-            >
-              <ImageIcon size={22} className="text-primary-400" strokeWidth={2.5} />
-            </motion.div>
+      <div style={{
+        position: 'relative',
+        overflow: 'hidden',
+        backgroundColor: 'rgba(17, 24, 39, 0.9)',
+        borderRadius: '24px',
+        padding: '24px 32px',
+        border: '1px solid rgba(255,255,255,0.1)'
+      }}>
+        <div style={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', gap: '32px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{
+              padding: '12px',
+              borderRadius: '12px',
+              border: '1px solid rgba(99, 102, 241, 0.3)',
+              backgroundColor: 'rgba(99, 102, 241, 0.2)'
+            }}>
+              <ImageIcon size={22} style={{ color: '#818cf8' }} strokeWidth={2.5} />
+            </div>
             <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-body-subtle font-semibold">{t('profile.texturesSectionTitle')}</p>
-              <h2 className="text-2xl font-bold text-heading leading-tight mt-1">{t('profile.appearanceHeadline')}</h2>
-              <p className="text-body-muted text-sm mt-1">{t('profile.texturesSubtitle')}</p>
+              <p style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px' }}>{t('profile.texturesSectionTitle')}</p>
+              <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginTop: '4px' }}>{t('profile.appearanceHeadline')}</h2>
+              <p style={{ fontSize: '14px', marginTop: '4px' }}>{t('profile.texturesSubtitle')}</p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2" style={{ gap: '32px', rowGap: '32px', columnGap: '32px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '32px' }}>
             {/* Skin Card */}
-            <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-surface-base/90 to-surface-elevated/70 p-6 backdrop-blur space-y-5">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xl font-bold text-heading">{t('profile.skinCardTitle')}</h3>
-                <span className="text-xs uppercase tracking-[0.3em] text-body-subtle font-semibold">{t('profile.skin')}</span>
+            <div style={{
+              borderRadius: '16px',
+              border: '1px solid rgba(255,255,255,0.1)',
+              backgroundColor: 'rgba(17, 24, 39, 0.9)',
+              padding: '24px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '20px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <h3 style={{ fontSize: '20px', fontWeight: 'bold' }}>{t('profile.skinCardTitle')}</h3>
+                <span style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px' }}>{t('profile.skin')}</span>
               </div>
-              <div className="flex flex-col gap-5 md:flex-row">
-                <div className="w-full md:w-60 h-60 bg-surface-base/80 rounded-2xl border border-white/10 overflow-hidden flex items-center justify-center shadow-lg">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <div style={{ width: '100%', height: '240px', backgroundColor: 'rgba(17, 24, 39, 0.8)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   {profile.skinUrl ? (
                     <SkinViewer3D
                       skinUrl={getTextureUrl(profile.skinUrl)}
                       cloakUrl={null}
                       width={220}
                       height={220}
-                      className="w-full h-full"
                     />
                   ) : (
-                    <div className="text-center text-body-dim space-y-3">
-                      <ImageIcon size={48} className="mx-auto opacity-50" strokeWidth={1.5} />
-                      <p className="text-sm font-medium">{t('profile.noSkin')}</p>
+                    <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      <ImageIcon size={48} style={{ opacity: 0.5, margin: '0 auto' }} strokeWidth={1.5} />
+                      <p style={{ fontSize: '14px', fontWeight: '500' }}>{t('profile.noSkin')}</p>
                     </div>
                   )}
                 </div>
-                <div className="flex-1 space-y-4">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   <div>
-                    <label className="block text-sm font-semibold text-heading mb-2">
+                    <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>
                       {t('profile.skinUploadLabel')}
                     </label>
-                    <div className="relative">
+                    <div style={{ position: 'relative' }}>
                       <input
                         ref={skinInputRef}
                         type="file"
                         accept="image/png"
                         onChange={(e) => setSkinFile(e.target.files?.[0] || null)}
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer', zIndex: 10 }}
                         aria-label={t('profile.skinUploadLabel')}
                         title={t('profile.skinUploadLabel')}
                       />
-                      <div className="w-full px-4 lg:px-6 py-3 lg:py-4 bg-surface-base/80 border border-white/10 rounded-xl text-heading focus-within:border-primary-500 focus-within:bg-surface-elevated/90 transition-all duration-200 flex items-center justify-between">
-                        <span className="text-sm text-body-muted">
+                      <div style={{
+                        width: '100%',
+                        padding: '12px 24px',
+                        backgroundColor: 'rgba(17, 24, 39, 0.8)',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        borderRadius: '12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between'
+                      }}>
+                        <span style={{ fontSize: '14px' }}>
                           {skinFile ? skinFile.name : t('profile.noFileChosen')}
                         </span>
-                        <motion.button
+                        <button
                           type="button"
                           onClick={() => skinInputRef.current?.click()}
-                          whileHover={shouldAnimate ? { scale: 1.05 } : undefined}
-                          whileTap={shouldAnimate ? { scale: 0.95 } : undefined}
-                          className="px-4 py-2 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white text-sm font-semibold rounded-lg transition-all duration-300 shadow-sm shadow-primary-500/20 border border-primary-500/40"
+                          style={{
+                            padding: '8px 16px',
+                            backgroundColor: '#6366f1',
+                            color: '#fff',
+                            fontSize: '14px',
+                            fontWeight: '600',
+                            borderRadius: '8px',
+                            border: 'none',
+                            cursor: 'pointer'
+                          }}
                         >
                           {t('profile.chooseFile')}
-                        </motion.button>
+                        </button>
                       </div>
                     </div>
-                    <p className="text-xs text-body-dim mt-2">{t('profile.skinUploadHint')}</p>
+                    <p style={{ fontSize: '12px', marginTop: '8px' }}>{t('profile.skinUploadHint')}</p>
                   </div>
                   {skinFile && (
-                    <motion.button
+                    <button
                       onClick={handleUploadSkin}
                       disabled={saving}
-                      whileHover={shouldAnimate && !saving ? { scale: 1.02 } : undefined}
-                      whileTap={shouldAnimate && !saving ? { scale: 0.98 } : undefined}
-                      className="inline-flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white font-semibold rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary-500/30 border border-primary-500/40"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '12px 20px',
+                        backgroundColor: '#6366f1',
+                        color: '#fff',
+                        fontWeight: '600',
+                        borderRadius: '12px',
+                        opacity: saving ? 0.5 : 1,
+                        cursor: saving ? 'not-allowed' : 'pointer',
+                        border: 'none'
+                      }}
                     >
-                      {saving ? <Loader2 size={18} className="animate-spin" /> : <Upload size={18} strokeWidth={2.5} />}
+                      {saving ? <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} /> : <Upload size={18} strokeWidth={2.5} />}
                       <span>{saving ? t('profile.uploading') : t('profile.skinUploadCta')}</span>
-                    </motion.button>
+                    </button>
                   )}
                 </div>
               </div>
             </div>
 
             {/* Cloak Card */}
-            <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-surface-base/90 to-surface-elevated/70 p-6 backdrop-blur space-y-5">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xl font-bold text-heading">{t('profile.cloakCardTitle')}</h3>
-                <span className="text-xs uppercase tracking-[0.3em] text-body-subtle font-semibold">{t('profile.cloak')}</span>
+            <div style={{
+              borderRadius: '16px',
+              border: '1px solid rgba(255,255,255,0.1)',
+              backgroundColor: 'rgba(17, 24, 39, 0.9)',
+              padding: '24px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '20px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <h3 style={{ fontSize: '20px', fontWeight: 'bold' }}>{t('profile.cloakCardTitle')}</h3>
+                <span style={{ fontSize: '12px', textTransform: 'uppercase', letterSpacing: '1px' }}>{t('profile.cloak')}</span>
               </div>
-              <div className="flex flex-col gap-5 md:flex-row">
-                <div className="w-full md:w-60 h-60 bg-surface-base/80 rounded-2xl border border-white/10 overflow-hidden flex items-center justify-center shadow-lg">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <div style={{ width: '100%', height: '240px', backgroundColor: 'rgba(17, 24, 39, 0.8)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   {profile.skinUrl ? (
                     <SkinViewer3D
                       skinUrl={getTextureUrl(profile.skinUrl)}
                       cloakUrl={getTextureUrl(profile.cloakUrl)}
                       width={220}
                       height={220}
-                      className="w-full h-full"
                     />
                   ) : (
-                    <div className="text-center text-body-dim space-y-3">
-                      <ImageIcon size={48} className="mx-auto opacity-50" strokeWidth={1.5} />
-                      <p className="text-sm font-medium">{t('profile.uploadSkinFirst')}</p>
+                    <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      <ImageIcon size={48} style={{ opacity: 0.5, margin: '0 auto' }} strokeWidth={1.5} />
+                      <p style={{ fontSize: '14px', fontWeight: '500' }}>{t('profile.uploadSkinFirst')}</p>
                     </div>
                   )}
                 </div>
-                <div className="flex-1 space-y-4">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   <div>
-                    <label className="block text-sm font-semibold text-heading mb-2">
+                    <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>
                       {t('profile.cloakUploadLabel')}
                     </label>
-                    <div className="relative">
+                    <div style={{ position: 'relative' }}>
                       <input
                         ref={cloakInputRef}
                         type="file"
                         accept="image/png,image/gif"
                         onChange={(e) => setCloakFile(e.target.files?.[0] || null)}
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer', zIndex: 10 }}
                         aria-label={t('profile.cloakUploadLabel')}
                         title={t('profile.cloakUploadLabel')}
                       />
-                      <div className="w-full px-4 lg:px-6 py-3 lg:py-4 bg-surface-base/80 border border-white/10 rounded-xl text-heading focus-within:border-primary-500 focus-within:bg-surface-elevated/90 transition-all duration-200 flex items-center justify-between">
-                        <span className="text-sm text-body-muted">
+                      <div style={{
+                        width: '100%',
+                        padding: '12px 24px',
+                        backgroundColor: 'rgba(17, 24, 39, 0.8)',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        borderRadius: '12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between'
+                      }}>
+                        <span style={{ fontSize: '14px' }}>
                           {cloakFile ? cloakFile.name : t('profile.noFileChosen')}
                         </span>
-                        <motion.button
+                        <button
                           type="button"
                           onClick={() => cloakInputRef.current?.click()}
-                          whileHover={shouldAnimate ? { scale: 1.05 } : undefined}
-                          whileTap={shouldAnimate ? { scale: 0.95 } : undefined}
-                          className="px-4 py-2 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white text-sm font-semibold rounded-lg transition-all duration-300 shadow-sm shadow-primary-500/20 border border-primary-500/40"
+                          style={{
+                            padding: '8px 16px',
+                            backgroundColor: '#6366f1',
+                            color: '#fff',
+                            fontSize: '14px',
+                            fontWeight: '600',
+                            borderRadius: '8px',
+                            border: 'none',
+                            cursor: 'pointer'
+                          }}
                         >
                           {t('profile.chooseFile')}
-                        </motion.button>
+                        </button>
                       </div>
                     </div>
-                    <p className="text-xs text-body-dim mt-2">{t('profile.cloakUploadHint')}</p>
+                    <p style={{ fontSize: '12px', marginTop: '8px' }}>{t('profile.cloakUploadHint')}</p>
                   </div>
                   {cloakFile && (
-                    <motion.button
+                    <button
                       onClick={handleUploadCloak}
                       disabled={saving}
-                      whileHover={shouldAnimate && !saving ? { scale: 1.02 } : undefined}
-                      whileTap={shouldAnimate && !saving ? { scale: 0.98 } : undefined}
-                      className="inline-flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white font-semibold rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary-500/30 border border-primary-500/40"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '12px 20px',
+                        backgroundColor: '#6366f1',
+                        color: '#fff',
+                        fontWeight: '600',
+                        borderRadius: '12px',
+                        opacity: saving ? 0.5 : 1,
+                        cursor: saving ? 'not-allowed' : 'pointer',
+                        border: 'none'
+                      }}
                     >
-                      {saving ? <Loader2 size={18} className="animate-spin" /> : <Upload size={18} strokeWidth={2.5} />}
+                      {saving ? <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} /> : <Upload size={18} strokeWidth={2.5} />}
                       <span>{saving ? t('profile.uploading') : t('profile.cloakUploadCta')}</span>
-                    </motion.button>
+                    </button>
                   )}
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </motion.section>
+      </div>
     </div>
   );
 }

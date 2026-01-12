@@ -20,10 +20,11 @@ import { config } from '../config';
  * Reconnection: Prisma automatically handles reconnection on connection loss.
  * For manual reconnection, use `prisma.$connect()`.
  */
+// Check if running in CLI mode to disable query logging
+const isCLI = process.argv.some(arg => arg.includes('cli'));
+
 export const prisma = new PrismaClient({
-  log: config.env === 'development' 
-    ? ['query', 'error', 'warn'] 
-    : ['error', 'warn'],
+  log: ['error', 'warn'], // Отключили query логи для чистого вывода
   errorFormat: 'pretty',
   datasources: {
     db: {

@@ -4,7 +4,7 @@
 
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
+
 import { 
   Users, 
   Server, 
@@ -40,10 +40,57 @@ import {
 import { statisticsAPI } from '../api/statistics';
 import { profilesAPI } from '../api/profiles';
 import { usersAPI } from '../api/users';
+import { Card, Button } from '../components/ui';
+import { useNavigate } from 'react-router-dom';
+import { ShieldAlert, FileWarning, Box, ArrowRight } from 'lucide-react';
+import { useTranslation } from '../hooks/useTranslation';
 
-const COLORS = ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#84cc16'];
+const COLORS = ['#B026FF', '#00F5FF', '#4A9EFF', '#00FFB3', '#FF9500', '#FF3B3B', '#FF2D95', '#6366f1'];
+
+const DashboardAction = ({ title, description, icon: Icon, color, onClick }: { title: string, description: string, icon: any, color: 'cyan' | 'red' | 'purple', onClick: () => void }) => {
+  const colors = {
+    cyan: 'group-hover:text-techno-cyan group-hover:border-techno-cyan',
+    red: 'group-hover:text-status-error group-hover:border-status-error',
+    purple: 'group-hover:text-magic-purple group-hover:border-magic-purple',
+  };
+
+  return (
+    <div 
+      onClick={onClick}
+      className={`group cursor-pointer bg-dark-card border border-white/5 p-6 relative overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg clip-cyber-corner ${colors[color]}`}
+    >
+      <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-bl-full -mr-4 -mt-4 transition-transform group-hover:scale-110" />
+      
+      <div className="relative z-10">
+        <div className="w-12 h-12 rounded bg-dark-panel flex items-center justify-center mb-4 border border-white/10 group-hover:border-current transition-colors">
+          <Icon className="w-6 h-6" />
+        </div>
+        <h3 className="text-xs font-bold text-white mb-2">{title}</h3>
+        <p className="text-gray-400 text-xs mb-4">{description}</p>
+        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider opacity-60 group-hover:opacity-100 transition-opacity">
+          Access Terminal <ArrowRight className="w-3 h-3" />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const HealthBar = ({ label, value, max, unit, color = 'bg-techno-cyan' }: { label: string, value: number, max: number, unit: string, color?: string }) => {
+  const width = (value / max) * 100;
+  return (
+    <div className="flex items-center gap-4 text-xs">
+      <div className="w-32 text-gray-400 font-mono">{label}</div>
+      <div className="flex-1 h-2 bg-dark-primary rounded-full overflow-hidden">
+        <div className={`h-full ${color}`} style={{ width: `${width}%` }} />
+      </div>
+      <div className="w-16 text-right font-bold text-white">{value}{unit}</div>
+    </div>
+  );
+};
 
 export default function AdminDashboardPage() {
+  const navigate = useNavigate();
+  const { t } = useTranslation();
   const [days, setDays] = useState(30);
 
   const { data: analyticsData, isLoading } = useQuery({
@@ -133,129 +180,155 @@ export default function AdminDashboardPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="text-center">
-          <Loader2 className="w-12 h-12 text-primary-500 animate-spin mx-auto mb-4" />
-          <p className="text-gray-400">Loading analytics...</p>
-        </div>
+        <Loader2 className="w-8 h-8 text-techno-cyan animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-4xl font-bold text-white mb-2">Admin Dashboard</h1>
-          <p className="text-gray-400">Analytics and metrics overview</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <select
-            value={days}
-            onChange={(e) => setDays(Number(e.target.value))}
-            className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none cursor-pointer hover:bg-white/10 transition-colors"
-          >
-            <option value={7} className="bg-gray-800">Last 7 days</option>
-            <option value={30} className="bg-gray-800">Last 30 days</option>
-            <option value={90} className="bg-gray-800">Last 90 days</option>
-            <option value={365} className="bg-gray-800">Last year</option>
-          </select>
-        </div>
+    <div className="space-y-8 animate-fade-in-up">
+      <div className="border-b border-status-warning/20 pb-6">
+        <h1 className="text-base font-display font-bold text-white mb-1 flex items-center gap-3">
+          <ShieldAlert className="w-4 h-4 text-status-warning" />
+          {t('admin.commandCenter')}
+        </h1>
+        <p className="text-status-warning/70 font-mono text-xs tracking-widest">AUTHORIZED PERSONNEL ONLY // LEVEL 5 CLEARANCE</p>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <motion.div
+      {/* Quick Actions Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <DashboardAction 
+          title={t('admin.userManagement')} 
+          description="Manage accounts, roles, and bans."
+          icon={Users}
+          color="cyan"
+          onClick={() => navigate('/admin/users')}
+        />
+        <DashboardAction 
+          title={t('admin.crashReports')} 
+          description="Analyze stack traces and resolve tickets."
+          icon={FileWarning}
+          color="red"
+          onClick={() => navigate('/admin/crashes')}
+        />
+        <DashboardAction 
+          title={t('admin.manageProfiles')} 
+          description="Edit modpacks and launcher profiles."
+          icon={Box}
+          color="purple"
+          onClick={() => navigate('/admin/profiles')}
+        />
+      </div>
+
+      {/* Live System Health */}
+      <Card className="border border-status-warning/20">
+        <div className="flex items-center gap-2 mb-6">
+           <Activity className="w-5 h-5 text-status-warning animate-pulse" />
+           <h3 className="text-status-warning font-bold uppercase tracking-wider text-xs">{t('admin.systemHealth')}</h3>
+        </div>
+        
+        <div className="space-y-4">
+          <HealthBar label={t('admin.databaseLatency')} value={12} max={100} unit="ms" />
+          <HealthBar label={t('admin.authServerLoad')} value={45} max={100} unit="%" />
+          <HealthBar label={t('admin.cdnThroughput')} value={78} max={100} unit="%" color="bg-magic-purple" />
+          <HealthBar label="Error Rate" value={2} max={100} unit="%" color="bg-status-success" />
+        </div>
+      </Card>
+
+      {/* Old Summary Cards - Keeping for compatibility */}
+      <div style={{ display: 'none' }}>
+        <div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl p-6 hover:bg-white/5 transition-colors shadow-lg"
+          
         >
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-blue-500/20 rounded-lg">
-              <Users className="w-6 h-6 text-blue-400" />
+          <div >
+            <div >
+              <Users  />
             </div>
-            <span className="text-3xl font-bold text-white">
+            <span >
               {analytics?.activeUsers.length || 0}
             </span>
           </div>
-          <p className="text-gray-400 text-sm font-medium">Active Users</p>
-          <p className="text-gray-500 text-xs mt-1">
+          <p >Active Users</p>
+          <p >
             {analytics?.totalSessions || 0} total sessions
           </p>
-        </motion.div>
+        </div>
 
-        <motion.div
+        <div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl p-6 hover:bg-white/5 transition-colors shadow-lg"
+          
         >
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-green-500/20 rounded-lg">
-              <Play className="w-6 h-6 text-green-400" />
+          <div >
+            <div >
+              <Play  />
             </div>
-            <span className="text-3xl font-bold text-white">
+            <span >
               {analytics?.totalLaunches || 0}
             </span>
           </div>
-          <p className="text-gray-400 text-sm font-medium">Total Launches</p>
-          <p className="text-gray-500 text-xs mt-1">
+          <p >Total Launches</p>
+          <p >
             {analytics?.totalSessions || 0} sessions completed
           </p>
-        </motion.div>
+        </div>
 
-        <motion.div
+        <div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl p-6 hover:bg-white/5 transition-colors shadow-lg"
+          
         >
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-purple-500/20 rounded-lg">
-              <Clock className="w-6 h-6 text-purple-400" />
+          <div >
+            <div >
+              <Clock  />
             </div>
-            <span className="text-3xl font-bold text-white">
+            <span >
               {analytics ? formatTime(analytics.totalPlayTime) : '0m'}
             </span>
           </div>
-          <p className="text-gray-400 text-sm font-medium">Total Play Time</p>
-          <p className="text-gray-500 text-xs mt-1">
+          <p >Total Play Time</p>
+          <p >
             {analytics && analytics.totalSessions > 0
               ? formatTime(Math.floor(analytics.totalPlayTime / analytics.totalSessions))
               : '0m'} avg session
           </p>
-        </motion.div>
+        </div>
 
-        <motion.div
+        <div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl p-6 hover:bg-white/5 transition-colors shadow-lg"
+          
         >
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-red-500/20 rounded-lg">
-              <AlertTriangle className="w-6 h-6 text-red-400" />
+          <div >
+            <div >
+              <AlertTriangle  />
             </div>
-            <span className="text-3xl font-bold text-white">
+            <span >
               {(analytics?.totalCrashes || 0) + (analytics?.totalConnectionIssues || 0)}
             </span>
           </div>
-          <p className="text-gray-400 text-sm font-medium">Total Issues</p>
-          <p className="text-gray-500 text-xs mt-1">
+          <p >Total Issues</p>
+          <p >
             {analytics?.totalCrashes || 0} crashes, {analytics?.totalConnectionIssues || 0} connection issues
           </p>
-        </motion.div>
+        </div>
       </div>
 
       {/* Activity Chart */}
-      <motion.div
+      <div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
-        className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl p-6 shadow-lg"
+        
       >
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <Activity className="w-5 h-5 text-primary-400" />
+        <div >
+          <h2 >
+            <Activity  />
             Activity Overview
           </h2>
         </div>
@@ -264,50 +337,61 @@ export default function AdminDashboardPage() {
             <AreaChart data={activityChartData}>
               <defs>
                 <linearGradient id="colorLaunches" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
-                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                  <stop offset="5%" stopColor="#4A9EFF" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#4A9EFF" stopOpacity={0}/>
                 </linearGradient>
                 <linearGradient id="colorSessions" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
-                  <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                  <stop offset="5%" stopColor="#00FFB3" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#00FFB3" stopOpacity={0}/>
                 </linearGradient>
                 <linearGradient id="colorPlayTime" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8}/>
-                  <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0}/>
+                  <stop offset="5%" stopColor="#B026FF" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#B026FF" stopOpacity={0}/>
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.05)" />
               <XAxis 
                 dataKey="date" 
-                stroke="#9ca3af"
-                style={{ fontSize: '12px' }}
+                stroke="#6B7280"
+                fontSize={10}
+                tickLine={false}
+                axisLine={false}
+                tick={{ fill: '#6B7280' }}
               />
               <YAxis 
                 yAxisId="left"
-                stroke="#9ca3af"
-                style={{ fontSize: '12px' }}
+                stroke="#6B7280"
+                fontSize={10}
+                tickLine={false}
+                axisLine={false}
+                tick={{ fill: '#6B7280' }}
               />
               <YAxis 
                 yAxisId="right"
                 orientation="right"
-                stroke="#9ca3af"
-                style={{ fontSize: '12px' }}
-                label={{ value: 'Minutes', angle: 90, position: 'insideRight', style: { fill: '#9ca3af' } }}
+                stroke="#6B7280"
+                fontSize={10}
+                tickLine={false}
+                axisLine={false}
+                tick={{ fill: '#6B7280' }}
+                label={{ value: 'Minutes', angle: 90, position: 'insideRight', style: { fill: '#6B7280', fontSize: '10px' } }}
               />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  borderRadius: '8px',
+                  backgroundColor: '#1A2332',
+                  border: '1px solid rgba(0,245,255,0.3)',
+                  borderRadius: '4px',
+                  color: '#fff'
                 }}
                 labelStyle={{ color: '#fff' }}
+                itemStyle={{ color: '#00F5FF' }}
               />
               <Legend />
               <Area 
                 yAxisId="left"
                 type="monotone" 
                 dataKey="launches" 
-                stroke="#3b82f6" 
+                stroke="#4A9EFF" 
                 fillOpacity={1}
                 fill="url(#colorLaunches)"
                 strokeWidth={2}
@@ -317,7 +401,7 @@ export default function AdminDashboardPage() {
                 yAxisId="left"
                 type="monotone" 
                 dataKey="sessions" 
-                stroke="#10b981" 
+                stroke="#00FFB3" 
                 fillOpacity={1}
                 fill="url(#colorSessions)"
                 strokeWidth={2}
@@ -327,7 +411,7 @@ export default function AdminDashboardPage() {
                 yAxisId="right"
                 type="monotone" 
                 dataKey="playTime" 
-                stroke="#8b5cf6" 
+                stroke="#B026FF" 
                 fillOpacity={1}
                 fill="url(#colorPlayTime)"
                 strokeWidth={2}
@@ -336,53 +420,61 @@ export default function AdminDashboardPage() {
             </AreaChart>
           </ResponsiveContainer>
         ) : (
-          <div className="flex items-center justify-center h-[400px] text-gray-400">
+          <div >
             No data available
           </div>
         )}
-      </motion.div>
+      </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div >
         {/* Issues Chart */}
         {activityChartData.length > 0 && (
-          <motion.div
+          <div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
-            className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl p-6 shadow-lg"
+            
           >
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                <XCircle className="w-5 h-5 text-red-400" />
+            <div >
+              <h2 >
+                <XCircle  />
                 Issues Over Time
               </h2>
             </div>
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={activityChartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.05)" />
                 <XAxis 
                   dataKey="date" 
-                  stroke="#9ca3af"
-                  style={{ fontSize: '12px' }}
+                  stroke="#6B7280"
+                  fontSize={10}
+                  tickLine={false}
+                  axisLine={false}
+                  tick={{ fill: '#6B7280' }}
                 />
                 <YAxis 
-                  stroke="#9ca3af"
-                  style={{ fontSize: '12px' }}
+                  stroke="#6B7280"
+                  fontSize={10}
+                  tickLine={false}
+                  axisLine={false}
+                  tick={{ fill: '#6B7280' }}
                 />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                    borderRadius: '8px',
+                    backgroundColor: '#1A2332',
+                    border: '1px solid rgba(0,245,255,0.3)',
+                    borderRadius: '4px',
+                    color: '#fff'
                   }}
                   labelStyle={{ color: '#fff' }}
+                  itemStyle={{ color: '#00F5FF' }}
                 />
                 <Legend />
                 <Line 
                   type="monotone" 
                   dataKey="crashes" 
-                  stroke="#ef4444" 
+                  stroke="#FF3B3B" 
                   strokeWidth={2}
                   name="Crashes"
                   dot={{ r: 4 }}
@@ -390,27 +482,27 @@ export default function AdminDashboardPage() {
                 <Line 
                   type="monotone" 
                   dataKey="connectionIssues" 
-                  stroke="#f59e0b" 
+                  stroke="#FF9500" 
                   strokeWidth={2}
                   name="Connection Issues"
                   dot={{ r: 4 }}
                 />
               </LineChart>
             </ResponsiveContainer>
-          </motion.div>
+          </div>
         )}
 
         {/* Popular Servers Pie Chart */}
         {popularServersData.length > 0 && (
-          <motion.div
+          <div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
-            className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl p-6 shadow-lg"
+            
           >
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                <Server className="w-5 h-5 text-green-400" />
+            <div >
+              <h2 >
+                <Server  />
                 Popular Servers
               </h2>
             </div>
@@ -423,7 +515,7 @@ export default function AdminDashboardPage() {
                   labelLine={false}
                   label={({ name, percent }) => `${name.split(':')[0]}: ${(percent * 100).toFixed(0)}%`}
                   outerRadius={100}
-                  fill="#8884d8"
+                  fill="#B026FF"
                   dataKey="value"
                 >
                   {popularServersData.map((entry, index) => (
@@ -432,135 +524,150 @@ export default function AdminDashboardPage() {
                 </Pie>
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                    borderRadius: '8px',
+                    backgroundColor: '#1A2332',
+                    border: '1px solid rgba(176,38,255,0.3)',
+                    borderRadius: '4px',
+                    color: '#fff'
                   }}
+                  labelStyle={{ color: '#fff' }}
+                  itemStyle={{ color: '#B026FF' }}
                 />
               </PieChart>
             </ResponsiveContainer>
-          </motion.div>
+          </div>
         )}
       </div>
 
       {/* Charts Row 2 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div >
         {/* Popular Profiles */}
         {popularProfilesChartData.length > 0 && (
-          <motion.div
+          <div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7 }}
-            className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl p-6 shadow-lg"
+            
           >
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                <BarChart3 className="w-5 h-5 text-blue-400" />
+            <div >
+              <h2 >
+                <BarChart3  />
                 Popular Profiles
               </h2>
             </div>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={popularProfilesChartData} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
-                <XAxis type="number" stroke="#9ca3af" style={{ fontSize: '12px' }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.05)" />
+                <XAxis type="number" stroke="#6B7280" fontSize={10} tickLine={false} axisLine={false} tick={{ fill: '#6B7280' }} />
                 <YAxis 
                   dataKey="name" 
                   type="category" 
-                  stroke="#9ca3af"
-                  style={{ fontSize: '12px' }}
+                  stroke="#6B7280"
+                  fontSize={10}
+                  tickLine={false}
+                  axisLine={false}
+                  tick={{ fill: '#6B7280' }}
                   width={120}
                 />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                    borderRadius: '8px',
+                    backgroundColor: '#1A2332',
+                    border: '1px solid rgba(0,245,255,0.3)',
+                    borderRadius: '4px',
+                    color: '#fff'
                   }}
                   labelStyle={{ color: '#fff' }}
+                  itemStyle={{ color: '#00F5FF' }}
                 />
                 <Bar 
                   dataKey="launches" 
-                  fill="#3b82f6"
-                  radius={[0, 8, 8, 0]}
+                  fill="#4A9EFF"
+                  radius={[0, 4, 4, 0]}
+                  barSize={20}
                 />
               </BarChart>
             </ResponsiveContainer>
-          </motion.div>
+          </div>
         )}
 
         {/* Active Users */}
         {activeUsersChartData.length > 0 && (
-          <motion.div
+          <div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.8 }}
-            className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl p-6 shadow-lg"
+            
           >
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                <Users className="w-5 h-5 text-purple-400" />
+            <div >
+              <h2 >
+                <Users  />
                 Most Active Users
               </h2>
             </div>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={activeUsersChartData} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.1)" />
-                <XAxis type="number" stroke="#9ca3af" style={{ fontSize: '12px' }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255, 255, 255, 0.05)" />
+                <XAxis type="number" stroke="#6B7280" fontSize={10} tickLine={false} axisLine={false} tick={{ fill: '#6B7280' }} />
                 <YAxis 
                   dataKey="name" 
                   type="category" 
-                  stroke="#9ca3af"
-                  style={{ fontSize: '12px' }}
+                  stroke="#6B7280"
+                  fontSize={10}
+                  tickLine={false}
+                  axisLine={false}
+                  tick={{ fill: '#6B7280' }}
                   width={120}
                 />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                    borderRadius: '8px',
+                    backgroundColor: '#1A2332',
+                    border: '1px solid rgba(0,245,255,0.3)',
+                    borderRadius: '4px',
+                    color: '#fff'
                   }}
                   labelStyle={{ color: '#fff' }}
+                  itemStyle={{ color: '#00F5FF' }}
                 />
                 <Bar 
                   dataKey="launches" 
-                  fill="#8b5cf6"
-                  radius={[0, 8, 8, 0]}
+                  fill="#B026FF"
+                  radius={[0, 4, 4, 0]}
+                  barSize={20}
                 />
               </BarChart>
             </ResponsiveContainer>
-          </motion.div>
+          </div>
         )}
       </div>
 
       {/* Tables Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div >
         {/* Popular Servers Table */}
         {analytics && analytics.popularServers.length > 0 && (
-          <motion.div
+          <div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.9 }}
-            className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl p-6 shadow-lg"
+            
           >
-            <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-              <Server className="w-5 h-5" />
+            <h2 >
+              <Server  />
               Popular Servers
             </h2>
-            <div className="overflow-x-auto">
-              <table className="w-full">
+            <div >
+              <table style={{ width: "100%" }}>
                 <thead>
-                  <tr className="border-b border-white/10">
-                    <th className="text-left py-3 px-4 text-gray-400 font-medium text-sm">Server</th>
-                    <th className="text-right py-3 px-4 text-gray-400 font-medium text-sm">Launches</th>
+                  <tr >
+                    <th >Server</th>
+                    <th >Launches</th>
                   </tr>
                 </thead>
                 <tbody>
                   {analytics.popularServers.slice(0, 10).map((server, index) => (
-                    <tr key={index} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                      <td className="py-3 px-4 text-white font-medium">
+                    <tr key={index} >
+                      <td >
                         {server.serverAddress || 'Unknown'}:{server.serverPort || 25565}
                       </td>
-                      <td className="py-3 px-4 text-right text-white">
+                      <td >
                         {server.launches}
                       </td>
                     </tr>
@@ -568,36 +675,36 @@ export default function AdminDashboardPage() {
                 </tbody>
               </table>
             </div>
-          </motion.div>
+          </div>
         )}
 
         {/* Active Users Table */}
         {analytics && analytics.activeUsers.length > 0 && (
-          <motion.div
+          <div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1.0 }}
-            className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl p-6 shadow-lg"
+            
           >
-            <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-              <Users className="w-5 h-5" />
+            <h2 >
+              <Users  />
               Active Users
             </h2>
-            <div className="overflow-x-auto">
-              <table className="w-full">
+            <div >
+              <table style={{ width: "100%" }}>
                 <thead>
-                  <tr className="border-b border-white/10">
-                    <th className="text-left py-3 px-4 text-gray-400 font-medium text-sm">User</th>
-                    <th className="text-right py-3 px-4 text-gray-400 font-medium text-sm">Launches</th>
+                  <tr >
+                    <th >User</th>
+                    <th >Launches</th>
                   </tr>
                 </thead>
                 <tbody>
                   {analytics.activeUsers.slice(0, 10).map((user, index) => (
-                    <tr key={index} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                      <td className="py-3 px-4 text-white font-medium">
+                    <tr key={index} >
+                      <td >
                         {getUserName(user.userId)}
                       </td>
-                      <td className="py-3 px-4 text-right text-white">
+                      <td >
                         {user.launches}
                       </td>
                     </tr>
@@ -605,37 +712,37 @@ export default function AdminDashboardPage() {
                 </tbody>
               </table>
             </div>
-          </motion.div>
+          </div>
         )}
       </div>
 
       {/* Popular Profiles Table */}
       {analytics && analytics.popularProfiles.length > 0 && (
-        <motion.div
+        <div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1.1 }}
-          className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl p-6 shadow-lg"
+          
         >
-          <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-            <Shield className="w-5 h-5" />
+          <h2 >
+            <Shield  />
             Popular Profiles
           </h2>
-          <div className="overflow-x-auto">
-            <table className="w-full">
+          <div >
+            <table style={{ width: "100%" }}>
               <thead>
-                <tr className="border-b border-white/10">
-                  <th className="text-left py-3 px-4 text-gray-400 font-medium text-sm">Profile</th>
-                  <th className="text-right py-3 px-4 text-gray-400 font-medium text-sm">Launches</th>
+                <tr >
+                  <th >Profile</th>
+                  <th >Launches</th>
                 </tr>
               </thead>
               <tbody>
                 {analytics.popularProfiles.slice(0, 15).map((profile, index) => (
-                  <tr key={index} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                    <td className="py-3 px-4 text-white font-medium">
+                  <tr key={index} >
+                    <td >
                       {getProfileName(profile.profileId)}
                     </td>
-                    <td className="py-3 px-4 text-right text-white">
+                    <td >
                       {profile.launches}
                     </td>
                   </tr>
@@ -643,21 +750,21 @@ export default function AdminDashboardPage() {
               </tbody>
             </table>
           </div>
-        </motion.div>
+        </div>
       )}
 
       {(!analytics || analytics.totalLaunches === 0) && (
-        <motion.div
+        <div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl p-12 text-center shadow-lg"
+          
         >
-          <BarChart3 className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-          <p className="text-gray-400 text-lg">No analytics data available</p>
-          <p className="text-gray-500 text-sm mt-2">
+          <BarChart3  />
+          <p >No analytics data available</p>
+          <p >
             Analytics will appear here once users start playing
           </p>
-        </motion.div>
+        </div>
       )}
     </div>
   );

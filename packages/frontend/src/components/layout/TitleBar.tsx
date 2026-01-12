@@ -1,88 +1,91 @@
 /**
- * Custom Window Title Bar Component
- * 
- * Кастомная панель заголовка окна для Electron приложения.
- * Включает:
- * - Кнопки управления окном (минимизация, максимизация, закрытие)
- * - Версию лаунчера
- * - Центр уведомлений
- * - Переключатель языка
- * 
- * @component
- * @example
- * ```tsx
- * import { TitleBar } from '@/components/layout';
- * 
- * function App() {
- *   return (
- *     <>
- *       <TitleBar />
- *       <div>Rest of app content</div>
- *     </>
- *   );
- * }
- * ```
+ * Cyberpunk Title Bar
+ * Techno-Magic Design System
  */
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Minus, Square, X, ChevronDown, Gamepad2 } from 'lucide-react';
+import { Minus, Square, X, ChevronDown, Bell } from 'lucide-react';
 import NotificationCenter from '../NotificationCenter';
 import LanguageSwitcher from '../LanguageSwitcher';
+import { tauriApi, isTauri } from '../../api/tauri';
 
-/**
- * Custom Window Title Bar Component
- * 
- * @returns Title bar with window controls, notifications, and language switcher
- */
 export default function TitleBar() {
   const [launcherVersion, setLauncherVersion] = useState<string | null>(null);
 
-  // Get launcher version
   useEffect(() => {
+    // Only try to get version in Tauri environment
+    if (!isTauri) {
+      return;
+    }
+
     const getVersion = async () => {
-      if (window.electronAPI) {
-        try {
-          const version = await window.electronAPI.getAppVersion();
-          setLauncherVersion(version);
-        } catch (error) {
+      try {
+        const version = await tauriApi.getAppVersion();
+        setLauncherVersion(version);
+      } catch (error) {
+        // Silently fail in browser mode - this is expected
+        if (isTauri) {
           console.error('Failed to get launcher version:', error);
         }
       }
     };
-    
+
     getVersion();
-    
+
     const interval = setInterval(() => {
       getVersion();
     }, 30000);
-    
+
     return () => {
       clearInterval(interval);
     };
   }, []);
 
-  const handleMinimize = () => {
-    if (window.electronAPI) {
-      window.electronAPI.minimizeWindow();
+  const handleMinimize = async () => {
+    if (!isTauri) return;
+    try {
+      await tauriApi.minimizeWindow();
+    } catch (error) {
+      // Silently fail in browser mode
+      if (isTauri) {
+        console.error('Failed to minimize window:', error);
+      }
     }
   };
 
-  const handleMinimizeToTray = () => {
-    if (window.electronAPI) {
-      window.electronAPI.minimizeToTray();
+  const handleMinimizeToTray = async () => {
+    if (!isTauri) return;
+    try {
+      await tauriApi.hideWindow();
+    } catch (error) {
+      // Silently fail in browser mode
+      if (isTauri) {
+        console.error('Failed to hide window:', error);
+      }
     }
   };
 
-  const handleMaximize = () => {
-    if (window.electronAPI) {
-      window.electronAPI.maximizeWindow();
+  const handleMaximize = async () => {
+    if (!isTauri) return;
+    try {
+      await tauriApi.maximizeWindow();
+    } catch (error) {
+      // Silently fail in browser mode
+      if (isTauri) {
+        console.error('Failed to maximize window:', error);
+      }
     }
   };
 
-  const handleClose = () => {
-    if (window.electronAPI) {
-      window.electronAPI.closeWindow();
+  const handleClose = async () => {
+    if (!isTauri) return;
+    try {
+      await tauriApi.closeWindow();
+    } catch (error) {
+      // Silently fail in browser mode
+      if (isTauri) {
+        console.error('Failed to close window:', error);
+      }
     }
   };
 
@@ -94,74 +97,78 @@ export default function TitleBar() {
   };
 
   return (
-    <header 
-      className="flex items-center justify-between h-12 bg-surface-base/80 backdrop-blur-xl window-drag px-6 border-b border-white/10 relative z-[100]"
-      role="banner"
-      aria-label="Application title bar"
-    >
+    <header className="h-14 bg-dark-secondary/80 backdrop-blur-md border-b border-white/5 flex items-center justify-between px-6 select-none draggable region z-30" role="banner" aria-label="Application title bar">
       <div className="flex items-center gap-3">
-        <motion.div
-          whileHover={{ scale: 1.1, rotate: 5 }}
-          className="w-8 h-8 bg-gradient-to-br from-primary-500 via-primary-600 to-primary-700 rounded-lg flex items-center justify-center border border-primary-500/30 shadow-lg shadow-primary-500/20"
-          aria-hidden="true"
-        >
-          <Gamepad2 size={18} className="text-white" strokeWidth={2.5} />
-        </motion.div>
-        <span className="text-sm font-bold text-white tracking-tight">Modern Launcher</span>
+         <div className="flex space-x-1">
+           <div className="w-1 h-6 bg-techno-cyan animate-pulse" />
+           <div className="w-1 h-4 bg-magic-purple mt-2" />
+           <div className="w-1 h-5 bg-white/50 mt-1" />
+         </div>
+         <span className="font-display font-bold tracking-[0.2em] text-sm text-white">
+          ALAUNCHER <span className="text-techno-cyan">OS</span>
+        </span>
         {launcherVersion && (
-          <span className="text-xs text-white/60 font-medium px-2 py-1 bg-white/5 rounded-md border border-white/10" aria-label={`Version ${launcherVersion}`}>
+          <span className="text-[10px] font-mono text-gray-500 border border-white/10 px-2 py-0.5 rounded" aria-label={`Version ${launcherVersion}`}>
             v{launcherVersion}
           </span>
         )}
       </div>
 
-      <div className="flex items-center gap-1 window-no-drag" role="toolbar" aria-label="Window controls">
-        <NotificationCenter />
-        <LanguageSwitcher />
-        <motion.button
-          whileHover={{ scale: 1.1, backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
-          whileTap={{ scale: 0.9 }}
-          onClick={handleMinimize}
-          onKeyDown={(e) => handleKeyDown(e, handleMinimize)}
-          className="p-2 hover:bg-white/10 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-surface-base"
-          aria-label="Minimize window"
-          type="button"
-        >
-          <Minus size={16} className="text-white/70" aria-hidden="true" />
-        </motion.button>
-        <motion.button
-          whileHover={{ scale: 1.1, backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
-          whileTap={{ scale: 0.9 }}
-          onClick={handleMinimizeToTray}
-          onKeyDown={(e) => handleKeyDown(e, handleMinimizeToTray)}
-          className="p-2 hover:bg-white/10 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-surface-base"
-          aria-label="Minimize to system tray"
-          type="button"
-        >
-          <ChevronDown size={16} className="text-white/70" aria-hidden="true" />
-        </motion.button>
-        <motion.button
-          whileHover={{ scale: 1.1, backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
-          whileTap={{ scale: 0.9 }}
-          onClick={handleMaximize}
-          onKeyDown={(e) => handleKeyDown(e, handleMaximize)}
-          className="p-2 hover:bg-white/10 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-surface-base"
-          aria-label="Maximize window"
-          type="button"
-        >
-          <Square size={14} className="text-white/70" aria-hidden="true" />
-        </motion.button>
-        <motion.button
-          whileHover={{ scale: 1.1, backgroundColor: 'rgba(239, 68, 68, 0.2)' }}
-          whileTap={{ scale: 0.9 }}
-          onClick={handleClose}
-          onKeyDown={(e) => handleKeyDown(e, handleClose)}
-          className="p-2 hover:bg-red-500/20 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-surface-base"
-          aria-label="Close window"
-          type="button"
-        >
-          <X size={16} className="text-white/70" aria-hidden="true" />
-        </motion.button>
+      <div className="flex items-center gap-4 no-drag" role="toolbar" aria-label="Window controls">
+         <div className="flex items-center gap-1 text-[10px] font-mono text-gray-500 mr-2 border-r border-white/10 pr-4">
+           <div className="w-2 h-2 bg-status-success rounded-full animate-pulse" />
+           SERVER STATUS: OPTIMAL
+         </div>
+
+         <div className="relative">
+           <NotificationCenter />
+         </div>
+
+         <LanguageSwitcher />
+
+        {isTauri && (
+          <>
+            <button
+              onClick={handleMinimize}
+              onKeyDown={(e) => handleKeyDown(e, handleMinimize)}
+              className="w-8 h-8 flex items-center justify-center hover:bg-white/5 text-gray-400 hover:text-white transition-colors"
+              aria-label="Minimize window"
+              type="button"
+            >
+              <Minus className="w-4 h-4" />
+            </button>
+
+            <button
+              onClick={handleMinimizeToTray}
+              onKeyDown={(e) => handleKeyDown(e, handleMinimizeToTray)}
+              className="w-8 h-8 flex items-center justify-center hover:bg-white/5 text-gray-400 hover:text-white transition-colors"
+              aria-label="Minimize to system tray"
+              type="button"
+            >
+              <ChevronDown className="w-4 h-4" />
+            </button>
+
+            <button
+              onClick={handleMaximize}
+              onKeyDown={(e) => handleKeyDown(e, handleMaximize)}
+              className="w-8 h-8 flex items-center justify-center hover:bg-white/5 text-gray-400 hover:text-white transition-colors"
+              aria-label="Maximize window"
+              type="button"
+            >
+              <Square className="w-3 h-3" />
+            </button>
+
+            <button
+              onClick={handleClose}
+              onKeyDown={(e) => handleKeyDown(e, handleClose)}
+              className="w-8 h-8 flex items-center justify-center hover:bg-status-error hover:text-white text-gray-400 transition-colors"
+              aria-label="Close application"
+              type="button"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </>
+        )}
       </div>
     </header>
   );

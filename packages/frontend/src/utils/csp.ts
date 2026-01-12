@@ -26,10 +26,10 @@ export const getCSPConnectSrc = (): string => {
   const isDev = API_CONFIG.isDevelopment;
   
   if (isDev) {
-    return `'self' http://localhost:* http://${apiHost} ws://localhost:* ws://${apiHost} wss://localhost:* wss://${apiHost}`;
+    return `'self' http://localhost:* http://${apiHost} ws://localhost:* ws://${apiHost} wss://localhost:* wss://${apiHost} https://fonts.googleapis.com https://fonts.gstatic.com`;
   }
   
-  return `'self' http://${apiHost} ws://${apiHost} wss://${apiHost}`;
+  return `'self' http://${apiHost} ws://${apiHost} wss://${apiHost} https://fonts.googleapis.com https://fonts.gstatic.com`;
 };
 
 /**
@@ -67,10 +67,10 @@ export const getCSPHeader = (): string => {
   return [
     `default-src ${getCSPDefaultSrc()};`,
     `script-src ${getCSPScriptSrc()};`,
-    `style-src 'self' 'unsafe-inline';`,
+    `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;`,
     `img-src 'self' data: blob: http: https:;`,
-    `font-src 'self' data:;`,
-    `connect-src ${getCSPConnectSrc()};`,
+    `font-src 'self' data: https://fonts.gstatic.com;`,
+    `connect-src ${getCSPConnectSrc()} https://fonts.googleapis.com https://fonts.gstatic.com;`,
   ].join(' ');
 };
 

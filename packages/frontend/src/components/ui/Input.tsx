@@ -1,123 +1,75 @@
 /**
- * Input Component
- *
- * Универсальный компонент поля ввода с поддержкой различных вариантов, размеров и состояний.
- * Использует дизайн-систему для консистентного стиля.
- *
- * @module components/ui/Input
+ * Cyberpunk Input Component
+ * Techno-Magic Design System
  */
 
 import React from 'react';
-import { inputVariants, inputSizes, inputBase, cn } from '../../styles/design-system';
+import { Cpu } from 'lucide-react';
 
-export type InputVariant = keyof typeof inputVariants;
-export type InputSize = keyof typeof inputSizes;
-
-export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  /** Вариант стиля поля ввода */
-  variant?: InputVariant;
-  /** Размер поля ввода */
-  size?: InputSize;
-  /** Текст ошибки */
+export interface InputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'> {
   error?: string;
-  /** Текст подсказки */
   hint?: string;
-  /** Иконка слева */
   leftIcon?: React.ReactNode;
-  /** Иконка справа */
   rightIcon?: React.ReactNode;
-  /** Метка поля */
   label?: string;
-  /** Обязательное поле */
   required?: boolean;
 }
 
-/**
- * Input Component
- *
- * @example
- * ```tsx
- * <Input
- *   label="Email"
- *   type="email"
- *   placeholder="Enter your email"
- *   required
- * />
- *
- * <Input
- *   variant="error"
- *   error="This field is required"
- *   leftIcon={<Icon />}
- * />
- * ```
- */
 export default function Input({
-  variant = 'default',
-  size = 'md',
   error,
   hint,
   leftIcon,
   rightIcon,
   label,
   required,
-  className,
+  className = '',
   id,
+  style,
   ...props
 }: InputProps) {
   const inputId = id || `input-${Math.random().toString(36).substr(2, 9)}`;
-  const hasError = variant === 'error' || !!error;
-  const actualVariant = hasError ? 'error' : variant;
-
-  const inputClasses = cn(
-    inputBase,
-    inputVariants[actualVariant],
-    inputSizes[size],
-    leftIcon && 'pl-10',
-    rightIcon && 'pr-10',
-    className
-  );
 
   return (
-    <div className="w-full">
+    <div className={`w-full group ${className}`}>
       {label && (
-        <label
-          htmlFor={inputId}
-          className="block text-sm font-medium text-heading mb-2"
-        >
-          {label}
-          {required && <span className="text-error-400 ml-1">*</span>}
+        <label className="flex items-center gap-2 text-xs font-bold text-techno-cyan mb-2 uppercase tracking-widest opacity-80 group-focus-within:opacity-100 transition-opacity">
+          <Cpu className="w-3 h-3" /> {label}
         </label>
       )}
       <div className="relative">
+        <div className="absolute inset-0 bg-techno-cyan/5 clip-cyber-corner pointer-events-none group-focus-within:bg-techno-cyan/10 transition-colors" />
+        
+        {/* Border using clip-path and pseudo-element */}
+        <div className={`absolute inset-0 pointer-events-none clip-cyber-corner border transition-colors duration-300 ${error ? 'border-status-error' : 'border-techno-cyan/30 group-focus-within:border-techno-cyan group-focus-within:shadow-[0_0_5px_rgba(0,245,255,0.5)]'}`} />
+
         {leftIcon && (
-          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-body-muted">
+          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-500 group-focus-within:text-techno-cyan transition-colors">
             {leftIcon}
           </div>
         )}
-        <input
-          id={inputId}
-          className={inputClasses}
-          aria-invalid={hasError}
-          aria-describedby={error ? `${inputId}-error` : hint ? `${inputId}-hint` : undefined}
+        
+        <input 
+          className={`w-full bg-transparent text-white placeholder-gray-600 py-3 ${leftIcon ? 'pl-12' : 'pl-4'} pr-4 focus:outline-none font-mono tracking-wide relative z-10`}
+          style={{ clipPath: 'polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)', ...style }}
           {...props}
         />
+
         {rightIcon && (
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 text-body-muted">
+          <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-gray-500">
             {rightIcon}
           </div>
         )}
       </div>
       {error && (
-        <p id={`${inputId}-error`} className="mt-1 text-sm text-error-400">
+        <p id={`${inputId}-error`} className="mt-1 text-xs text-status-error font-mono animate-pulse">
           {error}
         </p>
       )}
       {hint && !error && (
-        <p id={`${inputId}-hint`} className="mt-1 text-sm text-body-muted">
+        <p id={`${inputId}-hint`} className="mt-1 text-xs text-gray-500 font-mono">
           {hint}
         </p>
       )}
     </div>
   );
 }
-

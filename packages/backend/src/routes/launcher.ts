@@ -12,10 +12,41 @@ import { AppError } from '../middleware/errorHandler';
 import { logger } from '../utils/logger';
 import { NotificationService } from '../services/notificationService';
 import { optionalAuth, AuthRequest } from '../middleware/auth';
+import { extractNativesFromJar, extractAllNatives } from '../services/clientDownloadService';
 
 const fsAccess = promisify(access);
 
 const router = Router();
+
+/**
+ * POST /api/natives/extract
+ * Extract native libraries from game assets
+ */
+router.post('/natives/extract', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { game_dir } = req.body;
+
+    if (!game_dir) {
+      return res.status(400).json({ error: 'game_dir is required' });
+    }
+
+    logger.info(`[Launcher API] Extracting natives for game directory: ${game_dir}`);
+
+    // Extract natives
+    await extractAllNatives(
+      join(game_dir, 'libraries'),
+      game_dir,
+      (stage: string, progress: number, message: string) => {
+        logger.info(`[Native Extraction] ${message} (${progress}%)`);
+      }
+    );
+
+    res.json({ success: true, message: 'Native libraries extracted successfully' });
+  } catch (error: any) {
+    logger.error(`[Launcher API] Failed to extract natives: ${error.message}`, error);
+    next(new AppError(500, `Failed to extract native libraries: ${error.message}`));
+  }
+});
 
 /**
  * GET /api/launcher/version

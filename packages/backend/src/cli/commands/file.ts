@@ -23,7 +23,8 @@ file verify <version> - Verify integrity of all files for version
 file stats <version> - Show sync statistics for version
 file list <version> - List all files for version
 file delete <version> <filePath> - Delete file from database (file must be deleted from disk first)
-file delete-all <version> - Delete all files for version from database`;
+file delete-all <version> - Delete all files for version from database
+file cleanup - Remove files with empty clientDirectory from database`;
   }
 
   getExamples(): string[] {
@@ -34,10 +35,11 @@ file delete-all <version> - Delete all files for version from database`;
       'file list 1.12.2',
       'file delete 1.12.2 libraries/net/minecraftforge/forge/1.12.2-14.23.5.2860/forge-1.12.2-14.23.5.2860.jar',
       'file delete-all 1.12.2',
+      'file cleanup',
     ];
   }
 
-  async execute(args: string[], rl: readline.Interface): Promise<void> {
+  async execute(args: string[], rl: readline.Interface, commandName?: string): Promise<void> {
     if (args.length === 0) {
       this.printError('Subcommand required. Use "file sync", "file verify", etc.');
       this.printInfo('Type "help file" for usage information');
@@ -64,6 +66,9 @@ file delete-all <version> - Delete all files for version from database`;
         break;
       case 'delete-all':
         await this.handleDeleteAll(args.slice(1), rl);
+        break;
+      case 'cleanup':
+        await this.handleCleanup(args.slice(1), rl);
         break;
       default:
         this.printError(`Unknown subcommand: ${subcommand}`);
@@ -325,6 +330,60 @@ file delete-all <version> - Delete all files for version from database`;
       this.printSuccess(`\n✅ Deleted ${deleteResult.count} file(s) from database for version "${version}"`);
     } catch (error: any) {
       this.printError(`Failed to delete files: ${error.message}`);
+    }
+  }
+
+  private async handleCleanup(args: string[], rl: readline.Interface): Promise<void> {
+    try {
+      this.printInfo('🧹 Cleaning up files with empty clientDirectory...');
+
+      // Найти все файлы с пустым clientDirectory
+      const filesWithEmptyDir = await prisma.clientFile.findMany({
+        where: {
+          clientDirectory: '', // Ищем файлы с пустой строкой
+        },
+        select: {
+          id: true,
+          filePath: true,
+          fileSize: true,
+          version: {
+            select: {
+              version: true,
+            },
+          },
+        },
+      });
+
+      if (filesWithEmptyDir.length === 0) {
+        this.printSuccess('✅ No files with empty clientDirectory found');
+        return;
+      }
+
+      this.printWarning(`\n⚠️  Found ${filesWithEmptyDir.length} files with empty clientDirectory:`);
+
+      // Показать первые 10 файлов
+      const previewFiles = filesWithEmptyDir.slice(0, 10);
+      previewFiles.forEach((file) => {
+        this.print(`   ${file.version.version}: ${file.filePath} (${this.formatBytes(file.fileSize)})`);
+      });
+
+      if (filesWithEmptyDir.length > 10) {
+        this.print(`   ... and ${filesWithEmptyDir.length - 10} more files`);
+      }
+
+      // Удаляем файлы с пустым clientDirectory
+      this.printInfo('\n🗑️ Deleting files with empty clientDirectory...');
+
+      const deleteResult = await prisma.clientFile.deleteMany({
+        where: {
+          clientDirectory: '', // Удаляем только файлы с пустой строкой
+        },
+      });
+
+      this.printSuccess(`\n✅ Successfully deleted ${deleteResult.count} files with empty clientDirectory`);
+      this.printInfo('💡 Note: Files with null clientDirectory (proper version files) were kept intact');
+    } catch (error: any) {
+      this.printError(`Failed to cleanup files: ${error.message}`);
     }
   }
 }

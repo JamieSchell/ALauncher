@@ -224,6 +224,7 @@ export const en = {
 
   // Settings
   settings: {
+    launcherBehavior: 'Launcher Behavior',
     title: 'Settings',
     general: 'General',
     game: 'Game',
@@ -286,6 +287,11 @@ export const en = {
     updateCheckElectronOnly: 'Update check only available in Electron app',
     updateCheckDesktopOnly: 'Update check only available in desktop app',
     updateCheckNotImplemented: 'Update check not yet implemented',
+    keepLauncherOpenDesc: 'Do not close window after game start',
+    discordRichPresenceDesc: 'Show status on Discord profile',
+    fullscreenModeDesc: 'Start game in fullscreen',
+    useOptimizationModsDesc: 'Injects Sodium/Lithium automatically',
+    audioSettingsDesc: 'Launcher sounds and notifications coming in v2.1 update.',
   },
 
   // Errors
@@ -349,6 +355,85 @@ export const en = {
     markAsRead: 'Mark as read',
     delete: 'Delete',
     settings: 'Notification Settings',
+  },
+
+  // Home Page
+  home: {
+    dimensionBrowser: 'DIMENSION BROWSER',
+    selectDestination: 'SELECT DESTINATION PROTOCOL',
+    initializeLink: 'INITIALIZE LINK',
+    processing: 'PROCESSING...',
+  },
+
+  // Server Details
+  serverDetails: {
+    playerActivity: 'Player Activity',
+    topContributors: 'Top Contributors',
+    readyToDive: 'Ready to Dive?',
+    allocatedRAM: 'Allocated RAM',
+    modloader: 'Modloader',
+    modpackInfo: 'Modpack Info',
+    modsLoaded: 'Mods Loaded',
+    lastUpdated: 'Last Updated',
+    size: 'Size',
+    downloading: 'DOWNLOADING...',
+    launching: 'LAUNCHING...',
+    downloadAndLaunch: 'DOWNLOAD & LAUNCH',
+    noLeaderboardData: 'No leaderboard data available',
+    economyDisabled: 'Economy system disabled',
+  },
+
+  // Settings
+  settingsLabels: {
+    keepLauncherOpen: 'Keep Launcher Open',
+    discordRichPresence: 'Discord Rich Presence',
+    memoryAllocation: 'Memory Allocation (RAM)',
+    javaRuntime: 'Java Runtime',
+    notificationSettings: 'Notification Settings',
+    resolution: 'Resolution',
+    fullscreenMode: 'Fullscreen Mode',
+    optimization: 'Optimization',
+    useOptimizationMods: 'Use Optimization Mods',
+    audioSettings: 'Audio settings managed in-game',
+  },
+
+  // Admin
+  admin: {
+    commandCenter: 'ADMIN COMMAND CENTER',
+    userManagement: 'User Management',
+    crashReports: 'CRASH REPORTS',
+    manageProfiles: 'Manage Profiles',
+    systemHealth: 'System Health Integrity',
+    databaseLatency: 'Database Latency',
+    authServerLoad: 'Auth Server Load',
+    cdnThroughput: 'CDN Throughput',
+  },
+
+  // Statistics
+  statisticsLabels: {
+    networkStatistics: 'NETWORK STATISTICS',
+    globalInfrastructure: 'GLOBAL INFRASTRUCTURE MONITORING',
+    trafficAnalysis: 'Traffic Analysis (24h)',
+    serverLoadDistribution: 'Server Load Distribution',
+    downloadReport: 'Download Weekly Report',
+    getDetailedAnalytics: 'Get detailed analytics in CSV or PDF format.',
+  },
+
+  // Login
+  login: {
+    initiateHandshake: 'INITIATE HANDSHAKE',
+    processing: 'PROCESSING...',
+  },
+
+  // Common UI
+  ui: {
+    backToDashboard: 'Back to Dashboard',
+    filters: 'FILTERS',
+    clearAll: 'Clear All',
+    viewBanManage: 'View, ban, and manage user accounts',
+    createEditDelete: 'Create, edit, and delete Minecraft profiles',
+    categories: 'Categories',
+    allocated: 'Allocated',
   },
 };
 

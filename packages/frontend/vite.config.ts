@@ -13,16 +13,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
-      'react': path.resolve(__dirname, './node_modules/react'),
-      'react-dom': path.resolve(__dirname, './node_modules/react-dom'),
     },
-  },
-  optimizeDeps: {
-    include: ['@modern-launcher/shared', 'gifuct-js', '@tauri-apps/api'],
-    esbuildOptions: {
-      target: 'es2020',
-    },
-    dedupe: ['react', 'react-dom'],
   },
   build: {
     base: './', // Use relative paths for Tauri
@@ -31,9 +22,8 @@ export default defineConfig({
       include: [/node_modules/, /shared/],
       transformMixedEsModules: true,
     },
-    chunkSizeWarningLimit: 1000, // Increase limit to 1MB to suppress warnings
     rollupOptions: {
-      external: ['@tauri-apps/api', '@tauri-apps/plugin-process'],
+      external: [],
       output: {
         manualChunks: (id) => {
           // Split vendor chunks for better code splitting
@@ -101,15 +91,4 @@ export default defineConfig({
       },
     },
   },
-  server: {
-    port: 5173,
-    host: '0.0.0.0', // Listen on all interfaces to allow access via IP
-    headers: {
-      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-      'Pragma': 'no-cache',
-      'Expires': '0',
-    },
-  },
-  // Tauri expects a Vite dev server output by default
-  clearScreen: false,
 });

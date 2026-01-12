@@ -7,6 +7,7 @@ import { notificationsAPI, NotificationType } from '../api/notifications';
 import { useSettingsStore } from '../stores/settingsStore';
 import { useAuthStore } from '../stores/authStore';
 import { downloadsAPI } from '../api/downloads';
+import { isElectron } from '../api/platformSimple';
 
 interface CreateNotificationOptions {
   type: NotificationType;
@@ -52,9 +53,9 @@ export async function createNotification(options: CreateNotificationOptions): Pr
     });
 
     // Show desktop notification if enabled
-    if (desktopEnabled && (options.showDesktop !== false) && window.electronAPI) {
+    if (desktopEnabled && (options.showDesktop !== false) && isElectron) {
       try {
-        await window.electronAPI.showNotification(
+        await (window as any).electronAPI.showNotification(
           options.title,
           options.message,
           {

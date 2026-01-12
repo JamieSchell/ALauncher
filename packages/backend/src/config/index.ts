@@ -5,7 +5,9 @@
 import dotenv from 'dotenv';
 import path from 'path';
 
-dotenv.config({ path: process.env.NODE_ENV === 'development' ? '.env.dev' : '.env' });
+dotenv.config({
+  path: process.env.NODE_ENV === 'development' ? '.env.dev' : '.env'
+});
 
 export const config = {
   env: process.env.NODE_ENV || 'development',

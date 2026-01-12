@@ -131,7 +131,7 @@ class AppInitializer {
       } catch (error) {
         const duration = Date.now() - start;
         ErrorLoggerService.logNetworkError(
-          args[0],
+          args[0] instanceof Request ? args[0].url : String(args[0]),
           'FETCH',
           0,
           error as Error

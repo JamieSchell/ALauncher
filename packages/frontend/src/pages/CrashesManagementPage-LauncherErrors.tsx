@@ -1,9 +1,8 @@
 /**
- * Launcher Errors Components for CrashesManagementPage
+ * Launcher Errors Components for CrashesManagementPage - Functionality Only
  */
 
 import React from 'react';
-import { motion } from 'framer-motion';
 import { Code, Loader2, User, Calendar, Eye, X } from 'lucide-react';
 import { LauncherError } from '../api/crashes';
 
@@ -31,89 +30,98 @@ export const LauncherErrorsList = React.forwardRef<HTMLDivElement, {
     UNKNOWN_ERROR: 'Unknown',
   };
 
-  const errorTypeColors: Record<string, string> = {
-    PROFILE_LOAD_ERROR: 'bg-blue-500/20 text-blue-300',
-    FILE_DOWNLOAD_ERROR: 'bg-yellow-500/20 text-yellow-300',
-    API_ERROR: 'bg-red-500/20 text-red-300',
-    AUTHENTICATION_ERROR: 'bg-orange-500/20 text-orange-300',
-    VALIDATION_ERROR: 'bg-purple-500/20 text-purple-300',
-    FILE_SYSTEM_ERROR: 'bg-pink-500/20 text-pink-300',
-    NETWORK_ERROR: 'bg-cyan-500/20 text-cyan-300',
-    ELECTRON_ERROR: 'bg-indigo-500/20 text-indigo-300',
-    JAVA_DETECTION_ERROR: 'bg-teal-500/20 text-teal-300',
-    CLIENT_LAUNCH_ERROR: 'bg-rose-500/20 text-rose-300',
-    UNKNOWN_ERROR: 'bg-gray-500/20 text-gray-300',
+  const errorTypeColors: Record<string, { bg: string; text: string }> = {
+    PROFILE_LOAD_ERROR: { bg: 'rgba(59, 130, 246, 0.2)', text: '#93c5fd' },
+    FILE_DOWNLOAD_ERROR: { bg: 'rgba(234, 179, 8, 0.2)', text: '#fde047' },
+    API_ERROR: { bg: 'rgba(239, 68, 68, 0.2)', text: '#fca5a5' },
+    AUTHENTICATION_ERROR: { bg: 'rgba(249, 115, 22, 0.2)', text: '#fdba74' },
+    VALIDATION_ERROR: { bg: 'rgba(168, 85, 247, 0.2)', text: '#d8b4fe' },
+    FILE_SYSTEM_ERROR: { bg: 'rgba(236, 72, 153, 0.2)', text: '#f9a8d4' },
+    NETWORK_ERROR: { bg: 'rgba(6, 182, 212, 0.2)', text: '#67e8f9' },
+    ELECTRON_ERROR: { bg: 'rgba(99, 102, 241, 0.2)', text: '#a5b4fc' },
+    JAVA_DETECTION_ERROR: { bg: 'rgba(20, 184, 166, 0.2)', text: '#5eead4' },
+    CLIENT_LAUNCH_ERROR: { bg: 'rgba(244, 63, 94, 0.2)', text: '#fda4af' },
+    UNKNOWN_ERROR: { bg: 'rgba(107, 114, 128, 0.2)', text: '#d1d5db' },
   };
 
   if (isLoading && errors.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '256px' }}>
+        <Loader2 style={{ width: '32px', height: '32px', color: '#6366f1', animation: 'spin 1s linear infinite' }} />
       </div>
     );
   }
 
   if (errors.length === 0) {
     return (
-      <div className="text-center py-12">
-        <Code className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-        <p className="text-gray-400">No launcher errors found</p>
+      <div style={{ textAlign: 'center', padding: '48px 0' }}>
+        <Code style={{ width: '64px', height: '64px', color: '#6b7280', margin: '0 auto 16px' }} />
+        <p style={{ color: '#9ca3af' }}>No launcher errors found</p>
       </div>
     );
   }
 
   return (
-    <div ref={ref} className="space-y-2 max-h-[600px] overflow-y-auto">
+    <div ref={ref} style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '600px', overflowY: 'auto' }}>
       {errors.map((error) => (
-        <motion.div
+        <div
           key={error.id}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className={`bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-lg p-4 cursor-pointer hover:bg-white/5 transition-colors shadow-lg ${
-            selectedError?.id === error.id ? 'ring-2 ring-primary-500' : ''
-          }`}
           onClick={() => onSelectError(error)}
+          style={{
+            padding: '16px',
+            cursor: 'pointer',
+            border: selectedError?.id === error.id ? '2px solid #6366f1' : '1px solid rgba(255,255,255,0.15)',
+            borderRadius: '8px',
+            backgroundColor: 'rgba(17, 24, 39, 0.6)'
+          }}
         >
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-2">
-                <span className={`px-2 py-1 rounded text-xs font-medium ${errorTypeColors[error.errorType] || errorTypeColors.UNKNOWN_ERROR}`}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px' }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                <span style={{
+                  padding: '4px 8px',
+                  borderRadius: '4px',
+                  fontSize: '12px',
+                  fontWeight: '500',
+                  backgroundColor: errorTypeColors[error.errorType]?.bg || errorTypeColors.UNKNOWN_ERROR.bg,
+                  color: errorTypeColors[error.errorType]?.text || errorTypeColors.UNKNOWN_ERROR.text
+                }}>
                   {errorTypeLabels[error.errorType] || error.errorType}
                 </span>
                 {error.component && (
-                  <span className="text-xs text-gray-400 bg-white/5 px-2 py-1 rounded">
+                  <span style={{ fontSize: '12px', color: '#9ca3af', backgroundColor: 'rgba(255,255,255,0.05)', padding: '4px 8px', borderRadius: '4px' }}>
                     {error.component}
                   </span>
                 )}
                 {error.statusCode && (
-                  <span className="text-xs text-gray-400 bg-white/5 px-2 py-1 rounded">
+                  <span style={{ fontSize: '12px', color: '#9ca3af', backgroundColor: 'rgba(255,255,255,0.05)', padding: '4px 8px', borderRadius: '4px' }}>
                     HTTP {error.statusCode}
                   </span>
                 )}
               </div>
-              <p className="text-white text-sm font-medium truncate mb-1">
+              <p style={{ color: '#fff', fontSize: '14px', fontWeight: '500', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {error.errorMessage.substring(0, 100)}{error.errorMessage.length > 100 ? '...' : ''}
               </p>
-              <div className="flex items-center gap-4 text-xs text-gray-400">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '12px', color: '#9ca3af' }}>
                 {error.username && (
-                  <span className="flex items-center gap-1">
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <User size={12} />
                     {error.username}
                   </span>
                 )}
-                <span className="flex items-center gap-1">
+                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                   <Calendar size={12} />
                   {formatDate(error.createdAt)}
                 </span>
               </div>
             </div>
-            <Eye className="w-5 h-5 text-gray-400 flex-shrink-0" />
+            <Eye style={{ width: '20px', height: '20px', color: '#9ca3af', flexShrink: 0 }} />
           </div>
-        </motion.div>
+        </div>
       ))}
       {isFetchingNext && (
-        <div className="flex justify-center py-4">
-          <Loader2 className="w-6 h-6 text-primary-500 animate-spin" />
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '16px' }}>
+          <Loader2 style={{ width: '24px', height: '24px', color: '#6366f1', animation: 'spin 1s linear infinite' }} />
         </div>
       )}
     </div>
@@ -139,98 +147,110 @@ export const LauncherErrorDetailModal = ({ error, onClose, formatDate }: { error
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+    <div
       onClick={onClose}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        zIndex: 50,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '16px'
+      }}
     >
-      <motion.div
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.9, opacity: 0 }}
-        className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-lg"
+      <div
         onClick={(e) => e.stopPropagation()}
+        style={{
+          backgroundColor: 'rgba(17, 24, 39, 0.6)',
+          borderRadius: '12px',
+          padding: '24px',
+          maxWidth: '896px',
+          width: '100%',
+          maxHeight: '90vh',
+          overflowY: 'auto',
+          border: '1px solid rgba(255,255,255,0.15)'
+        }}
       >
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-            <Code className="w-6 h-6 text-purple-400" />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+          <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#fff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Code style={{ width: '24px', height: '24px', color: '#a855f7' }} />
             Launcher Error Details
           </h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+            style={{ padding: '8px', border: 'none', backgroundColor: 'transparent', cursor: 'pointer', borderRadius: '8px' }}
           >
-            <X size={20} className="text-gray-400" />
+            <X size={20} style={{ color: '#9ca3af' }} />
           </button>
         </div>
 
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
             <div>
-              <label className="text-xs text-gray-400">Error Type</label>
-              <p className="text-white font-medium">{errorTypeLabels[error.errorType] || error.errorType}</p>
+              <label style={{ fontSize: '12px', color: '#9ca3af' }}>Error Type</label>
+              <p style={{ color: '#fff', fontWeight: '500' }}>{errorTypeLabels[error.errorType] || error.errorType}</p>
             </div>
             <div>
-              <label className="text-xs text-gray-400">Date</label>
-              <p className="text-white">{formatDate(error.createdAt)}</p>
+              <label style={{ fontSize: '12px', color: '#9ca3af' }}>Date</label>
+              <p style={{ color: '#fff' }}>{formatDate(error.createdAt)}</p>
             </div>
             {error.username && (
               <div>
-                <label className="text-xs text-gray-400">User</label>
-                <p className="text-white">{error.username}</p>
+                <label style={{ fontSize: '12px', color: '#9ca3af' }}>User</label>
+                <p style={{ color: '#fff' }}>{error.username}</p>
               </div>
             )}
             {error.component && (
               <div>
-                <label className="text-xs text-gray-400">Component</label>
-                <p className="text-white">{error.component}</p>
+                <label style={{ fontSize: '12px', color: '#9ca3af' }}>Component</label>
+                <p style={{ color: '#fff' }}>{error.component}</p>
               </div>
             )}
             {error.action && (
               <div>
-                <label className="text-xs text-gray-400">Action</label>
-                <p className="text-white">{error.action}</p>
+                <label style={{ fontSize: '12px', color: '#9ca3af' }}>Action</label>
+                <p style={{ color: '#fff' }}>{error.action}</p>
               </div>
             )}
             {error.url && (
               <div>
-                <label className="text-xs text-gray-400">URL</label>
-                <p className="text-white break-all">{error.url}</p>
+                <label style={{ fontSize: '12px', color: '#9ca3af' }}>URL</label>
+                <p style={{ color: '#fff', wordBreak: 'break-all' }}>{error.url}</p>
               </div>
             )}
             {error.statusCode && (
               <div>
-                <label className="text-xs text-gray-400">HTTP Status</label>
-                <p className="text-white">{error.statusCode}</p>
+                <label style={{ fontSize: '12px', color: '#9ca3af' }}>HTTP Status</label>
+                <p style={{ color: '#fff' }}>{error.statusCode}</p>
               </div>
             )}
             {error.os && (
               <div>
-                <label className="text-xs text-gray-400">OS</label>
-                <p className="text-white">{error.os}{error.osVersion ? ` ${error.osVersion}` : ''}</p>
+                <label style={{ fontSize: '12px', color: '#9ca3af' }}>OS</label>
+                <p style={{ color: '#fff' }}>{error.os}{error.osVersion ? ` ${error.osVersion}` : ''}</p>
               </div>
             )}
             {error.launcherVersion && (
               <div>
-                <label className="text-xs text-gray-400">Launcher Version</label>
-                <p className="text-white">{error.launcherVersion}</p>
+                <label style={{ fontSize: '12px', color: '#9ca3af' }}>Launcher Version</label>
+                <p style={{ color: '#fff' }}>{error.launcherVersion}</p>
               </div>
             )}
           </div>
 
           <div>
-            <label className="text-xs text-gray-400 mb-2 block">Error Message</label>
-            <pre className="bg-black/30 p-4 rounded-lg text-sm text-red-300 overflow-x-auto whitespace-pre-wrap">
+            <label style={{ fontSize: '12px', color: '#9ca3af', marginBottom: '8px', display: 'block' }}>Error Message</label>
+            <pre style={{ backgroundColor: 'rgba(0,0,0,0.3)', padding: '16px', borderRadius: '8px', fontSize: '14px', color: '#fca5a5', overflowX: 'auto', whiteSpace: 'pre-wrap' }}>
               {error.errorMessage}
             </pre>
           </div>
 
           {error.stackTrace && (
             <div>
-              <label className="text-xs text-gray-400 mb-2 block">Stack Trace</label>
-              <pre className="bg-black/30 p-4 rounded-lg text-sm text-gray-300 overflow-x-auto max-h-64 overflow-y-auto whitespace-pre-wrap">
+              <label style={{ fontSize: '12px', color: '#9ca3af', marginBottom: '8px', display: 'block' }}>Stack Trace</label>
+              <pre style={{ backgroundColor: 'rgba(0,0,0,0.3)', padding: '16px', borderRadius: '8px', fontSize: '14px', color: '#d1d5db', overflowX: 'auto', maxHeight: '256px', overflowY: 'auto', whiteSpace: 'pre-wrap' }}>
                 {error.stackTrace}
               </pre>
             </div>
@@ -238,13 +258,12 @@ export const LauncherErrorDetailModal = ({ error, onClose, formatDate }: { error
 
           {error.userAgent && (
             <div>
-              <label className="text-xs text-gray-400 mb-2 block">User Agent</label>
-              <p className="text-gray-300 text-sm break-all">{error.userAgent}</p>
+              <label style={{ fontSize: '12px', color: '#9ca3af', marginBottom: '8px', display: 'block' }}>User Agent</label>
+              <p style={{ color: '#d1d5db', fontSize: '14px', wordBreak: 'break-all' }}>{error.userAgent}</p>
             </div>
           )}
         </div>
-      </motion.div>
-    </motion.div>
+      </div>
+    </div>
   );
 };
-

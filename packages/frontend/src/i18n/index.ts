@@ -12,6 +12,7 @@ import { en } from './locales/en';
 import { TranslationKey } from './types';
 
 export type Language = 'ru' | 'en';
+export type { TranslationKey };
 
 export const languages: Record<Language, { name: string; flag: string }> = {
   ru: { name: 'Русский', flag: '🇷🇺' },

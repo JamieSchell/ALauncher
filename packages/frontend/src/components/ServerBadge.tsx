@@ -3,8 +3,6 @@
  * Отображает пометки на карточках серверов (NEW, TOP, WIP, HARD и т.д.)
  */
 
-import { motion } from 'framer-motion';
-
 type BadgeType = 'NEW' | 'TOP' | 'WIP' | 'HARD' | 'POPULAR' | 'BETA' | 'ALPHA' | string;
 
 interface ServerBadgeProps {
@@ -12,53 +10,62 @@ interface ServerBadgeProps {
   className?: string;
 }
 
-const badgeStyles: Record<string, { bg: string; text: string; border?: string }> = {
+const badgeStyles: Record<string, { background: string; color: string; border?: string }> = {
   NEW: {
-    bg: 'bg-gradient-to-r from-green-500 to-emerald-600',
-    text: 'text-white',
+    background: 'linear-gradient(to right, rgb(34, 197, 94), rgb(16, 185, 129))',
+    color: 'white',
   },
   TOP: {
-    bg: 'bg-gradient-to-r from-yellow-500 to-orange-500',
-    text: 'text-white',
+    background: 'linear-gradient(to right, rgb(234, 179, 8), rgb(249, 115, 22))',
+    color: 'white',
   },
   WIP: {
-    bg: 'bg-gradient-to-r from-blue-500 to-cyan-500',
-    text: 'text-white',
+    background: 'linear-gradient(to right, rgb(59, 130, 246), rgb(6, 182, 212))',
+    color: 'white',
   },
   HARD: {
-    bg: 'bg-gradient-to-r from-red-600 to-red-700',
-    text: 'text-white',
+    background: 'linear-gradient(to right, rgb(220, 38, 38), rgb(185, 28, 28))',
+    color: 'white',
   },
   POPULAR: {
-    bg: 'bg-gradient-to-r from-pink-500 to-rose-600',
-    text: 'text-white',
+    background: 'linear-gradient(to right, rgb(236, 72, 153), rgb(225, 29, 72))',
+    color: 'white',
   },
   BETA: {
-    bg: 'bg-gradient-to-r from-purple-500 to-indigo-600',
-    text: 'text-white',
+    background: 'linear-gradient(to right, rgb(168, 85, 247), rgb(79, 70, 229))',
+    color: 'white',
   },
   ALPHA: {
-    bg: 'bg-gradient-to-r from-gray-600 to-gray-700',
-    text: 'text-white',
+    background: 'linear-gradient(to right, rgb(107, 114, 128), rgb(75, 85, 99))',
+    color: 'white',
   },
 };
 
 const defaultStyle = {
-  bg: 'bg-gradient-to-r from-gray-500 to-gray-600',
-  text: 'text-white',
+  background: 'linear-gradient(to right, rgb(107, 114, 128), rgb(75, 85, 99))',
+  color: 'white',
 };
 
 export default function ServerBadge({ type, className = '' }: ServerBadgeProps) {
   const style = badgeStyles[type] || defaultStyle;
 
   return (
-    <motion.span
-      initial={{ scale: 0.8, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${style.bg} ${style.text} ${(style as any).border || ''} shadow-lg ${className}`}
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        padding: '2px 10px',
+        borderRadius: '9999px',
+        fontSize: '12px',
+        fontWeight: 'bold',
+        background: style.background,
+        color: style.color,
+        border: style.border || 'none',
+        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+      }}
+      className={className}
     >
       {type}
-    </motion.span>
+    </span>
   );
 }
-

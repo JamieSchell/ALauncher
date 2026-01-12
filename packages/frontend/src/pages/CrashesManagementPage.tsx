@@ -5,13 +5,15 @@
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { motion, AnimatePresence } from 'framer-motion';
-import { AlertTriangle, WifiOff, RefreshCw, Loader2, Filter, X, Eye, Calendar, User, Server, Code, Bell } from 'lucide-react';
+
+import { AlertTriangle, WifiOff, RefreshCw, Loader2, Filter, X, Eye, Calendar, User, Server, Code, Bell, ArrowLeft, Terminal } from 'lucide-react';
 import { crashesAPI, GameCrash, ServerConnectionIssue, LauncherError } from '../api/crashes';
-import { useOptimizedAnimation } from '../hooks/useOptimizedAnimation';
 import { useFormatDate } from '../hooks/useFormatDate';
 import { LauncherErrorsList, LauncherErrorDetailModal } from './CrashesManagementPage-LauncherErrors';
 import { useAuthStore } from '../stores/authStore';
+import { useNavigate } from 'react-router-dom';
+import { Card, Button, Badge, Input } from '../components/ui';
+import { useTranslation } from '../hooks/useTranslation';
 
 type TabType = 'crashes' | 'connection-issues' | 'launcher-errors';
 
@@ -53,9 +55,10 @@ const issueTypeColors: Record<string, string> = {
 };
 
 export default function CrashesManagementPage() {
+  const { t } = useTranslation();
+  const navigate = useNavigate();
   const { role } = useAuthStore();
-  const { formatDateTime } = useFormatDate();
-  const { shouldAnimate, getAnimationProps } = useOptimizedAnimation();
+  const { formatDate } = useFormatDate();
   const [activeTab, setActiveTab] = useState<TabType>('crashes');
   const [selectedCrash, setSelectedCrash] = useState<GameCrash | null>(null);
   const [selectedIssue, setSelectedIssue] = useState<ServerConnectionIssue | null>(null);
@@ -540,65 +543,27 @@ export default function CrashesManagementPage() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Notifications */}
-      <div className="fixed top-20 right-4 z-50 flex flex-col gap-2 pointer-events-none">
-        <AnimatePresence mode="popLayout">
-          {notifications.map((notification) => (
-            <motion.div
-              key={notification.id}
-              initial={{ opacity: 0, y: -20, x: 300 }}
-              animate={{ opacity: 1, y: 0, x: 0 }}
-              exit={{ opacity: 0, x: 300 }}
-              transition={{ duration: 0.3 }}
-              className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl p-4 shadow-lg max-w-md cursor-pointer pointer-events-auto"
-              onClick={() => {
-                handleNotificationClick(notification);
-                removeNotification(notification.id);
-              }}
-            >
-            <div className="flex items-start gap-3">
-              <div className={`p-2 rounded-lg ${notification.type === 'crash' ? 'bg-red-500/20' : 'bg-yellow-500/20'}`}>
-                {notification.type === 'crash' ? (
-                  <AlertTriangle className="w-5 h-5 text-red-400" />
-                ) : (
-                  <WifiOff className="w-5 h-5 text-yellow-400" />
-                )}
-              </div>
-              <div className="flex-1">
-                <p className="text-white font-medium text-sm">{notification.message}</p>
-                <p className="text-gray-400 text-xs mt-1">Click to view</p>
-              </div>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  removeNotification(notification.id);
-                }}
-                className="p-1 hover:bg-white/10 rounded transition-colors"
-              >
-                <X size={16} className="text-gray-400" />
-              </button>
-            </div>
-          </motion.div>
-          ))}
-        </AnimatePresence>
-      </div>
-
+    <div className="flex flex-col animate-fade-in-up space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-bold text-white mb-2">Crashes & Issues</h1>
-          <p className="text-gray-400">Monitor game crashes and connection issues</p>
+          <button 
+            onClick={() => navigate('/admin/dashboard')} 
+            className="flex items-center gap-2 text-gray-400 hover:text-white mb-2 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" /> {t('ui.backToDashboard')}
+          </button>
+          <h1 className="text-base font-display font-bold text-white">{t('admin.crashReports')}</h1>
         </div>
         <div className="flex items-center gap-2">
           {notifications.length > 0 && (
-            <div className="relative">
-              <Bell className="w-5 h-5 text-primary-400" />
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-xs flex items-center justify-center text-white">
-                {notifications.length}
-              </span>
-            </div>
+            <Badge status="ERROR" className="flex items-center gap-1">
+              <Bell className="w-3 h-3" />
+              {notifications.length}
+            </Badge>
           )}
-          <button
+          <Button
+            variant="secondary"
+            leftIcon={<RefreshCw className="w-4 h-4" />}
             onClick={() => {
               if (activeTab === 'crashes') {
                 refetchCrashes();
@@ -608,68 +573,66 @@ export default function CrashesManagementPage() {
                 refetchLauncherErrors();
               }
             }}
-            className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg transition-colors flex items-center gap-2"
           >
-            <RefreshCw size={18} />
-            <span>Refresh</span>
-          </button>
+            Refresh
+          </Button>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-white/10">
+      <div className="flex gap-2 border-b border-white/5">
         <button
           onClick={() => setActiveTab('crashes')}
-          className={`px-6 py-3 font-medium transition-colors border-b-2 ${
+          className={`px-4 py-2 text-xs font-medium transition-colors border-b-2 ${
             activeTab === 'crashes'
-              ? 'border-primary-500 text-primary-400'
+              ? 'border-status-error text-status-error'
               : 'border-transparent text-gray-400 hover:text-white'
           }`}
         >
           <div className="flex items-center gap-2">
-            <AlertTriangle size={18} />
+            <AlertTriangle className="w-4 h-4" />
             <span>Game Crashes</span>
             {crashes.length > 0 && (
-              <span className="px-2 py-0.5 bg-red-500/20 text-red-300 rounded text-xs">
+              <Badge status="ERROR" className="text-xs px-1.5 py-0.5">
                 {crashes.length}
-              </span>
+              </Badge>
             )}
           </div>
         </button>
         <button
           onClick={() => setActiveTab('connection-issues')}
-          className={`px-6 py-3 font-medium transition-colors border-b-2 ${
+          className={`px-4 py-2 text-xs font-medium transition-colors border-b-2 ${
             activeTab === 'connection-issues'
-              ? 'border-primary-500 text-primary-400'
+              ? 'border-status-warning text-status-warning'
               : 'border-transparent text-gray-400 hover:text-white'
           }`}
         >
           <div className="flex items-center gap-2">
-            <WifiOff size={18} />
+            <WifiOff className="w-4 h-4" />
             <span>Connection Issues</span>
             {issues.length > 0 && (
-              <span className="px-2 py-0.5 bg-yellow-500/20 text-yellow-300 rounded text-xs">
+              <Badge status="WARNING" className="text-xs px-1.5 py-0.5">
                 {issues.length}
-              </span>
+              </Badge>
             )}
           </div>
         </button>
         {role === 'ADMIN' && (
           <button
             onClick={() => setActiveTab('launcher-errors')}
-            className={`px-6 py-3 font-medium transition-colors border-b-2 ${
+            className={`px-4 py-2 text-xs font-medium transition-colors border-b-2 ${
               activeTab === 'launcher-errors'
-                ? 'border-primary-500 text-primary-400'
+                ? 'border-techno-cyan text-techno-cyan'
                 : 'border-transparent text-gray-400 hover:text-white'
             }`}
           >
             <div className="flex items-center gap-2">
-              <Code size={18} />
+              <Code className="w-4 h-4" />
               <span>Launcher Errors</span>
               {launcherErrors.length > 0 && (
-                <span className="px-2 py-0.5 bg-purple-500/20 text-purple-300 rounded text-xs">
+                <Badge status="ERROR" className="text-xs px-1.5 py-0.5">
                   {launcherErrors.length}
-                </span>
+                </Badge>
               )}
             </div>
           </button>
@@ -677,170 +640,236 @@ export default function CrashesManagementPage() {
       </div>
 
       {/* Filters */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl p-4 space-y-4 shadow-lg"
-      >
-        <div className="flex items-center gap-2 mb-2">
-          <Filter size={18} className="text-gray-400" />
-          <span className="text-sm font-medium text-gray-300">Filters</span>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
-            <label className="block text-xs text-gray-400 mb-1">Profile ID</label>
-            <input
-              type="text"
-              value={filters.profileId}
-              onChange={(e) => setFilters({ ...filters, profileId: e.target.value })}
-              placeholder="Filter by profile..."
-              className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-            />
+      <Card>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-techno-cyan" />
+            <h3 className="text-xs font-display font-bold text-white uppercase tracking-wider">{t('ui.filters')}</h3>
           </div>
+          {(filters.profileId || filters.serverAddress || filters.issueType || filters.errorType || filters.component) && (
+            <Button
+              variant="ghost"
+              leftIcon={<X className="w-3 h-3" />}
+              onClick={handleClearFilters}
+              className="text-xs h-7"
+            >
+              {t('ui.clearAll')}
+            </Button>
+          )}
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Input
+            label="Profile ID"
+            value={filters.profileId}
+            onChange={(e) => setFilters({ ...filters, profileId: e.target.value })}
+            placeholder="Filter by profile..."
+            leftIcon={<User className="w-3 h-3" />}
+            className="text-xs"
+          />
+          
           {activeTab === 'connection-issues' && (
             <>
-              <div>
-                <label className="block text-xs text-gray-400 mb-1">Server Address</label>
-                <input
-                  type="text"
-                  value={filters.serverAddress}
-                  onChange={(e) => setFilters({ ...filters, serverAddress: e.target.value })}
-                  placeholder="Filter by server..."
-                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-400 mb-1">Issue Type</label>
+              <Input
+                label="Server Address"
+                value={filters.serverAddress}
+                onChange={(e) => setFilters({ ...filters, serverAddress: e.target.value })}
+                placeholder="Filter by server..."
+                leftIcon={<Server className="w-3 h-3" />}
+                className="text-xs"
+              />
+              <div className="w-full">
+                <label className="flex items-center gap-2 text-xs font-bold text-techno-cyan mb-2 uppercase tracking-widest opacity-80">
+                  <Filter className="w-3 h-3" />
+                  Issue Type
+                </label>
                 <select
                   value={filters.issueType}
                   onChange={(e) => setFilters({ ...filters, issueType: e.target.value })}
-                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  className="w-full bg-dark-panel/80 backdrop-blur-md border border-white/5 clip-cyber-corner text-white text-xs py-2 px-4 focus:outline-none focus:border-techno-cyan transition-colors font-mono"
                 >
                   <option value="">All Types</option>
                   {Object.entries(issueTypeLabels).map(([value, label]) => (
-                    <option key={value} value={value}>{label}</option>
+                    <option key={value} value={value} className="bg-dark-panel">{label}</option>
                   ))}
                 </select>
               </div>
             </>
           )}
+          
           {activeTab === 'launcher-errors' && (
             <>
-              <div>
-                <label className="block text-xs text-gray-400 mb-1">Error Type</label>
+              <div className="w-full">
+                <label className="flex items-center gap-2 text-xs font-bold text-techno-cyan mb-2 uppercase tracking-widest opacity-80">
+                  <Code className="w-3 h-3" />
+                  Error Type
+                </label>
                 <select
                   value={filters.errorType}
                   onChange={(e) => setFilters({ ...filters, errorType: e.target.value })}
-                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  className="w-full bg-dark-panel/80 backdrop-blur-md border border-white/5 clip-cyber-corner text-white text-xs py-2 px-4 focus:outline-none focus:border-techno-cyan transition-colors font-mono"
                 >
                   <option value="">All Types</option>
-                  <option value="PROFILE_LOAD_ERROR">Profile Load Error</option>
-                  <option value="FILE_DOWNLOAD_ERROR">File Download Error</option>
-                  <option value="API_ERROR">API Error</option>
-                  <option value="AUTHENTICATION_ERROR">Authentication Error</option>
-                  <option value="VALIDATION_ERROR">Validation Error</option>
-                  <option value="FILE_SYSTEM_ERROR">File System Error</option>
-                  <option value="NETWORK_ERROR">Network Error</option>
-                  <option value="ELECTRON_ERROR">Electron Error</option>
-                  <option value="JAVA_DETECTION_ERROR">Java Detection Error</option>
-                  <option value="CLIENT_LAUNCH_ERROR">Client Launch Error</option>
-                  <option value="UNKNOWN_ERROR">Unknown Error</option>
+                  <option value="PROFILE_LOAD_ERROR" className="bg-dark-panel">Profile Load Error</option>
+                  <option value="FILE_DOWNLOAD_ERROR" className="bg-dark-panel">File Download Error</option>
+                  <option value="API_ERROR" className="bg-dark-panel">API Error</option>
+                  <option value="AUTHENTICATION_ERROR" className="bg-dark-panel">Authentication Error</option>
+                  <option value="VALIDATION_ERROR" className="bg-dark-panel">Validation Error</option>
+                  <option value="FILE_SYSTEM_ERROR" className="bg-dark-panel">File System Error</option>
+                  <option value="NETWORK_ERROR" className="bg-dark-panel">Network Error</option>
+                  <option value="ELECTRON_ERROR" className="bg-dark-panel">Electron Error</option>
+                  <option value="JAVA_DETECTION_ERROR" className="bg-dark-panel">Java Detection Error</option>
+                  <option value="CLIENT_LAUNCH_ERROR" className="bg-dark-panel">Client Launch Error</option>
+                  <option value="UNKNOWN_ERROR" className="bg-dark-panel">Unknown Error</option>
                 </select>
               </div>
-              <div>
-                <label className="block text-xs text-gray-400 mb-1">Component</label>
-                <input
-                  type="text"
-                  value={filters.component}
-                  onChange={(e) => setFilters({ ...filters, component: e.target.value })}
-                  placeholder="Filter by component..."
-                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                />
-              </div>
+              <Input
+                label="Component"
+                value={filters.component}
+                onChange={(e) => setFilters({ ...filters, component: e.target.value })}
+                placeholder="Filter by component..."
+                leftIcon={<Code className="w-3 h-3" />}
+                className="text-xs"
+              />
             </>
           )}
-          <div>
-            <label className="block text-xs text-gray-400 mb-1">Limit</label>
+          
+          <div className="w-full">
+            <label className="flex items-center gap-2 text-xs font-bold text-techno-cyan mb-2 uppercase tracking-widest opacity-80">
+              <Filter className="w-3 h-3" />
+              Limit
+            </label>
             <input
               type="number"
               value={filters.limit}
               onChange={(e) => setFilters({ ...filters, limit: parseInt(e.target.value) || 50 })}
               min="10"
               max="500"
-              className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full bg-dark-panel/80 backdrop-blur-md border border-white/5 clip-cyber-corner text-white text-xs py-2 px-4 focus:outline-none focus:border-techno-cyan transition-colors font-mono"
             />
           </div>
         </div>
-        {(filters.profileId || filters.serverAddress || filters.issueType) && (
-          <button
-            onClick={handleClearFilters}
-            className="text-xs text-gray-400 hover:text-white flex items-center gap-1"
-          >
-            <X size={14} />
-            <span>Clear filters</span>
-          </button>
-        )}
-      </motion.div>
+      </Card>
 
-      {/* Content */}
-      {activeTab === 'crashes' ? (
-        <CrashesList
-          ref={crashesListRef}
-          crashes={crashes}
-          isLoading={crashesLoading}
-          isFetchingNext={crashesFetchingNext}
-          hasNext={crashesHasNext}
-          selectedCrash={selectedCrash}
-          onSelectCrash={setSelectedCrash}
-          formatDate={formatDateTime}
-          getExitCodeColor={getExitCodeColor}
-        />
-      ) : activeTab === 'connection-issues' ? (
-        <ConnectionIssuesList
-          ref={issuesListRef}
-          issues={issues}
-          isLoading={issuesLoading}
-          isFetchingNext={issuesFetchingNext}
-          hasNext={issuesHasNext}
-          selectedIssue={selectedIssue}
-          onSelectIssue={setSelectedIssue}
-          formatDate={formatDateTime}
-        />
-      ) : (
-        <LauncherErrorsList
-          errors={launcherErrors}
-          isLoading={launcherErrorsLoading}
-          isFetchingNext={launcherErrorsFetchingNext}
-          hasNext={launcherErrorsHasNext}
-          selectedError={selectedLauncherError}
-          onSelectError={setSelectedLauncherError}
-          formatDate={formatDateTime}
-        />
-      )}
+      {/* Content - Grid Layout */}
+      <div className="grid grid-cols-12 gap-6">
+        {/* List */}
+        <div className="col-span-4 flex flex-col gap-4 max-h-[calc(100vh-300px)] overflow-y-auto custom-scrollbar pr-2">
+          {activeTab === 'crashes' ? (
+            <CrashesList
+              ref={crashesListRef}
+              crashes={crashes}
+              isLoading={crashesLoading}
+              isFetchingNext={crashesFetchingNext}
+              hasNext={crashesHasNext}
+              selectedCrash={selectedCrash}
+              onSelectCrash={setSelectedCrash}
+              formatDate={formatDate}
+              getExitCodeColor={getExitCodeColor}
+            />
+          ) : activeTab === 'connection-issues' ? (
+            <ConnectionIssuesList
+              ref={issuesListRef}
+              issues={issues}
+              isLoading={issuesLoading}
+              isFetchingNext={issuesFetchingNext}
+              hasNext={issuesHasNext}
+              selectedIssue={selectedIssue}
+              onSelectIssue={setSelectedIssue}
+              formatDate={formatDate}
+            />
+          ) : (
+            <LauncherErrorsList
+              errors={launcherErrors}
+              isLoading={launcherErrorsLoading}
+              isFetchingNext={launcherErrorsFetchingNext}
+              hasNext={launcherErrorsHasNext}
+              selectedError={selectedLauncherError}
+              onSelectError={setSelectedLauncherError}
+              formatDate={formatDate}
+            />
+          )}
+        </div>
 
-      {/* Detail Modals */}
-      {selectedCrash && (
-        <CrashDetailModal
-          crash={selectedCrash}
-          onClose={() => setSelectedCrash(null)}
-          formatDate={formatDateTime}
-          getExitCodeColor={getExitCodeColor}
-        />
-      )}
-      {selectedIssue && (
-        <ConnectionIssueDetailModal
-          issue={selectedIssue}
-          onClose={() => setSelectedIssue(null)}
-          formatDate={formatDateTime}
-        />
-      )}
-      {selectedLauncherError && (
-        <LauncherErrorDetailModal
-          error={selectedLauncherError}
-          onClose={() => setSelectedLauncherError(null)}
-          formatDate={formatDateTime}
-        />
-      )}
+        {/* Detail View */}
+        <div className="col-span-8">
+          <Card className="min-h-[400px] flex flex-col font-mono text-xs relative overflow-hidden">
+            {activeTab === 'crashes' && selectedCrash ? (
+              <>
+                <div className="border-b border-white/10 pb-4 mb-4 flex justify-between items-center">
+                  <div>
+                    <h2 className="text-xs font-bold text-status-error flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4" /> Exit Code: {selectedCrash.exitCode}
+                    </h2>
+                    <div className="text-gray-500 text-[10px] mt-1">
+                      Reported by {selectedCrash.username || 'Unknown'} at {formatDate(selectedCrash.createdAt)}
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="secondary" className="h-8 text-xs">Assign</Button>
+                    <Button variant="primary" className="h-8 text-xs">Resolve</Button>
+                  </div>
+                </div>
+                
+                <div className="flex-1 bg-black/50 p-4 rounded overflow-auto custom-scrollbar border border-white/5">
+                  <pre className="text-gray-300 whitespace-pre-wrap leading-relaxed">
+                    <span className="text-status-error">Stack Trace:</span>
+                    {'\n' + (selectedCrash.stackTrace || selectedCrash.errorMessage || 'No stack trace available')}
+                  </pre>
+                </div>
+              </>
+            ) : activeTab === 'connection-issues' && selectedIssue ? (
+              <>
+                <div className="border-b border-white/10 pb-4 mb-4 flex justify-between items-center">
+                  <div>
+                    <h2 className="text-xs font-bold text-status-warning flex items-center gap-2">
+                      <WifiOff className="w-4 h-4" /> {issueTypeLabels[selectedIssue.issueType] || 'Connection Issue'}
+                    </h2>
+                    <div className="text-gray-500 text-[10px] mt-1">
+                      Reported by {selectedIssue.username || 'Unknown'} at {formatDate(selectedIssue.createdAt)}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex-1 bg-black/50 p-4 rounded overflow-auto custom-scrollbar border border-white/5">
+                  <pre className="text-gray-300 whitespace-pre-wrap leading-relaxed">
+                    <span className="text-status-warning">Details:</span>
+                    {'\nServer: ' + selectedIssue.serverAddress + ':' + selectedIssue.serverPort}
+                    {'\nError: ' + (selectedIssue.errorMessage || 'No error message')}
+                  </pre>
+                </div>
+              </>
+            ) : activeTab === 'launcher-errors' && selectedLauncherError ? (
+              <>
+                <div className="border-b border-white/10 pb-4 mb-4 flex justify-between items-center">
+                  <div>
+                    <h2 className="text-xs font-bold text-status-error flex items-center gap-2">
+                      <Code className="w-4 h-4" /> {selectedLauncherError.errorType}
+                    </h2>
+                    <div className="text-gray-500 text-[10px] mt-1">
+                      Component: {selectedLauncherError.component} at {formatDate(selectedLauncherError.createdAt)}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex-1 bg-black/50 p-4 rounded overflow-auto custom-scrollbar border border-white/5">
+                  <pre className="text-gray-300 whitespace-pre-wrap leading-relaxed">
+                    <span className="text-status-error">Error Details:</span>
+                    {'\n' + (selectedLauncherError.errorMessage || 'No error message')}
+                    {selectedLauncherError.stackTrace && '\n\nStack Trace:\n' + selectedLauncherError.stackTrace}
+                  </pre>
+                </div>
+              </>
+            ) : (
+              <div className="flex-1 flex flex-col items-center justify-center text-gray-500">
+                <Terminal className="w-16 h-16 mb-4 opacity-20" />
+                <p className="text-xs">Select a report to view details.</p>
+              </div>
+            )}
+          </Card>
+        </div>
+      </div>
+
     </div>
   );
 }
@@ -853,60 +882,31 @@ const CrashItem = React.memo<{
   formatDate: (date: string | Date) => string;
   getExitCodeColor: (code: number) => string;
 }>(({ crash, isSelected, onSelect, formatDate, getExitCodeColor }) => {
-  const { shouldAnimate } = useOptimizedAnimation();
 
   return (
-    <motion.div
+    <div
       key={crash.id}
-      initial={shouldAnimate ? { opacity: 0, y: 10 } : false}
-      animate={shouldAnimate ? { opacity: 1, y: 0 } : false}
-      className={`bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl p-4 hover:bg-white/5 transition-colors cursor-pointer shadow-lg ${
-        isSelected ? 'ring-2 ring-primary-500' : ''
-      }`}
       onClick={() => onSelect(crash)}
+      className={`p-4 rounded border cursor-pointer transition-all ${
+        isSelected ? 'bg-status-error/10 border-status-error' : 'bg-dark-card border-white/5 hover:border-white/20'
+      }`}
     >
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex-1">
-          <div className="flex items-center gap-3 mb-2">
-            <Code className={`w-5 h-5 ${getExitCodeColor(crash.exitCode)}`} />
-            <span className={`font-mono font-bold ${getExitCodeColor(crash.exitCode)}`}>
-              Exit Code: {crash.exitCode}
-            </span>
-            {crash.profileVersion && (
-              <span className="px-2 py-0.5 bg-primary-500/20 text-primary-300 rounded text-xs">
-                {crash.profileVersion}
-              </span>
-            )}
-          </div>
-          {crash.errorMessage && (
-            <p className="text-sm text-gray-300 mb-2 line-clamp-2">
-              {crash.errorMessage.substring(0, 200)}
-            </p>
-          )}
-          <div className="flex items-center gap-4 text-xs text-gray-500">
-            {crash.username && (
-              <div className="flex items-center gap-1">
-                <User size={14} />
-                <span>{crash.username}</span>
-              </div>
-            )}
-            {crash.serverAddress && (
-              <div className="flex items-center gap-1">
-                <Server size={14} />
-                <span>{crash.serverAddress}:{crash.serverPort}</span>
-              </div>
-            )}
-            <div className="flex items-center gap-1">
-              <Calendar size={14} />
-              <span>{formatDate(crash.createdAt)}</span>
-            </div>
-          </div>
-        </div>
-        <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
-          <Eye size={18} className="text-gray-400" />
-        </button>
+      <div className="flex justify-between items-start mb-2">
+        <span className="font-mono text-xs text-gray-500">{crash.id.slice(0, 8)}</span>
+        <Badge status={crash.exitCode === 0 ? 'SUCCESS' : 'ERROR'} className="text-xs px-2 py-0.5">
+          {crash.exitCode === 0 ? 'RESOLVED' : 'OPEN'}
+        </Badge>
       </div>
-    </motion.div>
+      <div className="font-bold text-white mb-1 text-xs">Exit Code: {crash.exitCode}</div>
+      {crash.errorMessage && (
+        <p className="text-xs text-gray-400 mb-2 line-clamp-2">{crash.errorMessage.substring(0, 100)}</p>
+      )}
+      <div className="text-xs text-gray-400 flex items-center gap-2">
+        {crash.username && <span>{crash.username}</span>}
+        {crash.username && <span>•</span>}
+        <span>{formatDate(crash.createdAt).split(' ')[0]}</span>
+      </div>
+    </div>
   );
 });
 CrashItem.displayName = 'CrashItem';
@@ -931,54 +931,46 @@ const CrashesList = React.memo(React.forwardRef<HTMLDivElement, {
   formatDate,
   getExitCodeColor,
 }, ref) => {
-  const { shouldAnimate } = useOptimizedAnimation();
   if (isLoading && crashes.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
+      <div className="flex justify-center py-12">
+        <Loader2 className="w-8 h-8 text-techno-cyan animate-spin" />
       </div>
     );
   }
 
   return (
-    <div
-      ref={ref}
-      className="space-y-2 max-h-[calc(100vh-400px)] overflow-y-auto"
-    >
+    <div ref={ref} className="space-y-2">
       {crashes.length === 0 ? (
-        <div className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl p-12 text-center shadow-lg">
-          <AlertTriangle className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-          <p className="text-gray-400">No crashes found</p>
+        <div className="flex flex-col items-center justify-center py-12 text-gray-500">
+          <AlertTriangle className="w-12 h-12 mb-4 opacity-20" />
+          <p className="text-sm">No crashes found</p>
         </div>
       ) : (
         <>
-          <motion.div
-            initial={shouldAnimate ? { opacity: 0 } : false}
-            animate={shouldAnimate ? { opacity: 1 } : false}
-            className="space-y-2"
-          >
+          <div className="space-y-2">
             {crashes.map((crash) => (
               <CrashItem
                 key={crash.id}
                 crash={crash}
                 isSelected={selectedCrash?.id === crash.id}
                 onSelect={onSelectCrash}
-                formatDate={formatDateTime}
+                formatDate={formatDate}
                 getExitCodeColor={getExitCodeColor}
               />
             ))}
-          </motion.div>
+          </div>
           
           {/* Loading indicator for next page */}
           {isFetchingNext && (
-            <div className="flex items-center justify-center py-4">
-              <Loader2 className="w-6 h-6 text-primary-500 animate-spin" />
+            <div className="flex justify-center py-4">
+              <Loader2 className="w-5 h-5 text-techno-cyan animate-spin" />
             </div>
           )}
           
           {/* End of list indicator */}
           {!hasNext && crashes.length > 0 && (
-            <div className="text-center py-4 text-gray-500 text-sm">
+            <div className="text-center py-4 text-xs text-gray-500">
               No more crashes to load
             </div>
           )}
@@ -996,58 +988,31 @@ const ConnectionIssueItem = React.memo<{
   onSelect: (issue: ServerConnectionIssue) => void;
   formatDate: (date: string | Date) => string;
 }>(({ issue, isSelected, onSelect, formatDate }) => {
-  const { shouldAnimate } = useOptimizedAnimation();
 
   return (
-    <motion.div
+    <div
       key={issue.id}
-      initial={shouldAnimate ? { opacity: 0, y: 10 } : false}
-      animate={shouldAnimate ? { opacity: 1, y: 0 } : false}
-      className={`bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl p-4 hover:bg-white/5 transition-colors cursor-pointer shadow-lg ${
-        isSelected ? 'ring-2 ring-primary-500' : ''
-      }`}
       onClick={() => onSelect(issue)}
+      className={`p-4 rounded border cursor-pointer transition-all ${
+        isSelected ? 'bg-status-warning/10 border-status-warning' : 'bg-dark-card border-white/5 hover:border-white/20'
+      }`}
     >
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex-1">
-          <div className="flex items-center gap-3 mb-2">
-            <WifiOff className="w-5 h-5 text-yellow-400" />
-            <span className={`px-3 py-1 rounded text-sm font-medium inline-block ${issueTypeColors[issue.issueType]}`}>
-              {issueTypeLabels[issue.issueType]}
-            </span>
-            {issue.profileVersion && (
-              <span className="px-2 py-0.5 bg-primary-500/20 text-primary-300 rounded text-xs">
-                {issue.profileVersion}
-              </span>
-            )}
-          </div>
-          {issue.errorMessage && (
-            <p className="text-sm text-gray-300 mb-2 line-clamp-2">
-              {issue.errorMessage.substring(0, 200)}
-            </p>
-          )}
-          <div className="flex items-center gap-4 text-xs text-gray-500">
-            {issue.username && (
-              <div className="flex items-center gap-1">
-                <User size={14} />
-                <span>{issue.username}</span>
-              </div>
-            )}
-            <div className="flex items-center gap-1">
-              <Server size={14} />
-              <span>{issue.serverAddress}:{issue.serverPort}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Calendar size={14} />
-              <span>{formatDate(issue.createdAt)}</span>
-            </div>
-          </div>
-        </div>
-        <button className="p-2 hover:bg-white/10 rounded-lg transition-colors">
-          <Eye size={18} className="text-gray-400" />
-        </button>
+      <div className="flex justify-between items-start mb-2">
+        <span className="font-mono text-xs text-gray-500">{issue.id.slice(0, 8)}</span>
+        <Badge status="WARNING" className="text-xs px-2 py-0.5">
+          {issueTypeLabels[issue.issueType] || 'ISSUE'}
+        </Badge>
       </div>
-    </motion.div>
+      <div className="font-bold text-white mb-1 text-xs">{issueTypeLabels[issue.issueType] || 'Connection Issue'}</div>
+      {issue.errorMessage && (
+        <p className="text-xs text-gray-400 mb-2 line-clamp-2">{issue.errorMessage.substring(0, 100)}</p>
+      )}
+      <div className="text-xs text-gray-400 flex items-center gap-2">
+        {issue.username && <span>{issue.username}</span>}
+        {issue.username && <span>•</span>}
+        <span>{formatDate(issue.createdAt).split(' ')[0]}</span>
+      </div>
+    </div>
   );
 });
 ConnectionIssueItem.displayName = 'ConnectionIssueItem';
@@ -1070,33 +1035,25 @@ const ConnectionIssuesList = React.memo(React.forwardRef<HTMLDivElement, {
   onSelectIssue,
   formatDate,
 }, ref) => {
-  const { shouldAnimate } = useOptimizedAnimation();
 
   if (isLoading && issues.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="w-8 h-8 text-primary-500 animate-spin" />
+      <div className="flex justify-center py-12">
+        <Loader2 className="w-8 h-8 text-techno-cyan animate-spin" />
       </div>
     );
   }
 
   return (
-    <div
-      ref={ref}
-      className="space-y-2 max-h-[calc(100vh-400px)] overflow-y-auto"
-    >
+    <div ref={ref} className="space-y-2">
       {issues.length === 0 ? (
-        <div className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl p-12 text-center shadow-lg">
-          <WifiOff className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-          <p className="text-gray-400">No connection issues found</p>
+        <div className="flex flex-col items-center justify-center py-12 text-gray-500">
+          <WifiOff className="w-12 h-12 mb-4 opacity-20" />
+          <p className="text-sm">No connection issues found</p>
         </div>
       ) : (
         <>
-          <motion.div
-            initial={shouldAnimate ? { opacity: 0 } : false}
-            animate={shouldAnimate ? { opacity: 1 } : false}
-            className="space-y-2"
-          >
+          <div className="space-y-2">
             {issues.map((issue) => (
               <ConnectionIssueItem
                 key={issue.id}
@@ -1106,18 +1063,18 @@ const ConnectionIssuesList = React.memo(React.forwardRef<HTMLDivElement, {
                 formatDate={formatDate}
               />
             ))}
-          </motion.div>
+          </div>
           
           {/* Loading indicator for next page */}
           {isFetchingNext && (
-            <div className="flex items-center justify-center py-4">
-              <Loader2 className="w-6 h-6 text-primary-500 animate-spin" />
+            <div className="flex justify-center py-4">
+              <Loader2 className="w-5 h-5 text-techno-cyan animate-spin" />
             </div>
           )}
           
           {/* End of list indicator */}
           {!hasNext && issues.length > 0 && (
-            <div className="text-center py-4 text-gray-500 text-sm">
+            <div className="text-center py-4 text-xs text-gray-500">
               No more issues to load
             </div>
           )}
@@ -1141,70 +1098,70 @@ function CrashDetailModal({
   getExitCodeColor: (code: number) => string;
 }) {
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <motion.div
+    <div >
+      <div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-lg"
+        
       >
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-white">Crash Details</h2>
+        <div >
+          <h2 style={{ fontSize: "24px", fontWeight: 700 }}>Crash Details</h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+            
           >
-            <X size={20} className="text-gray-400" />
+            <X size={20}  />
           </button>
         </div>
 
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          <div >
             <div>
-              <label className="text-xs text-gray-400">Exit Code</label>
+              <label >Exit Code</label>
               <p className={`font-mono font-bold ${getExitCodeColor(crash.exitCode)}`}>
                 {crash.exitCode}
               </p>
             </div>
             <div>
-              <label className="text-xs text-gray-400">Date</label>
-              <p className="text-white">{formatDate(crash.createdAt)}</p>
+              <label >Date</label>
+              <p style={{ color: "white" }}>{formatDate(crash.createdAt)}</p>
             </div>
             {crash.username && (
               <div>
-                <label className="text-xs text-gray-400">User</label>
-                <p className="text-white">{crash.username}</p>
+                <label >User</label>
+                <p style={{ color: "white" }}>{crash.username}</p>
               </div>
             )}
             {crash.profileVersion && (
               <div>
-                <label className="text-xs text-gray-400">Version</label>
-                <p className="text-white">{crash.profileVersion}</p>
+                <label >Version</label>
+                <p style={{ color: "white" }}>{crash.profileVersion}</p>
               </div>
             )}
             {crash.serverAddress && (
               <div>
-                <label className="text-xs text-gray-400">Server</label>
-                <p className="text-white font-mono">{crash.serverAddress}:{crash.serverPort}</p>
+                <label >Server</label>
+                <p >{crash.serverAddress}:{crash.serverPort}</p>
               </div>
             )}
             {crash.javaVersion && (
               <div>
-                <label className="text-xs text-gray-400">Java Version</label>
-                <p className="text-white">{crash.javaVersion}</p>
+                <label >Java Version</label>
+                <p style={{ color: "white" }}>{crash.javaVersion}</p>
               </div>
             )}
             {crash.os && (
               <div>
-                <label className="text-xs text-gray-400">OS</label>
-                <p className="text-white">{crash.os} {crash.osVersion || ''}</p>
+                <label >OS</label>
+                <p style={{ color: "white" }}>{crash.os} {crash.osVersion || ''}</p>
               </div>
             )}
           </div>
 
           {crash.errorMessage && (
             <div>
-              <label className="text-xs text-gray-400 mb-2 block">Error Message</label>
-              <pre className="bg-black/30 p-4 rounded-lg text-sm text-red-300 overflow-x-auto">
+              <label >Error Message</label>
+              <pre >
                 {crash.errorMessage}
               </pre>
             </div>
@@ -1212,8 +1169,8 @@ function CrashDetailModal({
 
           {crash.stderrOutput && (
             <div>
-              <label className="text-xs text-gray-400 mb-2 block">Stderr Output</label>
-              <pre className="bg-black/30 p-4 rounded-lg text-sm text-gray-300 overflow-x-auto max-h-64 overflow-y-auto">
+              <label >Stderr Output</label>
+              <pre >
                 {crash.stderrOutput}
               </pre>
             </div>
@@ -1221,8 +1178,8 @@ function CrashDetailModal({
 
           {crash.stdoutOutput && (
             <div>
-              <label className="text-xs text-gray-400 mb-2 block">Stdout Output (last 100 lines)</label>
-              <pre className="bg-black/30 p-4 rounded-lg text-sm text-gray-300 overflow-x-auto max-h-64 overflow-y-auto">
+              <label >Stdout Output (last 100 lines)</label>
+              <pre >
                 {crash.stdoutOutput}
               </pre>
             </div>
@@ -1230,14 +1187,14 @@ function CrashDetailModal({
 
           {crash.stackTrace && (
             <div>
-              <label className="text-xs text-gray-400 mb-2 block">Stack Trace</label>
-              <pre className="bg-black/30 p-4 rounded-lg text-sm text-red-300 overflow-x-auto max-h-64 overflow-y-auto">
+              <label >Stack Trace</label>
+              <pre >
                 {crash.stackTrace}
               </pre>
             </div>
           )}
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }
@@ -1253,68 +1210,68 @@ function ConnectionIssueDetailModal({
   formatDate: (date: string | Date) => string;
 }) {
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <motion.div
+    <div >
+      <div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-lg"
+        
       >
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-white">Connection Issue Details</h2>
+        <div >
+          <h2 style={{ fontSize: "24px", fontWeight: 700 }}>Connection Issue Details</h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+            
           >
-            <X size={20} className="text-gray-400" />
+            <X size={20}  />
           </button>
         </div>
 
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          <div >
             <div>
-              <label className="text-xs text-gray-400">Issue Type</label>
+              <label >Issue Type</label>
               <p className={`px-3 py-1 rounded text-sm font-medium inline-block ${issueTypeColors[issue.issueType]}`}>
                 {issueTypeLabels[issue.issueType]}
               </p>
             </div>
             <div>
-              <label className="text-xs text-gray-400">Date</label>
-              <p className="text-white">{formatDate(issue.createdAt)}</p>
+              <label >Date</label>
+              <p style={{ color: "white" }}>{formatDate(issue.createdAt)}</p>
             </div>
             <div>
-              <label className="text-xs text-gray-400">Server</label>
-              <p className="text-white font-mono">{issue.serverAddress}:{issue.serverPort}</p>
+              <label >Server</label>
+              <p >{issue.serverAddress}:{issue.serverPort}</p>
             </div>
             {issue.username && (
               <div>
-                <label className="text-xs text-gray-400">User</label>
-                <p className="text-white">{issue.username}</p>
+                <label >User</label>
+                <p style={{ color: "white" }}>{issue.username}</p>
               </div>
             )}
             {issue.profileVersion && (
               <div>
-                <label className="text-xs text-gray-400">Version</label>
-                <p className="text-white">{issue.profileVersion}</p>
+                <label >Version</label>
+                <p style={{ color: "white" }}>{issue.profileVersion}</p>
               </div>
             )}
             {issue.javaVersion && (
               <div>
-                <label className="text-xs text-gray-400">Java Version</label>
-                <p className="text-white">{issue.javaVersion}</p>
+                <label >Java Version</label>
+                <p style={{ color: "white" }}>{issue.javaVersion}</p>
               </div>
             )}
             {issue.os && (
               <div>
-                <label className="text-xs text-gray-400">OS</label>
-                <p className="text-white">{issue.os}</p>
+                <label >OS</label>
+                <p style={{ color: "white" }}>{issue.os}</p>
               </div>
             )}
           </div>
 
           {issue.errorMessage && (
             <div>
-              <label className="text-xs text-gray-400 mb-2 block">Error Message</label>
-              <pre className="bg-black/30 p-4 rounded-lg text-sm text-red-300 overflow-x-auto">
+              <label >Error Message</label>
+              <pre >
                 {issue.errorMessage}
               </pre>
             </div>
@@ -1322,14 +1279,14 @@ function ConnectionIssueDetailModal({
 
           {issue.logOutput && (
             <div>
-              <label className="text-xs text-gray-400 mb-2 block">Log Output</label>
-              <pre className="bg-black/30 p-4 rounded-lg text-sm text-gray-300 overflow-x-auto max-h-64 overflow-y-auto">
+              <label >Log Output</label>
+              <pre >
                 {issue.logOutput}
               </pre>
             </div>
           )}
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }

@@ -51,9 +51,27 @@ export class UUIDHelper {
    */
   static generateOffline(username: string): string {
     // This is a simplified version, you should use proper UUID v3 generation
-    const crypto = require('crypto');
-    const hash = crypto.createHash('md5').update(`OfflinePlayer:${username}`).digest('hex');
-    return this.fromHash(hash);
+    try {
+      // Try Node.js crypto module first (for backend)
+      if (typeof require !== 'undefined') {
+        const crypto = require('crypto');
+        const hash = crypto.createHash('md5').update(`OfflinePlayer:${username}`).digest('hex');
+        return this.fromHash(hash);
+      }
+    } catch (error) {
+      // Fallback if crypto module is not available
+    }
+
+    // Simple fallback for browser/frontend
+    let hash = 0;
+    const str = `OfflinePlayer:${username}`;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32bit integer
+    }
+    const hashHex32 = Math.abs(hash).toString(16).padStart(32, '0').slice(0, 32);
+    return this.fromHash(hashHex32);
   }
 }
 

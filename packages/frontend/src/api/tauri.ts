@@ -1,7 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-shell';
 import { ask, message, save, open as openDialog } from '@tauri-apps/plugin-dialog';
-import { readTextFile, writeTextFile, mkdir, remove, exists } from '@tauri-apps/plugin-fs';
 
 // Tauri API service to replace Electron IPC
 export const tauriApi = {
@@ -20,35 +19,52 @@ export const tauriApi = {
   },
 
   async readTextFile(path: string): Promise<string> {
-    return await readTextFile(path);
+    return await invoke('read_file', { path });
   },
 
   async writeTextFile(path: string, content: string): Promise<void> {
-    return await writeTextFile(path, content);
+    return await invoke('write_file', { path, content });
   },
 
   async createDirectory(path: string): Promise<void> {
-    return await invoke('create_directory', { path });
+    return await invoke('ensure_dir', { path });
   },
 
   async createDir(path: string): Promise<void> {
-    return await mkdir(path, { recursive: true });
+    return await invoke('ensure_dir', { path });
   },
 
   async deleteFile(path: string): Promise<void> {
-    return await invoke('delete_file', { path });
+    // Not implemented in Rust backend yet
+    throw new Error('deleteFile not implemented');
   },
 
   async removeFile(path: string): Promise<void> {
-    return await remove(path);
+    // Not implemented in Rust backend yet
+    throw new Error('removeFile not implemented');
   },
 
   async fileExists(path: string): Promise<boolean> {
-    return await exists(path);
+    return await invoke('file_exists', { path });
   },
 
   async getFileInfo(path: string) {
     return await invoke('get_file_info', { path });
+  },
+
+  // Download operations
+  async downloadFile(url: string, destPath: string, onProgress?: (progress: number) => void, accessToken?: string): Promise<void> {
+    return await invoke('download_file', { url, destPath, onProgress: !!onProgress, accessToken });
+  },
+
+  // Updates directory
+  async getUpdatesDir(): Promise<string> {
+    return await invoke('get_updates_dir');
+  },
+
+  // Ensure directory exists
+  async ensureDir(path: string): Promise<void> {
+    return await invoke('ensure_dir', { path });
   },
 
   // Dialog operations
@@ -59,7 +75,6 @@ export const tauriApi = {
   }) {
     return await message(options.message || '', {
       title: options.title || 'ALauncher',
-      type: options.type || 'info',
     });
   },
 
@@ -70,7 +85,6 @@ export const tauriApi = {
   }) {
     return await ask(options.message || '', {
       title: options.title || 'ALauncher',
-      type: options.type || 'info',
     });
   },
 
@@ -144,36 +158,149 @@ export const tauriApi = {
     return await invoke('get_arch');
   },
 
-  // Window operations
+  // Window operations - use Tauri commands instead of frontend API
   async minimizeWindow() {
-    const { getCurrentWindow } = await import('@tauri-apps/api/window');
-    const window = getCurrentWindow();
-    return window.minimize();
+    try {
+      console.log('=== MINIMIZE WINDOW START ===');
+      console.log('isTauri:', isTauri);
+
+      if (!isTauri) {
+        throw new Error('Not running in Tauri environment');
+      }
+
+      console.log('Using window_minimize command...');
+      const result = await invoke('window_minimize');
+      console.log('✓ Minimize successful via command:', result);
+      return result;
+    } catch (error) {
+      console.error('=== MINIMIZE WINDOW FAILED ===');
+      console.error('Final error:', error);
+      throw error;
+    }
   },
 
   async maximizeWindow() {
-    const { getCurrentWindow } = await import('@tauri-apps/api/window');
-    const window = getCurrentWindow();
-    return window.toggleMaximize();
+    try {
+      console.log('=== MAXIMIZE WINDOW START ===');
+      console.log('isTauri:', isTauri);
+
+      if (!isTauri) {
+        throw new Error('Not running in Tauri environment');
+      }
+
+      console.log('Using window_toggle_maximize command...');
+      const result = await invoke('window_toggle_maximize');
+      console.log('✓ Maximize/Unmaximize successful via command:', result);
+      return result;
+    } catch (error) {
+      console.error('=== MAXIMIZE WINDOW FAILED ===');
+      console.error('Final error:', error);
+      throw error;
+    }
   },
 
   async closeWindow() {
-    const { getCurrentWindow } = await import('@tauri-apps/api/window');
-    const window = getCurrentWindow();
-    return window.close();
+    try {
+      console.log('=== CLOSE WINDOW START ===');
+      console.log('isTauri:', isTauri);
+
+      if (!isTauri) {
+        throw new Error('Not running in Tauri environment');
+      }
+
+      console.log('Using window_close command...');
+      const result = await invoke('window_close');
+      console.log('✓ Close successful via command:', result);
+      return result;
+    } catch (error) {
+      console.error('=== CLOSE WINDOW FAILED ===');
+      console.error('Final error:', error);
+      throw error;
+    }
   },
 
   async hideWindow() {
-    const { getCurrentWindow } = await import('@tauri-apps/api/window');
-    const window = getCurrentWindow();
-    return window.hide();
+    try {
+      console.log('=== HIDE WINDOW START ===');
+      console.log('isTauri:', isTauri);
+
+      if (!isTauri) {
+        throw new Error('Not running in Tauri environment');
+      }
+
+      console.log('Using window_hide command...');
+      const result = await invoke('window_hide');
+      console.log('✓ Hide successful via command:', result);
+      return result;
+    } catch (error) {
+      console.error('=== HIDE WINDOW FAILED ===');
+      console.error('Final error:', error);
+      throw error;
+    }
+  },
+
+  async openDevtools() {
+    try {
+      if (!isTauri) {
+        throw new Error('Not running in Tauri environment');
+      }
+      // Пробуем несколько способов открытия DevTools
+      const { getCurrentWebviewWindow, WebviewWindow } = await import('@tauri-apps/api/webviewWindow');
+      
+      // Способ 1: getCurrentWebviewWindow (рекомендуемый)
+      try {
+        const currentWindow = getCurrentWebviewWindow();
+        if (currentWindow) {
+          await currentWindow.openDevtools();
+          return;
+        }
+      } catch (e) {
+        console.log('getCurrentWebviewWindow failed, trying alternatives...', e);
+      }
+      
+      // Способ 2: WebviewWindow.getCurrent()
+      try {
+        const currentWindow = WebviewWindow.getCurrent();
+        if (currentWindow) {
+          await currentWindow.openDevtools();
+          return;
+        }
+      } catch (e) {
+        console.log('WebviewWindow.getCurrent() failed, trying getByLabel...', e);
+      }
+      
+      // Способ 3: Получить окно по label
+      const window = await WebviewWindow.getByLabel('main');
+      if (window) {
+        await window.openDevtools();
+        return;
+      }
+      
+      throw new Error('No webview window found');
+    } catch (error) {
+      console.error('Failed to open devtools:', error);
+      throw error;
+    }
   },
 
   async showWindow() {
-    const { getCurrentWindow } = await import('@tauri-apps/api/window');
-    const window = getCurrentWindow();
-    return window.show();
-    return window.unminimize();
+    try {
+      console.log('=== SHOW WINDOW START ===');
+      console.log('isTauri:', isTauri);
+
+      if (!isTauri) {
+        throw new Error('Not running in Tauri environment');
+      }
+
+      console.log('Using window_show_from_tray command...');
+      const result = await invoke('window_show_from_tray');
+      console.log('✓ Show successful via command:', result);
+      return result;
+    } catch (error) {
+      console.error('=== SHOW WINDOW FAILED ===');
+      console.error('Final error:', error);
+      throw error;
+    }
   },
 
   async setAlwaysOnTop(alwaysOnTop: boolean) {
@@ -195,7 +322,23 @@ export const tauriApi = {
 };
 
 // Check if we're running in Tauri
-export const isTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
+export const isTauri = typeof window !== 'undefined' && (
+  ('__TAURI_INTERNALS__' in window) ||
+  ('__TAURI__' in window) ||
+  (typeof (window as any).__TAURI_INTERNALS__ !== 'undefined') ||
+  (typeof (window as any).__TAURI__ !== 'undefined')
+);
+
+// Debug function to check Tauri availability
+export const debugTauri = () => {
+  console.log('Tauri debug info:');
+  console.log('typeof window:', typeof window);
+  console.log('__TAURI_INTERNALS__ in window:', '__TAURI_INTERNALS__' in window);
+  console.log('__TAURI__ in window:', '__TAURI__' in window);
+  console.log('window.__TAURI_INTERNALS__:', window?.['__TAURI_INTERNALS__']);
+  console.log('window.__TAURI__:', window?.['__TAURI__']);
+  console.log('isTauri result:', isTauri);
+};
 
 // Export a unified API that works with both Tauri and web environments
 export const electronToTauriApi = {

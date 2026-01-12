@@ -37,6 +37,9 @@ async function bootstrap() {
     'http://127.0.0.1:5173',  // Vite dev server (alternative)
     'http://localhost:4173',  // Vite preview server
     'http://127.0.0.1:4173',  // Vite preview server (alternative)
+    'http://tauri.localhost', // Tauri development
+    'https://tauri.localhost', // Tauri development (HTTPS)
+    'tauri://localhost', // Tauri protocol
   ];
   
   // Merge with configured origins
@@ -132,17 +135,23 @@ async function bootstrap() {
   // Removed verbose request logging for cleaner console output
 
   // Initialize database
+  console.log('\n🔌 Initializing services...');
   await initializeDatabase();
+  console.log('   ✅ Database connected');
 
   // Initialize RSA keys
   await initializeKeys();
+  console.log('   ✅ RSA keys loaded');
 
   // Initialize file sync service (auto-sync files from updates directory)
   let fileWatcherInitialized = false;
+  // Отключаем автоматическую синхронизацию при запуске для предотвращения дубликатов
+  // File watcher будет работать, но без начальной синхронизации
   if (config.env === 'production' || process.env.ENABLE_FILE_SYNC !== 'false') {
     const { initializeFileWatcher } = await import('./services/fileSyncService');
     await initializeFileWatcher();
     fileWatcherInitialized = true;
+    console.log('   ✅ File watcher ready');
   }
 
   // CLI is now started separately via "npm run cli" command
@@ -213,27 +222,36 @@ async function bootstrap() {
   app.use(errorHandler);
 
   // Start HTTP server
-  const server = app.listen(config.server.port, config.server.host, () => {
+  const serverInstance = app.listen(config.server.port, config.server.host, () => {
     console.log('\n╔═══════════════════════════════════════════════════════════╗');
     console.log('║     Modern Minecraft Launcher - Backend Server            ║');
     console.log('╚═══════════════════════════════════════════════════════════╝');
-    console.log(`\n  ✓ Database      Connected`);
-    console.log(`  ✓ RSA Keys       Loaded`);
-    console.log(`  ✓ File Sync      Active`);
-    console.log(`  ✓ WebSocket      Ready`);
     console.log(`\n  🌐 Server:       http://${config.server.host}:${config.server.port}`);
     console.log(`  🔌 WebSocket:    ws://${config.server.host}:${config.server.port}/ws`);
     console.log(`  📦 Environment: ${config.env}`);
-    console.log(`\n╚═══════════════════════════════════════════════════════════╝\n`);
+    if (fileWatcherInitialized) {
+      console.log(`  👀 File Watcher: Active`);
+    }
+    console.log(`\n✨ Server started successfully!`);
+    console.log(`\n🚀 Ready to serve Minecraft launcher requests\n`);
   });
 
   // Initialize WebSocket
-  initializeWebSocket(server);
+  initializeWebSocket(serverInstance);
 
   // Graceful shutdown handler
+  let isShuttingDown = false; // Flag to prevent double shutdown
+
   const gracefulShutdown = async (signal: string) => {
+    // Prevent double shutdown
+    if (isShuttingDown) {
+      logger.warn(`[Shutdown] ⚠️  Already shutting down, ignoring ${signal} signal`);
+      return;
+    }
+
+    isShuttingDown = true;
     logger.info(`\n⚠️  ${signal} received, shutting down gracefully...`);
-    
+
     // Set timeout for forced shutdown (15 seconds)
     const forceShutdown = setTimeout(() => {
       logger.error('⚠️  Forced shutdown after timeout - some resources may not have closed cleanly');
@@ -246,7 +264,14 @@ async function bootstrap() {
       // Step 1: Stop accepting new connections
       logger.info('[Shutdown] Stopping HTTP server...');
       await new Promise<void>((resolve, reject) => {
-        server.close((err) => {
+        // Check if server is still running before attempting to close
+        if (!serverInstance.listening) {
+          logger.info('[Shutdown] HTTP server already closed, skipping...');
+          resolve();
+          return;
+        }
+
+        serverInstance.close((err) => {
           if (err) {
             shutdownErrors.push({ component: 'HTTP server', error: err });
             logger.error('[Shutdown] Error closing HTTP server:', err);
@@ -258,8 +283,8 @@ async function bootstrap() {
         });
       });
     } catch (error) {
-      shutdownErrors.push({ 
-        component: 'HTTP server', 
+      shutdownErrors.push({
+        component: 'HTTP server',
         error: error instanceof Error ? error : new Error(String(error))
       });
       logger.error('[Shutdown] Error during HTTP server shutdown:', error);
@@ -271,8 +296,8 @@ async function bootstrap() {
       await closeWebSocketServer();
       logger.info('[Shutdown] ✓ WebSocket server closed');
     } catch (error) {
-      shutdownErrors.push({ 
-        component: 'WebSocket server', 
+      shutdownErrors.push({
+        component: 'WebSocket server',
         error: error instanceof Error ? error : new Error(String(error))
       });
       logger.error('[Shutdown] Error closing WebSocket server:', error);
@@ -287,8 +312,8 @@ async function bootstrap() {
         logger.info('[Shutdown] ✓ File watcher stopped');
       }
     } catch (error) {
-      shutdownErrors.push({ 
-        component: 'File watcher', 
+      shutdownErrors.push({
+        component: 'File watcher',
         error: error instanceof Error ? error : new Error(String(error))
       });
       logger.error('[Shutdown] Error stopping file watcher:', error);
@@ -300,8 +325,8 @@ async function bootstrap() {
       await disconnectDatabase();
       logger.info('[Shutdown] ✓ Database connection closed');
     } catch (error) {
-      shutdownErrors.push({ 
-        component: 'Database', 
+      shutdownErrors.push({
+        component: 'Database',
         error: error instanceof Error ? error : new Error(String(error))
       });
       logger.error('[Shutdown] Error closing database connection:', error);
@@ -309,7 +334,7 @@ async function bootstrap() {
 
     // Clear timeout
     clearTimeout(forceShutdown);
-    
+
     // Log summary
     if (shutdownErrors.length > 0) {
       logger.warn(`[Shutdown] Completed with ${shutdownErrors.length} error(s):`);
@@ -324,7 +349,14 @@ async function bootstrap() {
     }
   };
 
-  // Handle shutdown signals
+  // Handle shutdown signals - remove existing listeners first to avoid duplicates
+  process.setMaxListeners(15); // Increase limit to handle multiple listeners
+
+  // Remove any existing SIGTERM/SIGINT listeners (in case of hot reload)
+  process.listeners('SIGTERM').forEach(listener => process.removeListener('SIGTERM', listener as any));
+  process.listeners('SIGINT').forEach(listener => process.removeListener('SIGINT', listener as any));
+
+  // Add new single listeners
   process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
   process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 }

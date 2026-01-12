@@ -1,64 +1,32 @@
 /**
- * Tabs Component
- *
- * Универсальный компонент вкладок для организации контента.
- * Использует дизайн-систему для консистентного стиля.
- *
- * @module components/ui/Tabs
+ * Simple Tabs Component - No Design
  */
 
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { tabsList, tabBase, tabActive, cn } from '../../styles/design-system';
-import { useOptimizedAnimation } from '../../hooks/useOptimizedAnimation';
 
 export interface Tab {
-  /** Уникальный идентификатор вкладки */
   id: string;
-  /** Заголовок вкладки */
   label: React.ReactNode;
-  /** Иконка вкладки */
   icon?: React.ReactNode;
-  /** Контент вкладки */
   content: React.ReactNode;
-  /** Отключить вкладку */
   disabled?: boolean;
 }
 
 export interface TabsProps {
-  /** Вкладки */
   tabs: Tab[];
-  /** Активная вкладка по умолчанию */
   defaultTab?: string;
-  /** Контролируемое значение активной вкладки */
   value?: string;
-  /** Обработчик изменения активной вкладки */
   onChange?: (tabId: string) => void;
-  /** Дополнительные классы */
   className?: string;
 }
 
-/**
- * Tabs Component
- *
- * @example
- * ```tsx
- * const tabs = [
- *   { id: 'tab1', label: 'Tab 1', content: <div>Content 1</div> },
- *   { id: 'tab2', label: 'Tab 2', content: <div>Content 2</div> },
- * ];
- *
- * <Tabs tabs={tabs} defaultTab="tab1" />
- * ```
- */
 export default function Tabs({
   tabs,
   defaultTab,
   value,
   onChange,
-  className,
+  className = '',
 }: TabsProps) {
-  const { shouldAnimate } = useOptimizedAnimation();
   const [internalValue, setInternalValue] = useState(defaultTab || tabs[0]?.id || '');
 
   const activeTab = value !== undefined ? value : internalValue;
@@ -71,10 +39,42 @@ export default function Tabs({
     onChange?.(tabId);
   };
 
+  const containerStyle: React.CSSProperties = {
+    width: '100%',
+  };
+
+  const tabsListStyle: React.CSSProperties = {
+    display: 'flex',
+    gap: '4px',
+    borderBottom: '1px solid #e5e7eb',
+    marginBottom: '16px',
+  };
+
+  const tabButtonStyle: React.CSSProperties = {
+    padding: '8px 16px',
+    background: 'none',
+    border: 'none',
+    borderBottom: '2px solid transparent',
+    cursor: 'pointer',
+    fontSize: '14px',
+    opacity: 1,
+  };
+
+  const tabButtonActiveStyle: React.CSSProperties = {
+    ...tabButtonStyle,
+    borderBottom: '2px solid #000',
+    fontWeight: 'bold',
+  };
+
+  const tabButtonDisabledStyle: React.CSSProperties = {
+    ...tabButtonStyle,
+    opacity: 0.5,
+    cursor: 'not-allowed',
+  };
+
   return (
-    <div className={cn('w-full', className)}>
-      {/* Tab List */}
-      <div className={tabsList}>
+    <div style={containerStyle} className={className}>
+      <div style={tabsListStyle}>
         {tabs.map((tab) => {
           const isActive = tab.id === activeTab;
           const isDisabled = tab.disabled;
@@ -84,32 +84,26 @@ export default function Tabs({
               key={tab.id}
               onClick={() => !isDisabled && handleTabChange(tab.id)}
               disabled={isDisabled}
-              className={cn(
-                tabBase,
-                isActive && tabActive,
-                isDisabled && 'opacity-50 cursor-not-allowed'
-              )}
+              style={
+                isDisabled
+                  ? tabButtonDisabledStyle
+                  : isActive
+                  ? tabButtonActiveStyle
+                  : tabButtonStyle
+              }
             >
-              {tab.icon && <span className="flex-shrink-0">{tab.icon}</span>}
+              {tab.icon && <span style={{ marginRight: '8px' }}>{tab.icon}</span>}
               {tab.label}
             </button>
           );
         })}
       </div>
 
-      {/* Tab Content */}
       {currentTab && (
-        <motion.div
-          key={activeTab}
-          initial={shouldAnimate ? { opacity: 0, y: 10 } : false}
-          animate={shouldAnimate ? { opacity: 1, y: 0 } : false}
-          transition={{ duration: 0.2 }}
-          className="mt-4"
-        >
+        <div>
           {currentTab.content}
-        </motion.div>
+        </div>
       )}
     </div>
   );
 }
-

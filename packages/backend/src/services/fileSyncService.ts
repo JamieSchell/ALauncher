@@ -13,6 +13,7 @@ import { logger } from '../utils/logger';
 import { broadcastToAll } from '../websocket';
 import { WSEvent } from '@modern-launcher/shared';
 import { prisma } from './database';
+import { ProgressBar, formatBytes, formatDuration } from '../utils/progressBar';
 
 // Store watcher instance for graceful shutdown
 let fileWatcher: FSWatcher | null = null;
@@ -156,10 +157,17 @@ async function syncVersionFiles(version: string): Promise<{ added: number; updat
   }
   
   // Сканировать все файлы
-    logger.debug(`[FileSync] Scanning files for version ${version}...`);
-    const files = await scanDirectory(versionDir);
-    logger.debug(`[FileSync] Found ${files.length} files for version ${version}`);
-  
+  console.log(`\n📂 Scanning files for version "${version}"...`);
+  const startTime = Date.now();
+  const files = await scanDirectory(versionDir);
+
+  if (files.length === 0) {
+    console.log(`⚠️  No files found in ${versionDir}`);
+    return { added: 0, updated: 0, errors: 0 };
+  }
+
+  console.log(`📊 Found ${files.length} files (${formatBytes(files.reduce((sum, f) => sum + f.size, BigInt(0)))})`);
+
   let added = 0;
   let updated = 0;
   let errors = 0;
@@ -176,41 +184,34 @@ async function syncVersionFiles(version: string): Promise<{ added: number; updat
     });
   }
   
+  // Создаем прогресс-бар для синхронизации
+  const progressBar = new ProgressBar(files.length, 'Syncing files');
+  console.log(''); // Пустая строка для прогресс-бара
+
   // Синхронизировать каждый файл
-  for (const file of files) {
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
     try {
       // Используем upsert для атомарной операции - предотвращает дубликаты
+      // Для общих файлов версии явно устанавливаем clientDirectory: null
       const fileData = {
         versionId: clientVersion.id,
-        clientDirectory: "", // общие файлы версии (vanilla) не привязаны к конкретному клиенту
+        clientDirectory: null, // явно указываем null для общих файлов версии
         filePath: file.filePath,
         fileHash: file.hash,
         fileSize: file.size,
         fileType: file.fileType,
         verified: false,
         integrityCheckFailed: false,
-      } as any;
+        lastVerified: new Date(),
+      };
 
-      // Проверить, существует ли файл, чтобы определить, это обновление или добавление
-      const existing = await prisma.clientFile.findUnique({
-        where: {
-          versionId_clientDirectory_filePath: {
-            versionId: clientVersion.id,
-            clientDirectory: "",
-            filePath: file.filePath,
-          },
-        },
-      });
-
-      const isNew = !existing;
-      const isChanged = existing && (existing.fileHash !== file.hash || existing.fileSize !== file.size);
-
-      // Используем upsert для атомарной операции
+      // Используем upsert для предотвращения дубликатов
       const result = await prisma.clientFile.upsert({
         where: {
           versionId_clientDirectory_filePath: {
             versionId: clientVersion.id,
-            clientDirectory: "",
+            clientDirectory: null, // для общих файлов версии
             filePath: file.filePath,
           },
         },
@@ -218,70 +219,57 @@ async function syncVersionFiles(version: string): Promise<{ added: number; updat
           fileHash: file.hash,
           fileSize: file.size,
           fileType: file.fileType,
-          verified: isChanged ? false : existing?.verified ?? false, // Сбрасываем verified только если файл изменился
+          verified: false,
           integrityCheckFailed: false,
-          lastVerified: isChanged ? null : existing?.lastVerified ?? null,
+          lastVerified: new Date(),
         },
         create: fileData,
       });
 
-      if (isNew) {
-          added++;
-          logger.info(`[FileSync] Added new file: ${file.filePath}`);
+      // Проверяем, был ли файл создан или обновлен (используем условие upsert)
+      // Если upsert создал новую запись, значит файл был добавлен, иначе - обновлен
+      const isCreated = !result.lastVerified || result.lastVerified.getTime() === (new Date()).getTime();
 
-          // Отправить WebSocket уведомление о новом файле
-            try {
-              broadcastToAll({
-                event: WSEvent.CLIENT_FILES_UPDATED,
-                data: {
-                  version: clientVersion.version,
-                  versionId: clientVersion.id,
-                  action: 'file_added',
-                  files: [{
-                filePath: result.filePath,
-                fileHash: result.fileHash,
-                fileSize: result.fileSize.toString(),
-                fileType: result.fileType,
-                verified: result.verified,
-                integrityCheckFailed: result.integrityCheckFailed,
-                  }],
-                },
-              });
-            } catch (error) {
-              logger.warn(`[FileSync] Failed to send WebSocket notification for new file:`, error);
-            }
-      } else if (isChanged) {
+      if (isCreated) {
+        added++;
+      } else {
         updated++;
-        logger.info(`[FileSync] Updated file: ${file.filePath} (hash changed)`);
-        
-        // Отправить WebSocket уведомление об обновлении файла
-        try {
-          broadcastToAll({
-            event: WSEvent.CLIENT_FILES_UPDATED,
-            data: {
-              version: clientVersion.version,
-                    versionId: clientVersion.id,
-              action: 'file_updated',
-              files: [{
-                filePath: result.filePath,
-                fileHash: result.fileHash,
-                fileSize: result.fileSize.toString(),
-                fileType: result.fileType,
-                verified: result.verified,
-                integrityCheckFailed: result.integrityCheckFailed,
-              }],
-                },
-              });
-        } catch (error) {
-          logger.warn(`[FileSync] Failed to send WebSocket notification for updated file:`, error);
-          }
-        }
-      // Если файл не изменился, ничего не делаем (не логируем и не обновляем счетчики)
+      }
+
+      try {
+        broadcastToAll({
+          event: WSEvent.CLIENT_FILES_UPDATED,
+          data: {
+            version: clientVersion.version,
+            versionId: clientVersion.id,
+            action: isCreated ? 'file_added' : 'file_updated',
+            files: [{
+              filePath: result.filePath,
+              fileHash: result.fileHash,
+              fileSize: result.fileSize.toString(),
+              fileType: result.fileType,
+              verified: result.verified,
+              integrityCheckFailed: result.integrityCheckFailed,
+            }],
+          },
+        });
+      } catch (error) {
+        // Silently ignore WebSocket errors during CLI operations
+      }
+
+      // Обновляем прогресс-бар с правильным статусом
+      const status = isCreated ? 'Added' : 'Updated';
+      progressBar.update(i + 1, `${status}: ${file.filePath}`);
+
     } catch (error) {
       errors++;
+      progressBar.update(i + 1, `❌ Error: ${file.filePath}`);
       logger.error(`[FileSync] Error syncing file ${file.filePath}:`, error);
     }
   }
+
+  // Завершаем прогресс-бар
+  progressBar.complete();
   
   // ВАЖНО: НЕ удаляем файлы из БД автоматически при синхронизации!
   // Это может привести к потере данных, если файлы не были найдены при сканировании
@@ -323,51 +311,68 @@ async function syncVersionFiles(version: string): Promise<{ added: number; updat
     logger.info(`[FileSync] Found ${missingFiles.length} files in DB that are not on disk (not auto-removed for safety). Use 'file delete' command to remove them manually.`);
   }
   
-  logger.info(`[FileSync] Sync completed for ${version}: ${added} added, ${updated} updated, ${errors} errors`);
-  
-  // Отправить WebSocket уведомление об обновлении файлов
-  try {
-    const files = await prisma.clientFile.findMany({
-      where: { versionId: clientVersion.id },
-      select: {
-        filePath: true,
-        fileHash: true,
-        fileSize: true,
-        fileType: true,
-        verified: true,
-        integrityCheckFailed: true,
-      },
-    });
+  const duration = Date.now() - startTime;
 
-    const stats = await getSyncStats(version);
-
-    broadcastToAll({
-      event: WSEvent.CLIENT_FILES_UPDATED,
-      data: {
-        version,
-        versionId: clientVersion.id,
-        action: 'sync',
-        files: files.map(f => ({
-          filePath: f.filePath,
-          fileHash: f.fileHash,
-          fileSize: f.fileSize.toString(),
-          fileType: f.fileType,
-          verified: f.verified,
-          integrityCheckFailed: f.integrityCheckFailed,
-        })),
-        stats: {
-          totalFiles: stats.totalFiles,
-          verifiedFiles: stats.verifiedFiles,
-          failedFiles: stats.failedFiles,
-        },
-      },
-    });
-
-    logger.info(`[FileSync] WebSocket notification sent for version ${version}`);
-  } catch (error) {
-    logger.warn(`[FileSync] Failed to send WebSocket notification:`, error);
+  // Красивый вывод статистики
+  console.log('\n📊 Sync Statistics:');
+  console.log(`   ✅ Added: ${added} files`);
+  console.log(`   🔄 Updated: ${updated} files`);
+  if (errors > 0) {
+    console.log(`   ❌ Errors: ${errors} files`);
   }
-  
+  console.log(`   ⏱️  Duration: ${formatDuration(duration)}`);
+  console.log(`   📦 Total: ${added + updated} files processed`);
+
+  if (errors === 0) {
+    console.log(`\n✨ Sync completed successfully for version "${version}"`);
+  } else {
+    console.log(`\n⚠️  Sync completed with ${errors} errors for version "${version}"`);
+  }
+
+  // Отправить WebSocket уведомление об обновлении файлов (только если не CLI режим)
+  try {
+    const isCLI = process.argv.some(arg => arg.includes('cli'));
+    if (!isCLI) {
+      const files = await prisma.clientFile.findMany({
+        where: { versionId: clientVersion.id },
+        select: {
+          filePath: true,
+          fileHash: true,
+          fileSize: true,
+          fileType: true,
+          verified: true,
+          integrityCheckFailed: true,
+        },
+      });
+
+      const stats = await getSyncStats(version);
+
+      broadcastToAll({
+        event: WSEvent.CLIENT_FILES_UPDATED,
+        data: {
+          version,
+          versionId: clientVersion.id,
+          action: 'sync',
+          files: files.map(f => ({
+            filePath: f.filePath,
+            fileHash: f.fileHash,
+            fileSize: f.fileSize.toString(),
+            fileType: f.fileType,
+            verified: f.verified,
+            integrityCheckFailed: f.integrityCheckFailed,
+          })),
+          stats: {
+            totalFiles: stats.totalFiles,
+            verifiedFiles: stats.verifiedFiles,
+            failedFiles: stats.failedFiles,
+          },
+        },
+      });
+    }
+  } catch (error) {
+    // Silently ignore WebSocket errors during CLI operations
+  }
+
   return { added, updated, errors };
 }
 
@@ -553,11 +558,11 @@ export async function initializeFileWatcher(): Promise<void> {
 
         if (profile) {
           // Если найден профиль, синхронизировать его файлы
-          logger.debug(`[FileSync] Auto-syncing profile: ${profile.title} (${directoryName})`);
+          console.log(`📁 Auto-syncing profile: ${profile.title} (${directoryName})`);
           await syncProfileFiles(profile.id);
         } else {
           // Иначе попытаться синхронизировать как версию (для обратной совместимости)
-          logger.debug(`[FileSync] Auto-syncing version: ${directoryName}`);
+          console.log(`📁 Auto-syncing version: ${directoryName}`);
           await syncVersionFiles(directoryName);
         }
       } catch (error) {
@@ -732,40 +737,9 @@ export async function initializeFileWatcher(): Promise<void> {
   
   // Синхронизировать все существующие профили и версии при запуске
   watcher.on('ready', async () => {
-    try {
-      const entries = await fs.readdir(updatesDir, { withFileTypes: true });
-      
-      for (const entry of entries) {
-        if (entry.isDirectory() && entry.name !== 'assets') {
-          const clientDir = path.join(updatesDir, entry.name);
-          try {
-            // Проверить, что это действительно директория клиента (содержит client.jar или version.json)
-            const hasClientJar = await fs.access(path.join(clientDir, 'client.jar')).then(() => true).catch(() => false);
-            const hasVersionJson = await fs.access(path.join(clientDir, 'version.json')).then(() => true).catch(() => false);
-            
-            if (hasClientJar || hasVersionJson) {
-              // Попытаться найти профиль по clientDirectory
-              const profile = await prisma.clientProfile.findFirst({
-                where: { clientDirectory: entry.name },
-              });
-
-              if (profile) {
-                logger.debug(`[FileSync] Initial sync for profile: ${profile.title} (${entry.name})`);
-                await syncProfileFiles(profile.id);
-              } else {
-                // Иначе синхронизировать как версию (для обратной совместимости)
-                logger.debug(`[FileSync] Initial sync for version: ${entry.name}`);
-                await syncVersionFiles(entry.name);
-              }
-            }
-          } catch (error) {
-            logger.warn(`[FileSync] Skipping directory ${entry.name}:`, error);
-          }
-        }
-      }
-    } catch (error) {
-      logger.error('[FileSync] Error during initial sync:', error);
-    }
+    // Отключаем начальную синхронизацию при запуске для предотвращения дубликатов
+    // Файлы будут синхронизироваться только при изменениях (add/change/unlink)
+    console.log('👀 File watcher initialized (initial sync disabled for duplicates prevention)');
   });
 }
 
@@ -865,9 +839,16 @@ export async function syncProfileFiles(profileId: string): Promise<{ added: numb
   }
 
   // Сканировать все файлы
-  logger.debug(`[FileSync] Scanning files for profile "${profile.title}" (${clientDir})...`);
+  console.log(`\n📂 Scanning files for profile "${profile.title}" (${clientDir})...`);
+  const startTime = Date.now();
   const files = await scanDirectory(profileDir);
-  logger.debug(`[FileSync] Found ${files.length} files for profile "${profile.title}"`);
+
+  if (files.length === 0) {
+    console.log(`⚠️  No files found in ${profileDir}`);
+    return { added: 0, updated: 0, errors: 0 };
+  }
+
+  console.log(`📊 Found ${files.length} files (${formatBytes(files.reduce((sum, f) => sum + f.size, BigInt(0)))})`);
 
   let added = 0;
   let updated = 0;
@@ -885,9 +866,14 @@ export async function syncProfileFiles(profileId: string): Promise<{ added: numb
     });
   }
 
+  // Создаем прогресс-бар для синхронизации профиля
+  const progressBar = new ProgressBar(files.length, `Syncing ${profile.title}`);
+  console.log(''); // Пустая строка для прогресс-бара
+
   // Синхронизировать каждый файл (используем ту же логику что и в syncVersionFiles),
   // НО с привязкой к конкретной директории клиента.
-  for (const file of files) {
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
     try {
       // Используем upsert для атомарной операции - предотвращает дубликаты
       const fileData = {
@@ -901,21 +887,7 @@ export async function syncProfileFiles(profileId: string): Promise<{ added: numb
               integrityCheckFailed: false,
       } as any;
 
-      // Проверить, существует ли файл, чтобы определить, это обновление или добавление
-      const existing = await prisma.clientFile.findUnique({
-        where: {
-          versionId_clientDirectory_filePath: {
-            versionId: clientVersion.id,
-            clientDirectory: clientDir,
-            filePath: file.filePath,
-          },
-        },
-      });
-
-      const isNew = !existing;
-      const isChanged = existing && (existing.fileHash !== file.hash || existing.fileSize !== file.size);
-
-      // Используем upsert для атомарной операции
+      // Проверяем, был ли файл создан или обновлен, сравнивая timestamps
       const result = await prisma.clientFile.upsert({
         where: {
           versionId_clientDirectory_filePath: {
@@ -928,67 +900,50 @@ export async function syncProfileFiles(profileId: string): Promise<{ added: numb
           fileHash: file.hash,
           fileSize: file.size,
           fileType: file.fileType,
-          verified: isChanged ? false : existing?.verified ?? false, // Сбрасываем verified только если файл изменился
+          verified: false,
           integrityCheckFailed: false,
-          lastVerified: isChanged ? null : existing?.lastVerified ?? null,
+          lastVerified: new Date(),
         },
         create: fileData,
       });
 
-      if (isNew) {
-          added++;
-          logger.info(`[FileSync] Added new file: ${file.filePath}`);
+      // Проверяем, был ли файл создан или обновлен (используем условие upsert)
+      // Если upsert создал новую запись, значит файл был добавлен, иначе - обновлен
+      const isCreated = !result.lastVerified || result.lastVerified.getTime() === (new Date()).getTime();
 
-          // Отправить WebSocket уведомление о новом файле
-            try {
-              broadcastToAll({
-                event: WSEvent.CLIENT_FILES_UPDATED,
-                data: {
-                  version: clientVersion.version,
-                  versionId: clientVersion.id,
-                  action: 'file_added',
-                  files: [{
-                filePath: result.filePath,
-                fileHash: result.fileHash,
-                fileSize: result.fileSize.toString(),
-                fileType: result.fileType,
-                verified: result.verified,
-                integrityCheckFailed: result.integrityCheckFailed,
-                  }],
-                },
-              });
-            } catch (error) {
-              logger.warn(`[FileSync] Failed to send WebSocket notification:`, error);
-            }
-      } else if (isChanged) {
+      if (isCreated) {
+        added++;
+      } else {
         updated++;
-        logger.info(`[FileSync] Updated file: ${file.filePath} (hash changed)`);
-        
-        // Отправить WebSocket уведомление об обновлении файла
-        try {
-          broadcastToAll({
-            event: WSEvent.CLIENT_FILES_UPDATED,
-            data: {
-              version: clientVersion.version,
-                    versionId: clientVersion.id,
-              action: 'file_updated',
-              files: [{
-                filePath: result.filePath,
-                fileHash: result.fileHash,
-                fileSize: result.fileSize.toString(),
-                fileType: result.fileType,
-                verified: result.verified,
-                integrityCheckFailed: result.integrityCheckFailed,
-              }],
-                },
-              });
-        } catch (error) {
-          logger.warn(`[FileSync] Failed to send WebSocket notification:`, error);
-          }
-        }
-      // Если файл не изменился, ничего не делаем (не логируем и не обновляем счетчики)
+      }
+
+      try {
+        broadcastToAll({
+          event: WSEvent.CLIENT_FILES_UPDATED,
+          data: {
+            version: clientVersion.version,
+            versionId: clientVersion.id,
+            action: isCreated ? 'file_added' : 'file_updated',
+            files: [{
+              filePath: result.filePath,
+              fileHash: result.fileHash,
+              fileSize: result.fileSize.toString(),
+              fileType: result.fileType,
+              verified: result.verified,
+              integrityCheckFailed: result.integrityCheckFailed,
+            }],
+          },
+        });
+      } catch (error) {
+        // Silently ignore WebSocket errors during CLI operations
+      }
+
+      // Обновляем прогресс-бар с правильным статусом
+      const status = isCreated ? 'Added' : 'Updated';
+      progressBar.update(i + 1, `${status}: ${file.filePath}`);
     } catch (error) {
       errors++;
+      progressBar.update(i + 1, `❌ Error: ${file.filePath}`);
       logger.error(`[FileSync] Error syncing file ${file.filePath}:`, error);
     }
   }
@@ -1035,7 +990,26 @@ export async function syncProfileFiles(profileId: string): Promise<{ added: numb
     logger.info(`[FileSync] Found ${missingFiles.length} files in DB that are not on disk (not auto-removed for safety). Use 'file delete' command to remove them manually.`);
   }
 
-  logger.info(`[FileSync] Sync completed for profile "${profile.title}": ${added} added, ${updated} updated, ${errors} errors`);
+  // Завершаем прогресс-бар
+  progressBar.complete();
+
+  const duration = Date.now() - startTime;
+
+  // Красивый вывод статистики
+  console.log('\n📊 Sync Statistics:');
+  console.log(`   ✅ Added: ${added} files`);
+  console.log(`   🔄 Updated: ${updated} files`);
+  if (errors > 0) {
+    console.log(`   ❌ Errors: ${errors} files`);
+  }
+  console.log(`   ⏱️  Duration: ${formatDuration(duration)}`);
+  console.log(`   📦 Total: ${added + updated} files processed`);
+
+  if (errors === 0) {
+    console.log(`\n✨ Sync completed successfully for profile "${profile.title}"`);
+  } else {
+    console.log(`\n⚠️  Sync completed with ${errors} errors for profile "${profile.title}"`);
+  }
 
   return { added, updated, errors };
 }

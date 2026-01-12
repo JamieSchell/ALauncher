@@ -4,7 +4,6 @@
  */
 
 import { ReactNode } from 'react';
-import { cn } from '../utils/cn';
 
 interface ContainerProps {
   children: ReactNode;
@@ -12,24 +11,23 @@ interface ContainerProps {
   className?: string;
 }
 
-const sizeClasses = {
-  sm: 'max-w-container-sm',
-  md: 'max-w-container-md',
-  lg: 'max-w-container-lg',
-  xl: 'max-w-container-xl',
-  '2xl': 'max-w-container-2xl',
-  full: 'max-w-full',
+const sizeStyles: Record<string, React.CSSProperties> = {
+  sm: { maxWidth: '640px' },
+  md: { maxWidth: '768px' },
+  lg: { maxWidth: '1024px' },
+  xl: { maxWidth: '1280px' },
+  '2xl': { maxWidth: '1536px' },
+  full: { maxWidth: '100%' },
 };
 
-export default function Container({ 
-  children, 
+export default function Container({
+  children,
   size = 'xl',
-  className = '' 
+  className = ''
 }: ContainerProps) {
   return (
-    <div className={cn('mx-auto px-4 sm:px-6 lg:px-8', sizeClasses[size], className)}>
+    <div style={{ margin: '0 auto', padding: '1rem', ...sizeStyles[size] }}>
       {children}
     </div>
   );
 }
-

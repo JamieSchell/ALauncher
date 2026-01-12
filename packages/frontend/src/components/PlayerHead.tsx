@@ -4,7 +4,6 @@
  */
 
 import { useState, useEffect } from 'react';
-import { User } from 'lucide-react';
 import { API_CONFIG } from '../config/api';
 
 interface PlayerHeadProps {
@@ -34,28 +33,28 @@ const getHeadFromSkin = (skinUrl: string, size: number): Promise<string> => {
   return new Promise<string>((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
-    
+
     img.onload = () => {
       try {
         const canvas = document.createElement('canvas');
         canvas.width = size;
         canvas.height = size;
         const ctx = canvas.getContext('2d');
-        
+
         if (!ctx) {
           reject(new Error('Failed to get canvas context'));
           return;
         }
-        
+
         // Minecraft skin head coordinates
         // Head front: x: 8-16, y: 8-16 (8x8 pixels) - works for both 64x64 and 64x32
         const headSize = 8; // 8x8 pixels in skin texture
         const headX = 8;
         const headY = 8;
-        
+
         // Disable image smoothing for pixelated Minecraft style
         ctx.imageSmoothingEnabled = false;
-        
+
         // Draw only head front (8x8 -> scale to size)
         // This gives a clean, recognizable head view
         ctx.drawImage(
@@ -63,27 +62,27 @@ const getHeadFromSkin = (skinUrl: string, size: number): Promise<string> => {
           headX, headY, headSize, headSize, // Source: head front (8x8)
           0, 0, size, size // Destination: full canvas
         );
-        
+
         resolve(canvas.toDataURL('image/png'));
       } catch (error) {
         reject(error);
       }
     };
-    
+
     img.onerror = () => {
       reject(new Error('Failed to load skin image'));
     };
-    
+
     img.src = skinUrl;
   });
 };
 
-export default function PlayerHead({ 
-  skinUrl, 
-  username, 
+export default function PlayerHead({
+  skinUrl,
+  username,
   uuid,
   size = 40,
-  className = '' 
+  className = ''
 }: PlayerHeadProps) {
   const [headImage, setHeadImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -121,22 +120,50 @@ export default function PlayerHead({
 
   if (loading) {
     return (
-      <div 
-        className={`bg-[#1f1f1f] rounded-lg flex items-center justify-center border border-[#3d3d3d] ${className}`}
-        style={{ width: size, height: size }}
+      <div
+        style={{
+          backgroundColor: '#1f1f1f',
+          borderRadius: '8px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          border: '1px solid #3d3d3d',
+          width: size,
+          height: size
+        }}
+        className={className}
       >
-        <div className="w-4 h-4 border-2 border-[#6b8e23] border-t-transparent rounded-full animate-spin" />
+        <div style={{
+          width: '16px',
+          height: '16px',
+          border: '2px solid #6b8e23',
+          borderTopColor: 'transparent',
+          borderRadius: '50%',
+          animation: 'spin 1s linear infinite'
+        }} />
       </div>
     );
   }
 
   if (error || !headImage) {
     return (
-      <div 
-        className={`bg-gradient-to-br from-[#6b8e23] to-[#556b2f] rounded-lg flex items-center justify-center border border-[#7a9f35]/30 ${className}`}
-        style={{ width: size, height: size }}
+      <div
+        style={{
+          background: 'linear-gradient(to bottom right, #6b8e23, #556b2f)',
+          borderRadius: '8px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          border: '1px solid rgba(122, 159, 53, 0.3)',
+          width: size,
+          height: size
+        }}
+        className={className}
       >
-        <User size={size * 0.5} className="text-white" />
+        <svg width={size * 0.5} height={size * 0.5} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </svg>
       </div>
     );
   }
@@ -145,12 +172,14 @@ export default function PlayerHead({
     <img
       src={headImage}
       alt={username || 'Player head'}
-      className={`rounded-lg border border-[#3d3d3d] ${className}`}
-      style={{ 
-        width: size, 
+      style={{
+        width: size,
         height: size,
+        borderRadius: '8px',
+        border: '1px solid #3d3d3d',
         imageRendering: 'pixelated' // Minecraft pixel art style
       }}
+      className={className}
       loading="lazy"
       decoding="async"
       onError={() => {
@@ -160,4 +189,3 @@ export default function PlayerHead({
     />
   );
 }
-

@@ -42,7 +42,7 @@ user info <username> - Show user information`;
     ];
   }
 
-  async execute(args: string[], rl: readline.Interface): Promise<void> {
+  async execute(args: string[], rl: readline.Interface, commandName?: string): Promise<void> {
     if (args.length === 0) {
       this.printError('Subcommand required. Use "user list", "user create", etc.');
       this.printInfo('Type "help user" for usage information');

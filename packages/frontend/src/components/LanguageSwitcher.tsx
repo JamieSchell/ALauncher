@@ -3,8 +3,6 @@
  */
 
 import { useState, useRef, useEffect } from 'react';
-import { Globe, Check } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguageStore } from '../stores/languageStore';
 import { languages, Language } from '../i18n';
 
@@ -35,82 +33,87 @@ export default function LanguageSwitcher() {
   const currentLang = languages[language];
 
   return (
-    <div className="relative" ref={dropdownRef}>
-      <motion.button
+    <div style={{ position: 'relative' }} ref={dropdownRef}>
+      <button
         onClick={() => setIsOpen(!isOpen)}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        className="relative p-2 rounded-lg hover:bg-white/10 active:bg-white/15 transition-all duration-200 border border-transparent hover:border-white/15 group"
+        style={{
+          position: 'relative',
+          padding: '8px',
+          borderRadius: '8px',
+          border: '1px solid transparent',
+          backgroundColor: 'transparent',
+          cursor: 'pointer',
+          transition: 'all 0.2s'
+        }}
         title={`Language: ${currentLang.name}`}
       >
-        <Globe size={16} className="text-white/80 group-hover:text-white transition-colors" aria-hidden="true" />
-      </motion.button>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255, 255, 255, 0.8)" strokeWidth="2" style={{ display: 'block' }}>
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="2" y1="12" x2="22" y2="12"></line>
+          <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+        </svg>
+      </button>
 
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            transition={{ duration: 0.2 }}
-            className="absolute top-full right-0 mt-2 w-48 bg-surface-base/95 backdrop-blur-xl border border-white/15 rounded-xl shadow-2xl overflow-hidden z-50"
-          >
-            <div className="py-1.5">
-              {(Object.keys(languages) as Language[]).map((lang) => {
-                const langInfo = languages[lang];
-                const isSelected = language === lang;
+      {isOpen && (
+        <div style={{
+          position: 'absolute',
+          top: '100%',
+          right: 0,
+          marginTop: '8px',
+          width: '192px',
+          backgroundColor: 'rgba(30, 41, 59, 0.95)',
+          backdropFilter: 'blur(24px)',
+          border: '1px solid rgba(255, 255, 255, 0.15)',
+          borderRadius: '12px',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+          zIndex: 50,
+          overflow: 'hidden'
+        }}>
+          <div style={{ padding: '6px' }}>
+            {(Object.keys(languages) as Language[]).map((lang) => {
+              const langInfo = languages[lang];
+              const isSelected = language === lang;
 
-                return (
-                  <motion.button
-                    key={lang}
-                    onClick={() => handleLanguageChange(lang)}
-                    whileHover={{ x: 2 }}
-                    whileTap={{ scale: 0.98 }}
-                    className={`relative w-full h-11 px-4 flex items-center gap-3 transition-all duration-200 group ${
-                      isSelected 
-                        ? 'bg-gradient-to-r from-primary-500/20 to-primary-600/10 text-heading border-l-2 border-primary-500' 
-                        : 'text-body-muted hover:bg-interactive-hover-secondary hover:text-heading'
-                    }`}
-                    style={{ alignItems: 'center' }}
-                  >
-                    {/* Selected indicator background */}
-                    {isSelected && (
-                      <motion.div
-                        layoutId="selectedLanguage"
-                        className="absolute inset-0 bg-gradient-to-r from-primary-500/15 to-primary-600/8 rounded-r-lg"
-                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                      />
-                    )}
-                    
-                    <div className="relative z-10 flex items-center justify-center shrink-0" style={{ width: '28px', height: '28px' }}>
-                      <span className="text-xl" style={{ lineHeight: '1', display: 'block' }}>{langInfo.flag}</span>
+              return (
+                <button
+                  key={lang}
+                  onClick={() => handleLanguageChange(lang)}
+                  style={{
+                    width: '100%',
+                    height: '44px',
+                    padding: '0 16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    backgroundColor: isSelected ? 'rgba(99, 102, 241, 0.2)' : 'transparent',
+                    color: isSelected ? 'white' : '#9ca3af',
+                    border: isSelected ? '1px solid rgb(99, 102, 241)' : '1px solid transparent',
+                    borderLeft: isSelected ? '2px solid rgb(99, 102, 241)' : '2px solid transparent',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    textAlign: 'left'
+                  }}
+                >
+                  <div style={{ width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <span style={{ fontSize: '20px', lineHeight: '1', display: 'block' }}>{langInfo.flag}</span>
+                  </div>
+                  <span style={{ flex: 1, fontSize: '14px', fontWeight: 500, lineHeight: '1.5' }}>
+                    {langInfo.name}
+                  </span>
+                  {isSelected && (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '20px', height: '20px' }}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgb(52, 211, 153)" strokeWidth="3">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                      </svg>
                     </div>
-                    <span className={`flex-1 text-sm font-medium relative z-10 ${
-                      isSelected ? 'text-heading' : 'text-body-muted group-hover:text-heading'
-                    }`} style={{ lineHeight: '1.5', display: 'flex', alignItems: 'center' }}>
-                      {langInfo.name}
-                    </span>
-                    {isSelected && (
-                      <motion.div
-                        initial={{ scale: 0, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                        className="relative z-10 flex items-center justify-center w-5 h-5"
-                      >
-                        <Check size={18} className="text-emerald-400" strokeWidth={3} />
-                      </motion.div>
-                    )}
-                    {!isSelected && (
-                      <div className="w-5 h-5 relative z-10 flex items-center justify-center" />
-                    )}
-                  </motion.button>
-                );
-              })}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-

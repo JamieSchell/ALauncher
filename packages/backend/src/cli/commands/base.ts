@@ -10,7 +10,7 @@ export abstract class BaseCommand {
   abstract getDescription(): string;
   abstract getUsage(): string;
   abstract getExamples(): string[];
-  abstract execute(args: string[], rl: readline.Interface): Promise<void>;
+  abstract execute(args: string[], rl: readline.Interface, commandName?: string): Promise<void>;
 
   protected print(message: string) {
     console.log(message);

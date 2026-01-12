@@ -35,7 +35,7 @@ stats errors [--days <n>] - Show launcher error statistics`;
     ];
   }
 
-  async execute(args: string[], rl: readline.Interface): Promise<void> {
+  async execute(args: string[], rl: readline.Interface, commandName?: string): Promise<void> {
     if (args.length === 0) {
       this.printError('Subcommand required. Use "stats users", "stats launches", etc.');
       this.printInfo('Type "help stats" for usage information');

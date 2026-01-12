@@ -144,7 +144,7 @@ export const routes: RouteConfig[] = [
  * @param config - Route configuration
  * @returns Wrapped component with protection and layout
  */
-export function wrapRouteComponent(config: RouteConfig): ReactElement {
+export function wrapRouteComponent(config: RouteConfig): any {
   const { component: Component, access, loadingMessage = 'Loading...', redirectTo } = config;
 
   // Handle redirects
@@ -166,7 +166,7 @@ export function wrapRouteComponent(config: RouteConfig): ReactElement {
   switch (access) {
     case RouteAccess.PUBLIC:
       return SuspenseWrapper;
-    
+
     case RouteAccess.PROTECTED:
       return <ProtectedRoute>{LayoutWrapper}</ProtectedRoute>;
     

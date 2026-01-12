@@ -5,7 +5,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
   Clock,
   Play,
@@ -19,7 +18,9 @@ import {
   Zap,
   Layers,
   Flame,
-  ChevronDown
+  ChevronDown,
+  Users,
+  Globe
 } from 'lucide-react';
 import {
   AreaChart,
@@ -36,11 +37,37 @@ import {
   ResponsiveContainer
 } from 'recharts';
 import { useTranslation } from '../hooks/useTranslation';
-import { useOptimizedAnimation } from '../hooks/useOptimizedAnimation';
 import { useFormatDate } from '../hooks/useFormatDate';
-import { useUserStatistics, useProfiles } from '../hooks/api';
+import { useUserStatistics, useProfiles, useAdminAnalytics } from '../hooks/api';
+import { Card, Button } from '../components/ui';
+import { useAuthStore } from '../stores/authStore';
 
 const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#3b82f6'];
+
+const StatsCard = ({ icon: Icon, label, value, trend, color }: { icon: any, label: string, value: string, trend: string, color: string }) => {
+  const colorClasses: Record<string, string> = {
+    cyan: 'text-techno-cyan border-techno-cyan/20 bg-techno-cyan/5',
+    purple: 'text-magic-purple border-magic-purple/20 bg-magic-purple/5',
+    blue: 'text-techno-blue border-techno-blue/20 bg-techno-blue/5',
+    green: 'text-status-success border-status-success/20 bg-status-success/5',
+  };
+
+  return (
+    <div className={`p-6 rounded-xl border ${colorClasses[color] || colorClasses.cyan} relative group overflow-hidden transition-all hover:-translate-y-1`}>
+      <div className="flex justify-between items-start mb-4">
+        <div className={`p-2 rounded-lg bg-black/20`}>
+          <Icon className="w-6 h-6" />
+        </div>
+        <span className="text-xs font-mono font-bold px-2 py-1 rounded bg-black/20">{trend}</span>
+      </div>
+      <div className="text-base font-bold text-white mb-1 font-display">{value}</div>
+      <div className="text-[10px] text-gray-400 uppercase tracking-wider">{label}</div>
+      
+      {/* Bg Decor */}
+      <div className="absolute -bottom-4 -right-4 w-24 h-24 rounded-full bg-current opacity-5 blur-2xl" />
+    </div>
+  );
+};
 
 const TIME_RANGE_OPTIONS = [
   { value: 7, labelKey: 'statistics.range.last7' },
@@ -56,7 +83,6 @@ export default function StatisticsPage() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const { t, language } = useTranslation();
-  const { getAnimationProps, shouldAnimate } = useOptimizedAnimation();
   const { formatDate, formatDateTime } = useFormatDate();
 
   // Calculate dropdown position and close when clicking outside
@@ -75,15 +101,15 @@ export default function StatisticsPage() {
     if (isDropdownOpen) {
       // Update position immediately
       updatePosition();
-      
+
       // Update on scroll and resize
       const handleUpdate = () => {
         requestAnimationFrame(updatePosition);
       };
-      
+
       window.addEventListener('resize', handleUpdate);
       window.addEventListener('scroll', handleUpdate, true);
-      
+
       // Also update when dropdown opens (next frame to ensure button is rendered)
       requestAnimationFrame(updatePosition);
 
@@ -97,7 +123,7 @@ export default function StatisticsPage() {
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
-        dropdownRef.current && 
+        dropdownRef.current &&
         !dropdownRef.current.contains(event.target as Node) &&
         buttonRef.current &&
         !buttonRef.current.contains(event.target as Node)
@@ -112,13 +138,31 @@ export default function StatisticsPage() {
     }
   }, [isDropdownOpen]);
 
-  const { data: statsData, isLoading } = useUserStatistics(days);
+  const { isAdmin } = useAuthStore();
+  const { data: statsData, isLoading: userStatsLoading } = useUserStatistics(days, { enabled: !isAdmin });
+  const { data: adminStatsData, isLoading: adminStatsLoading } = useAdminAnalytics(days, { enabled: isAdmin });
 
   const { data: profilesData } = useProfiles();
 
-  const stats = statsData?.data;
+  // Use admin stats if admin, otherwise user stats
+  const stats = isAdmin ? adminStatsData?.data : statsData?.data;
   const profiles = profilesData?.data || [];
+  const isLoading = isAdmin ? adminStatsLoading : userStatsLoading;
   const hasStats = Boolean(stats && (stats.totalPlayTime > 0 || stats.totalLaunches > 0));
+  
+  // Format numbers for display
+  const formatNumber = (num: number) => {
+    if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
+    if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
+    return num.toString();
+  };
+  
+  const formatBytes = (bytes: number) => {
+    if (bytes >= 1e12) return `${(bytes / 1e12).toFixed(1)} TB`;
+    if (bytes >= 1e9) return `${(bytes / 1e9).toFixed(1)} GB`;
+    if (bytes >= 1e6) return `${(bytes / 1e6).toFixed(1)} MB`;
+    return `${(bytes / 1e3).toFixed(1)} KB`;
+  };
 
   const formatTime = (seconds: number) => {
     if (!seconds) return '0m';
@@ -136,18 +180,18 @@ export default function StatisticsPage() {
     return profile?.profile.title || profileId || t('statistics.unknownProfile');
   };
 
-  const playTimeChartData = stats?.dailyStats.map((stat) => ({
+  const playTimeChartData = stats?.dailyStats?.map((stat) => ({
     date: formatDate(stat.date),
     playTime: Math.floor(stat.playTime / 60),
   })) || [];
 
-  const launchesChartData = stats?.dailyStats.map((stat) => ({
+  const launchesChartData = stats?.dailyStats?.map((stat) => ({
     date: formatDate(stat.date),
     launches: stat.launches,
   })) || [];
 
   const playTimeByProfileData = stats?.playTimeByProfile
-    .filter((p) => p.duration > 0)
+    ?.filter((p) => p.duration > 0)
     .map((p) => ({
       name: getProfileName(p.profileId),
       value: Math.floor(p.duration / 60),
@@ -155,7 +199,7 @@ export default function StatisticsPage() {
       sessions: p.sessions,
     })) || [];
 
-  const popularProfilesData = stats?.popularProfiles.map((p) => ({
+  const popularProfilesData = stats?.popularProfiles?.map((p) => ({
     name: getProfileName(p.profileId),
     launches: p.launches,
   })) || [];
@@ -184,7 +228,7 @@ export default function StatisticsPage() {
     },
     {
       label: t('statistics.activeProfiles'),
-      value: `${stats?.popularProfiles.length || 0}`,
+          value: `${stats?.popularProfiles?.length || 0}`,
       hint: `${stats?.popularProfiles[0]?.launches || 0} ${t('statistics.topProfileLaunches')}`,
       icon: Activity,
       color: 'warning',
@@ -193,41 +237,46 @@ export default function StatisticsPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-xl" style={{ paddingBottom: '32px' }}>
+      <div style={{ paddingBottom: '32px' }}>
         {/* Header Skeleton */}
-        <motion.section
-          initial={shouldAnimate ? { opacity: 0, y: 20 } : false}
-          animate={shouldAnimate ? { opacity: 1, y: 0 } : false}
-          transition={getAnimationProps({ duration: 0.3 })}
-          className="relative overflow-hidden bg-gradient-to-br from-surface-elevated/90 to-surface-base/70 rounded-3xl p-8 lg:p-10 border border-white/10 shadow-lg backdrop-blur-sm"
-          style={{ marginBottom: '48px' }}
-        >
-          <div className="space-y-sm">
-            <div className="h-10 w-64 bg-surface-base/50 rounded-lg animate-pulse" />
-            <div className="h-6 w-96 bg-surface-base/30 rounded-lg animate-pulse" />
+        <div
+            style={{
+              marginBottom: '48px',
+              position: 'relative',
+              overflow: 'hidden',
+              borderRadius: '24px',
+              padding: '32px 40px',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              background: 'linear-gradient(to bottom right, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02))',
+              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+            }}
+          >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ height: '40px', width: '256px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px', animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }} />
+            <div style={{ height: '24px', width: '384px', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '8px', animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }} />
           </div>
-        </motion.section>
+        </div>
 
         {/* Summary Cards Skeleton */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4" style={{ gap: '24px', rowGap: '24px', columnGap: '24px', marginBottom: '48px' }}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="bg-gradient-to-br from-surface-elevated/90 to-surface-base/70 border border-white/10 rounded-2xl p-lg">
-              <div className="h-5 w-24 bg-surface-base/50 rounded-lg animate-pulse mb-base" />
-              <div className="h-10 w-32 bg-surface-base/50 rounded-lg animate-pulse mb-sm" />
-              <div className="h-4 w-20 bg-surface-base/30 rounded-lg animate-pulse" />
+            <div key={i} style={{ background: 'linear-gradient(to bottom right, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02))', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '16px', padding: '24px' }}>
+              <div style={{ height: '20px', width: '96px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px', animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite', marginBottom: '16px' }} />
+              <div style={{ height: '40px', width: '128px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px', animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite', marginBottom: '8px' }} />
+              <div style={{ height: '16px', width: '80px', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '8px', animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }} />
             </div>
           ))}
         </div>
 
         {/* Charts Skeleton */}
-        <div className="grid grid-cols-1 lg:grid-cols-2" style={{ gap: '32px', rowGap: '32px', columnGap: '32px' }}>
-          <div className="bg-gradient-to-br from-surface-elevated/90 to-surface-base/70 border border-white/10 rounded-3xl p-lg">
-            <div className="h-6 w-40 bg-surface-base/50 rounded-lg animate-pulse mb-lg" />
-            <div className="h-64 bg-surface-base/30 rounded-lg animate-pulse" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div style={{ background: 'linear-gradient(to bottom right, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02))', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '24px', padding: '24px' }}>
+            <div style={{ height: '24px', width: '160px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px', animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite', marginBottom: '24px' }} />
+            <div style={{ height: '256px', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '8px', animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }} />
           </div>
-          <div className="bg-gradient-to-br from-surface-elevated/90 to-surface-base/70 border border-white/10 rounded-3xl p-lg">
-            <div className="h-6 w-40 bg-surface-base/50 rounded-lg animate-pulse mb-lg" />
-            <div className="h-64 bg-surface-base/30 rounded-lg animate-pulse" />
+          <div style={{ background: 'linear-gradient(to bottom right, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02))', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '24px', padding: '24px' }}>
+            <div style={{ height: '24px', width: '160px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px', animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite', marginBottom: '24px' }} />
+            <div style={{ height: '256px', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '8px', animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }} />
           </div>
         </div>
       </div>
@@ -235,190 +284,328 @@ export default function StatisticsPage() {
   }
 
   return (
-    <div className="space-y-xl" style={{ paddingBottom: '32px' }}>
-      {/* Hero Section - Premium Design */}
-      <motion.section
-        initial={shouldAnimate ? { opacity: 0, y: 20 } : false}
-        animate={shouldAnimate ? { opacity: 1, y: 0 } : false}
-        transition={getAnimationProps({ duration: 0.3 })}
-        className="relative overflow-visible bg-gradient-to-br from-surface-elevated/90 to-surface-base/70 rounded-3xl p-8 lg:p-10 border border-white/10 shadow-lg backdrop-blur-sm"
-        style={{ marginBottom: '48px' }}
+    <div className="space-y-8 animate-fade-in-up pb-8">
+      <div>
+        <h1 className="text-base font-display font-bold text-white mb-1">{t('statisticsLabels.networkStatistics')}</h1>
+        <p className="text-techno-cyan font-mono text-[10px] tracking-widest">{t('statisticsLabels.globalInfrastructure')}</p>
+      </div>
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <StatsCard 
+          icon={Users} 
+          label="Total Unique Users" 
+          value={isAdmin && stats ? formatNumber(stats.activeUsers?.length || 0) : (stats ? formatNumber(stats.totalSessions || 0) : '0')} 
+          trend={isAdmin ? "+5%" : ""} 
+          color="cyan" 
+        />
+        <StatsCard 
+          icon={Server} 
+          label="Active Sessions" 
+          value={stats ? formatNumber(stats.totalSessions || 0) : '0'} 
+          trend="+5%" 
+          color="purple" 
+        />
+        <StatsCard 
+          icon={Globe} 
+          label="Total Launches" 
+          value={stats ? formatNumber(stats.totalLaunches || 0) : '0'} 
+          trend="+8%" 
+          color="blue" 
+        />
+        <StatsCard 
+          icon={Zap} 
+          label="System Health" 
+          value={stats && stats.totalCrashes !== undefined ? `${100 - Math.min(100, Math.round((stats.totalCrashes / Math.max(1, stats.totalSessions)) * 100))}%` : '100%'} 
+          trend="STABLE" 
+          color="green" 
+        />
+      </div>
+
+      {/* Charts Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <Card>
+          <h3 className="text-techno-cyan font-bold uppercase tracking-wider text-xs mb-4 flex items-center gap-2">
+            <Activity className="w-3 h-3" /> {t('statisticsLabels.trafficAnalysis')}
+          </h3>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={playTimeChartData.length > 0 ? playTimeChartData : [{ date: 'No Data', playTime: 0 }]}>
+                <defs>
+                  <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#00F5FF" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#00F5FF" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                <XAxis dataKey="date" stroke="#6B7280" fontSize={10} tickLine={false} axisLine={false} tick={{ fill: '#6B7280' }} />
+                <YAxis stroke="#6B7280" fontSize={10} tickLine={false} axisLine={false} tick={{ fill: '#6B7280' }} />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: '#1A2332', border: '1px solid rgba(0,245,255,0.3)', borderRadius: '4px', color: '#fff' }}
+                  labelStyle={{ color: '#fff' }}
+                  itemStyle={{ color: '#00F5FF' }}
+                />
+                <Area type="monotone" dataKey="playTime" stroke="#00F5FF" strokeWidth={2} fillOpacity={1} fill="url(#colorUsers)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+
+        <Card>
+          <h3 className="text-magic-purple font-bold uppercase tracking-wider text-xs mb-4 flex items-center gap-2">
+            <Server className="w-3 h-3" /> Server Load Distribution
+          </h3>
+          <div className="h-64">
+             <ResponsiveContainer width="100%" height="100%">
+               <BarChart data={
+                 isAdmin && stats?.popularServers 
+                   ? stats.popularServers.map(s => ({ name: `${s.serverAddress || 'Unknown'}:${s.serverPort || ''}`, launches: s.launches }))
+                   : (popularProfilesData.length > 0 ? popularProfilesData : [{ name: 'No Data', launches: 0 }])
+               } layout="vertical">
+                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
+                 <XAxis type="number" stroke="#6B7280" fontSize={10} tickLine={false} axisLine={false} tick={{ fill: '#6B7280' }} />
+                 <YAxis dataKey="name" type="category" stroke="#6B7280" fontSize={10} tickLine={false} axisLine={false} width={100} tick={{ fill: '#6B7280' }} />
+                 <Tooltip 
+                   cursor={{fill: 'rgba(255,255,255,0.05)'}}
+                   contentStyle={{ backgroundColor: '#1A2332', border: '1px solid rgba(176,38,255,0.3)', borderRadius: '4px', color: '#fff' }}
+                   labelStyle={{ color: '#fff' }}
+                   itemStyle={{ color: '#B026FF' }}
+                 />
+                 <Bar dataKey="launches" fill="#B026FF" radius={[0, 4, 4, 0]} barSize={20} />
+               </BarChart>
+             </ResponsiveContainer>
+          </div>
+        </Card>
+      </div>
+
+      <Card className="bg-gradient-to-r from-dark-card to-dark-panel">
+         <div className="flex items-center justify-between">
+           <div>
+             <h3 className="text-white font-bold text-xs">{t('statisticsLabels.downloadReport')}</h3>
+             <p className="text-gray-400 text-xs">{t('statisticsLabels.getDetailedAnalytics')}</p>
+           </div>
+           <Button variant="secondary">Export Data</Button>
+         </div>
+      </Card>
+
+      {/* Old Hero Section - Keeping for compatibility */}
+      <div
+        style={{
+          marginBottom: '48px',
+          position: 'relative',
+          overflow: 'visible',
+          borderRadius: '24px',
+          padding: '32px 40px',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          background: 'linear-gradient(to bottom right, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02))',
+          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+          backdropFilter: 'blur(12px)',
+          display: 'none'
+        }}
       >
         {/* Background Pattern - Contained within rounded corners */}
-        <div className="absolute inset-0 opacity-[0.03] bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDAgTCA0MCAwIEwgNDAgNDAgTCAwIDQwIFoiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] rounded-3xl overflow-hidden" />
-        
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          opacity: 0.03,
+          backgroundImage: 'url("data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDAgTCA0MCAwIEwgNDAgNDAgTCAwIDQwIFoiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+")',
+          borderRadius: '24px',
+          overflow: 'hidden'
+        }} />
+
         {/* Gradient Overlay - Contained within rounded corners */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 to-transparent rounded-3xl overflow-hidden" />
-        
-        <div className="relative z-10 flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
-          <div className="space-y-4">
-            <motion.span
-              initial={shouldAnimate ? { opacity: 0, x: -20 } : false}
-              animate={shouldAnimate ? { opacity: 1, x: 0 } : false}
-              transition={getAnimationProps({ duration: 0.3, delay: 0.1 })}
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs uppercase tracking-[0.3em] text-body-subtle border border-white/20 bg-surface-base/50"
-            >
-              <Layers size={14} className="text-primary-400" />
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'linear-gradient(to bottom right, rgba(99, 102, 241, 0.05), transparent)',
+          borderRadius: '24px',
+          overflow: 'hidden'
+        }} />
+
+        <div style={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', gap: '32px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '6px 12px',
+              borderRadius: '9999px',
+              fontSize: '12px',
+              textTransform: 'uppercase',
+              letterSpacing: '0.3em',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              background: 'rgba(255, 255, 255, 0.02)'
+            }}>
+              <Layers size={14} style={{ color: 'rgba(167, 139, 250, 1)' }} />
               {t('statistics.heroTag')}
-            </motion.span>
+            </div>
             <div>
-              <motion.h1
-                initial={shouldAnimate ? { opacity: 0, x: -20 } : false}
-                animate={shouldAnimate ? { opacity: 1, x: 0 } : false}
-                transition={getAnimationProps({ duration: 0.4, delay: 0.2 })}
-                className="text-4xl lg:text-5xl font-black text-heading leading-tight tracking-tight"
-              >
+              <h1 style={{
+                fontSize: '36px',
+                fontWeight: 900,
+                lineHeight: '1.2',
+                letterSpacing: '-0.025em'
+              }}>
                 {t('statistics.title')}
-              </motion.h1>
-              <motion.p
-                initial={shouldAnimate ? { opacity: 0, x: -20 } : false}
-                animate={shouldAnimate ? { opacity: 1, x: 0 } : false}
-                transition={getAnimationProps({ duration: 0.4, delay: 0.3 })}
-                className="text-body-muted text-lg lg:text-xl leading-relaxed mt-2 max-w-2xl"
-              >
+              </h1>
+              <p style={{
+                fontSize: '18px',
+                lineHeight: '1.6',
+                marginTop: '8px',
+                maxWidth: '640px'
+              }}>
                 {t('statistics.subtitle')}
-              </motion.p>
+              </p>
             </div>
           </div>
-          <motion.div
-            initial={shouldAnimate ? { opacity: 0, x: 20 } : false}
-            animate={shouldAnimate ? { opacity: 1, x: 0 } : false}
-            transition={getAnimationProps({ duration: 0.3, delay: 0.4 })}
-            className="space-y-3 w-full max-w-xs relative"
-          >
-            <label className="text-sm font-semibold uppercase tracking-[0.15em] text-body-subtle leading-normal">{t('statistics.rangeLabel')}</label>
-            <div className="relative">
-              <motion.button
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', width: '100%', maxWidth: '320px', position: 'relative' }}>
+            <label style={{ fontSize: '14px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.15em', lineHeight: '1.5' }}>{t('statistics.rangeLabel')}</label>
+            <div style={{ position: 'relative' }}>
+              <button
                 ref={buttonRef}
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                whileHover={shouldAnimate ? { scale: 1.02 } : undefined}
-                whileTap={shouldAnimate ? { scale: 0.98 } : undefined}
-                className="w-full px-4 lg:px-6 py-3 lg:py-4 bg-gradient-to-br from-surface-base/80 to-surface-elevated/60 border border-white/10 rounded-xl text-heading focus:outline-none focus:border-primary-500 focus:bg-surface-elevated/90 transition-all duration-200 flex items-center justify-between group hover:border-primary-500/30 shadow-sm"
+                style={{
+                  width: '100%',
+                  padding: '12px 24px',
+                  background: 'linear-gradient(to bottom right, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01))',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  cursor: 'pointer',
+                  transition: 'all 200ms'
+                }}
               >
-                <span className="font-semibold">{t(TIME_RANGE_OPTIONS.find(opt => opt.value === days)?.labelKey || TIME_RANGE_OPTIONS[1].labelKey)}</span>
-                <motion.div
-                  animate={shouldAnimate && isDropdownOpen ? { rotate: 180 } : { rotate: 0 }}
-                  transition={getAnimationProps({ duration: 0.2 })}
-                >
-                  <ChevronDown size={18} className="text-body-muted group-hover:text-primary-400 transition-colors" strokeWidth={2.5} />
-                </motion.div>
-              </motion.button>
+                <span style={{ fontWeight: 600 }}>{t(TIME_RANGE_OPTIONS.find(opt => opt.value === days)?.labelKey || TIME_RANGE_OPTIONS[1].labelKey)}</span>
+                <ChevronDown size={18} style={{ strokeWidth: 2.5 }} />
+              </button>
             </div>
-          </motion.div>
-
-          {/* Dropdown rendered via Portal */}
-          {typeof window !== 'undefined' && createPortal(
-            <AnimatePresence>
-              {isDropdownOpen && (
-                <motion.div
-                  ref={dropdownRef}
-                  initial={shouldAnimate ? { opacity: 0, y: -10, scale: 0.95 } : false}
-                  animate={shouldAnimate ? { opacity: 1, y: 0, scale: 1 } : false}
-                  exit={shouldAnimate ? { opacity: 0, y: -10, scale: 0.95 } : false}
-                  transition={getAnimationProps({ duration: 0.2 })}
-                  className="fixed bg-gradient-to-br from-surface-elevated/95 to-surface-base/90 backdrop-blur-xl border border-white/15 rounded-xl shadow-2xl overflow-hidden z-[9999] pointer-events-auto"
-                  style={{
-                    top: `${dropdownPosition.top}px`,
-                    right: `${dropdownPosition.right}px`,
-                    width: `${dropdownPosition.width}px`,
-                  }}
-                >
-                  {/* Background Pattern */}
-                  <div className="absolute inset-0 opacity-[0.03] bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDAgTCA0MCAwIEwgNDAgNDAgTCAwIDQwIFoiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')]" />
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 to-transparent" />
-                  
-                  <div className="relative z-10 py-1.5">
-                    {TIME_RANGE_OPTIONS.map((option) => {
-                      const isSelected = days === option.value;
-                      return (
-                        <motion.button
-                          key={option.value}
-                          onClick={() => {
-                            setDays(option.value);
-                            setIsDropdownOpen(false);
-                          }}
-                          whileHover={shouldAnimate ? { x: 2 } : undefined}
-                          whileTap={shouldAnimate ? { scale: 0.98 } : undefined}
-                          className={`relative w-full h-11 px-4 lg:px-5 flex items-center gap-3 transition-all duration-200 group ${
-                            isSelected 
-                              ? 'bg-gradient-to-r from-primary-500/20 to-primary-600/10 text-heading border-l-2 border-primary-500' 
-                              : 'text-body-muted hover:bg-interactive-hover-secondary hover:text-heading'
-                          }`}
-                        >
-                          {/* Selected indicator background */}
-                          {isSelected && (
-                            <motion.div
-                              layoutId="selectedRange"
-                              className="absolute inset-0 bg-gradient-to-r from-primary-500/15 to-primary-600/8 rounded-r-lg"
-                              transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                            />
-                          )}
-                          <span className="relative z-10 font-semibold text-sm">{t(option.labelKey)}</span>
-                          {isSelected && (
-                            <motion.div
-                              initial={shouldAnimate ? { scale: 0 } : false}
-                              animate={shouldAnimate ? { scale: 1 } : false}
-                              className="relative z-10 ml-auto"
-                            >
-                              <div className="w-1.5 h-1.5 rounded-full bg-primary-400" />
-                            </motion.div>
-                          )}
-                        </motion.button>
-                      );
-                    })}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>,
-            document.body
-          )}
+          </div>
         </div>
-      </motion.section>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4" style={{ gap: '24px', rowGap: '24px', columnGap: '24px', marginBottom: '48px' }}>
+        {/* Dropdown rendered via Portal */}
+        {typeof window !== 'undefined' && createPortal(
+          isDropdownOpen && (
+            <div
+              ref={dropdownRef}
+              style={{
+                position: 'fixed',
+                top: `${dropdownPosition.top}px`,
+                right: `${dropdownPosition.right}px`,
+                width: `${dropdownPosition.width}px`,
+                background: 'linear-gradient(to bottom right, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01))',
+                backdropFilter: 'blur(24px)',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                borderRadius: '12px',
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                overflow: 'hidden',
+                zIndex: 9999,
+                pointerEvents: 'auto'
+              }}
+            >
+              {/* Background Pattern */}
+              <div style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                opacity: 0.03,
+                backgroundImage: 'url("data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDAgTCA0MCAwIEwgNDAgNDAgTCAwIDQwIFoiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+")'
+              }} />
+              <div style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'linear-gradient(to bottom right, rgba(99, 102, 241, 0.05), transparent)'
+              }} />
+
+              <div style={{ position: 'relative', zIndex: 10, padding: '6px' }}>
+                {TIME_RANGE_OPTIONS.map((option) => {
+                  const isSelected = days === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      onClick={() => {
+                        setDays(option.value);
+                        setIsDropdownOpen(false);
+                      }}
+                      style={{
+                        position: 'relative',
+                        width: '100%',
+                        height: '44px',
+                        padding: '0 16px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        transition: 'all 200ms',
+                        background: isSelected ? 'rgba(99, 102, 241, 0.1)' : 'transparent',
+                        borderLeft: isSelected ? '2px solid rgba(99, 102, 241, 1)' : 'none',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {/* Selected indicator background */}
+                      {isSelected && (
+                        <div style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          background: 'linear-gradient(to right, rgba(99, 102, 241, 0.15), rgba(99, 102, 241, 0.08))',
+                          borderRadius: '0 8px 8px 0'
+                        }} />
+                      )}
+                      <span style={{ position: 'relative', zIndex: 10, fontWeight: 600, fontSize: '14px' }}>{t(option.labelKey)}</span>
+                      {isSelected && (
+                        <div style={{ position: 'relative', zIndex: 10, marginLeft: 'auto' }}>
+                          <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'rgba(167, 139, 250, 1)' }} />
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ),
+          document.body
+        )}
+      </div>
+
+      {/* Summary Cards - Using StatsCard component */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
         {summaryCards.map((card, index) => {
           const Icon = card.icon;
-          const colorClasses = {
-            primary: 'from-primary-500/20 to-primary-600/15 border-primary-500/30 text-primary-400',
-            info: 'from-info-500/20 to-info-600/15 border-info-500/30 text-info-400',
-            success: 'from-success-500/20 to-success-600/15 border-success-500/30 text-success-400',
-            warning: 'from-warning-500/20 to-warning-600/15 border-warning-500/30 text-warning-400',
+          const colorMap: Record<string, string> = {
+            primary: 'cyan',
+            info: 'blue',
+            success: 'green',
+            warning: 'purple'
           };
-          const colorClass = colorClasses[card.color as keyof typeof colorClasses] || colorClasses.primary;
-          
           return (
-            <motion.div
+            <StatsCard 
               key={card.label}
-              initial={shouldAnimate ? { opacity: 0, y: 20 } : false}
-              animate={shouldAnimate ? { opacity: 1, y: 0 } : false}
-              transition={getAnimationProps({ duration: 0.3, delay: 0.1 + index * 0.05 })}
-              whileHover={shouldAnimate ? { y: -4, scale: 1.02 } : undefined}
-              className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-surface-elevated/90 to-surface-base/70 p-6 backdrop-blur hover:border-primary-500/30 transition-all duration-300 group"
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              <div className="relative z-10">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.25em] text-body-subtle font-semibold mb-2">{card.label}</p>
-                    <p className="text-3xl font-bold text-heading">{card.value}</p>
-                  </div>
-                  <motion.div
-                    className={`p-3 bg-gradient-to-br ${colorClass} rounded-xl shadow-sm`}
-                    whileHover={shouldAnimate ? { scale: 1.1, rotate: 5 } : undefined}
-                  >
-                    <Icon size={22} strokeWidth={2.5} />
-                  </motion.div>
-                </div>
-                <p className="text-body-muted text-xs font-medium">{card.hint}</p>
-              </div>
-            </motion.div>
+              icon={Icon} 
+              label={card.label} 
+              value={card.value} 
+              trend={card.hint} 
+              color={colorMap[card.color] || 'cyan'} 
+            />
           );
         })}
       </div>
 
       {/* Charts Section */}
-      <div className="grid grid-cols-1 xl:grid-cols-2" style={{ gap: '32px', rowGap: '32px', columnGap: '32px', marginBottom: '48px' }}>
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-12">
         <StatisticsChartCard
           icon={Clock}
           title={t('statistics.chart.playTimeTitle')}
@@ -426,8 +613,6 @@ export default function StatisticsPage() {
           type="area"
           dataKey="playTime"
           valueFormatter={(value) => `${value} ${t('statistics.minutesLabel')}`}
-          shouldAnimate={shouldAnimate}
-          getAnimationProps={getAnimationProps}
         />
         <StatisticsChartCard
           icon={Zap}
@@ -436,21 +621,17 @@ export default function StatisticsPage() {
           type="bar"
           dataKey="launches"
           valueFormatter={(value) => `${value}`}
-          shouldAnimate={shouldAnimate}
-          getAnimationProps={getAnimationProps}
         />
       </div>
 
       {/* Pie & Bar Charts */}
-      <div className="grid grid-cols-1 xl:grid-cols-2" style={{ gap: '32px', rowGap: '32px', columnGap: '32px', marginBottom: '48px' }}>
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-12">
         {playTimeByProfileData.length > 0 && (
           <StatisticsPieCard
             title={t('statistics.playtimeByProfile')}
             icon={Award}
             data={playTimeByProfileData}
             formatter={(value) => formatTime(value * 60)}
-            shouldAnimate={shouldAnimate}
-            getAnimationProps={getAnimationProps}
           />
         )}
         {popularProfilesData.length > 0 && (
@@ -458,153 +639,219 @@ export default function StatisticsPage() {
             title={t('statistics.popularProfiles')}
             icon={BarChart3}
             data={popularProfilesData}
-            shouldAnimate={shouldAnimate}
-            getAnimationProps={getAnimationProps}
           />
         )}
       </div>
 
       {/* Playtime Table */}
-      {stats && stats.playTimeByProfile.length > 0 && (
-        <motion.section
-          initial={shouldAnimate ? { opacity: 0, y: 20 } : false}
-          animate={shouldAnimate ? { opacity: 1, y: 0 } : false}
-          transition={getAnimationProps({ duration: 0.3, delay: 0.2 })}
-          className="relative overflow-hidden bg-gradient-to-br from-surface-elevated/90 to-surface-base/70 rounded-3xl p-6 lg:p-8 border border-white/10 shadow-lg backdrop-blur-sm"
-          style={{ marginBottom: '48px' }}
+      {stats && stats.playTimeByProfile && stats.playTimeByProfile.length > 0 && (
+        <section
+          style={{
+            marginBottom: '48px',
+            position: 'relative',
+            overflow: 'hidden',
+            borderRadius: '24px',
+            padding: '24px 32px',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            background: 'linear-gradient(to bottom right, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02))',
+            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+            backdropFilter: 'blur(12px)'
+          }}
         >
           {/* Background Pattern */}
-          <div className="absolute inset-0 opacity-[0.03] bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDAgTCA0MCAwIEwgNDAgNDAgTCAwIDQwIFoiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')]" />
-          <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 to-transparent" />
-          
-          <div className="relative z-10">
-            <div className="flex items-center gap-4 mb-6">
-              <motion.div
-                className="p-3 bg-gradient-to-br from-primary-500/20 to-primary-600/15 rounded-xl border border-primary-500/30 shadow-sm shadow-primary-500/10"
-                whileHover={shouldAnimate ? { scale: 1.1, rotate: 5 } : undefined}
-              >
-                <Server size={22} className="text-primary-400" strokeWidth={2.5} />
-              </motion.div>
-              <h2 className="text-2xl font-bold text-heading">{t('statistics.playtimeTableTitle')}</h2>
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            opacity: 0.03,
+            backgroundImage: 'url("data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDAgTCA0MCAwIEwgNDAgNDAgTCAwIDQwIFoiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+")'
+          }} />
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'linear-gradient(to bottom right, rgba(99, 102, 241, 0.05), transparent)'
+          }} />
+
+          <div style={{ position: 'relative', zIndex: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
+              <div style={{
+                padding: '12px',
+                background: 'linear-gradient(to bottom right, rgba(99, 102, 241, 0.2), rgba(99, 102, 241, 0.15))',
+                borderRadius: '12px',
+                border: '1px solid rgba(99, 102, 241, 0.3)',
+                boxShadow: '0 4px 6px -1px rgba(99, 102, 241, 0.1)'
+              }}>
+                <Server size={22} style={{ color: 'rgba(167, 139, 250, 1)' }} strokeWidth={2.5} />
+              </div>
+              <h2 style={{ fontSize: '24px', fontWeight: 700 }}>{t('statistics.playtimeTableTitle')}</h2>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', fontSize: '14px' }}>
                 <thead>
-                  <tr className="text-body-subtle border-b border-white/10">
-                    <th className="text-left py-4 px-4 font-semibold">{t('statistics.tableProfile')}</th>
-                    <th className="text-right py-4 px-4 font-semibold">{t('statistics.tablePlaytime')}</th>
-                    <th className="text-right py-4 px-4 font-semibold">{t('statistics.tableSessions')}</th>
-                    <th className="text-right py-4 px-4 font-semibold">{t('statistics.tableAverage')}</th>
+                  <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                    <th style={{ textAlign: 'left', padding: '16px', fontWeight: 600 }}>{t('statistics.tableProfile')}</th>
+                    <th style={{ textAlign: 'right', padding: '16px', fontWeight: 600 }}>{t('statistics.tablePlaytime')}</th>
+                    <th style={{ textAlign: 'right', padding: '16px', fontWeight: 600 }}>{t('statistics.tableSessions')}</th>
+                    <th style={{ textAlign: 'right', padding: '16px', fontWeight: 600 }}>{t('statistics.tableAverage')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {stats.playTimeByProfile
                     .sort((a, b) => b.duration - a.duration)
-                    .map((profile, index) => (
-                      <motion.tr
+                    .map((profile) => (
+                      <tr
                         key={profile.profileId}
-                        initial={shouldAnimate ? { opacity: 0, x: -20 } : false}
-                        animate={shouldAnimate ? { opacity: 1, x: 0 } : false}
-                        transition={getAnimationProps({ duration: 0.2, delay: 0.1 + index * 0.03 })}
-                        className="border-b border-white/5 text-heading hover:bg-surface-hover/30 transition-colors"
+                        style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}
                       >
-                        <td className="py-4 px-4 font-semibold">{getProfileName(profile.profileId)}</td>
-                        <td className="py-4 px-4 text-right font-semibold">{formatTime(profile.duration)}</td>
-                        <td className="py-4 px-4 text-right text-body-muted">{profile.sessions}</td>
-                        <td className="py-4 px-4 text-right text-body-muted">
+                        <td style={{ padding: '16px', fontWeight: 600 }}>{getProfileName(profile.profileId)}</td>
+                        <td style={{ padding: '16px', textAlign: 'right', fontWeight: 600 }}>{formatTime(profile.duration)}</td>
+                        <td style={{ padding: '16px', textAlign: 'right' }}>{profile.sessions}</td>
+                        <td style={{ padding: '16px', textAlign: 'right' }}>
                           {profile.sessions > 0 ? formatTime(Math.floor(profile.duration / profile.sessions)) : '0m'}
                         </td>
-                      </motion.tr>
+                      </tr>
                     ))}
                 </tbody>
               </table>
             </div>
           </div>
-        </motion.section>
+        </section>
       )}
 
       {/* Recent Launches */}
-      {stats && stats.launchHistory.length > 0 && (
-        <motion.section
-          initial={shouldAnimate ? { opacity: 0, y: 20 } : false}
-          animate={shouldAnimate ? { opacity: 1, y: 0 } : false}
-          transition={getAnimationProps({ duration: 0.3, delay: 0.3 })}
-          className="relative overflow-hidden bg-gradient-to-br from-surface-elevated/90 to-surface-base/70 rounded-3xl p-6 lg:p-8 border border-white/10 shadow-lg backdrop-blur-sm"
+      {stats && stats.launchHistory && stats.launchHistory.length > 0 && (
+        <section
+          style={{
+            position: 'relative',
+            overflow: 'hidden',
+            borderRadius: '24px',
+            padding: '24px 32px',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            background: 'linear-gradient(to bottom right, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02))',
+            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+            backdropFilter: 'blur(12px)'
+          }}
         >
           {/* Background Pattern */}
-          <div className="absolute inset-0 opacity-[0.03] bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDAgTCA0MCAwIEwgNDAgNDAgTCAwIDQwIFoiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')]" />
-          <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 to-transparent" />
-          
-          <div className="relative z-10 space-y-5">
-            <div className="flex items-center gap-4">
-              <motion.div
-                className="p-3 bg-gradient-to-br from-primary-500/20 to-primary-600/15 rounded-xl border border-primary-500/30 shadow-sm shadow-primary-500/10"
-                whileHover={shouldAnimate ? { scale: 1.1, rotate: 5 } : undefined}
-              >
-                <Calendar size={22} className="text-primary-400" strokeWidth={2.5} />
-              </motion.div>
-              <h2 className="text-2xl font-bold text-heading">{t('statistics.recentLaunches')}</h2>
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            opacity: 0.03,
+            backgroundImage: 'url("data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDAgTCA0MCAwIEwgNDAgNDAgTCAwIDQwIFoiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+")'
+          }} />
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'linear-gradient(to bottom right, rgba(99, 102, 241, 0.05), transparent)'
+          }} />
+
+          <div style={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{
+                padding: '12px',
+                background: 'linear-gradient(to bottom right, rgba(99, 102, 241, 0.2), rgba(99, 102, 241, 0.15))',
+                borderRadius: '12px',
+                border: '1px solid rgba(99, 102, 241, 0.3)',
+                boxShadow: '0 4px 6px -1px rgba(99, 102, 241, 0.1)'
+              }}>
+                <Calendar size={22} style={{ color: 'rgba(167, 139, 250, 1)' }} strokeWidth={2.5} />
+              </div>
+              <h2 style={{ fontSize: '24px', fontWeight: 700 }}>{t('statistics.recentLaunches')}</h2>
             </div>
-            <div className="space-y-3">
-              {stats.launchHistory.slice(0, 20).map((launch, index) => (
-                <motion.div
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {stats.launchHistory.slice(0, 20).map((launch) => (
+                <div
                   key={launch.id}
-                  initial={shouldAnimate ? { opacity: 0, x: -20 } : false}
-                  animate={shouldAnimate ? { opacity: 1, x: 0 } : false}
-                  transition={getAnimationProps({ duration: 0.2, delay: 0.1 + index * 0.02 })}
-                  whileHover={shouldAnimate ? { x: 4 } : undefined}
-                  className="rounded-2xl border border-white/10 bg-gradient-to-br from-surface-base/90 to-surface-elevated/70 p-4 lg:p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-4 hover:border-primary-500/30 transition-all duration-200"
+                  style={{
+                    borderRadius: '16px',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    background: 'linear-gradient(to bottom right, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01))',
+                    padding: '16px 20px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '16px'
+                  }}
                 >
                   <div>
-                    <p className="text-heading font-semibold">{getProfileName(launch.profileId)}</p>
-                    <p className="text-body-muted text-sm mt-1">
+                    <p style={{ fontWeight: 600 }}>{getProfileName(launch.profileId)}</p>
+                    <p style={{ fontSize: '14px', marginTop: '4px' }}>
                       {launch.serverAddress ? `${launch.serverAddress}:${launch.serverPort || 25565}` : t('statistics.singleplayer')}
                     </p>
-                    <p className="text-body-dim text-xs mt-2">
+                    <p style={{ fontSize: '12px', marginTop: '8px' }}>
                       {formatDateTime(launch.createdAt)}
                     </p>
                   </div>
-                  <div className="text-right space-y-2">
+                  <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {launch.duration !== null && (
-                      <p className="text-heading font-bold">{formatTime(launch.duration)}</p>
+                      <p style={{ fontWeight: 700 }}>{formatTime(launch.duration)}</p>
                     )}
                     {launch.exitCode !== null && launch.exitCode !== 0 && (
-                      <p className="text-error-400 text-sm font-medium">
+                      <p style={{ color: 'rgba(248, 113, 113, 1)', fontSize: '14px', fontWeight: 500 }}>
                         {t('statistics.exitCode')} {launch.exitCode}
                       </p>
                     )}
                     {launch.crashed && (
-                      <span className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-full bg-error-bg text-error-400 border border-error-border font-semibold">
+                      <span style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        fontSize: '12px',
+                        padding: '6px 12px',
+                        borderRadius: '9999px',
+                        background: 'rgba(239, 68, 68, 0.1)',
+                        border: '1px solid rgba(239, 68, 68, 0.2)',
+                        color: 'rgba(248, 113, 113, 1)',
+                        fontWeight: 600
+                      }}>
                         <Flame size={12} strokeWidth={2.5} /> {t('statistics.crashedBadge')}
                       </span>
                     )}
                   </div>
-                </motion.div>
+                </div>
               ))}
             </div>
           </div>
-        </motion.section>
+        </section>
       )}
 
       {/* Empty State */}
       {!hasStats && (
-        <motion.section
-          initial={shouldAnimate ? { opacity: 0, scale: 0.9 } : false}
-          animate={shouldAnimate ? { opacity: 1, scale: 1 } : false}
-          transition={getAnimationProps({ duration: 0.4 })}
-          className="relative overflow-hidden rounded-3xl border border-dashed border-white/15 bg-gradient-to-br from-surface-base/90 to-surface-elevated/70 p-12 lg:p-16 text-center"
+        <section
+          style={{
+            position: 'relative',
+            overflow: 'hidden',
+            borderRadius: '24px',
+            border: '1px dashed rgba(255, 255, 255, 0.15)',
+            background: 'linear-gradient(to bottom right, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01))',
+            padding: '48px 64px',
+            textAlign: 'center'
+          }}
         >
-          <motion.div
-            initial={shouldAnimate ? { scale: 0, rotate: -180 } : false}
-            animate={shouldAnimate ? { scale: 1, rotate: 0 } : false}
-            transition={getAnimationProps({ duration: 0.5, delay: 0.2 })}
-            className="w-20 h-20 mx-auto mb-6 p-5 bg-surface-base/50 rounded-2xl border border-white/10"
-          >
-            <BarChart3 className="w-10 h-10 text-body-dim mx-auto" strokeWidth={1.5} />
-          </motion.div>
-          <p className="text-heading text-lg lg:text-xl font-bold mb-2">{t('statistics.noStatsTitle')}</p>
-          <p className="text-body-muted text-sm lg:text-base">{t('statistics.noStatsSubtitle')}</p>
-        </motion.section>
+          <div style={{
+            width: '80px',
+            height: '80px',
+            margin: '0 auto 24px',
+            padding: '20px',
+            background: 'rgba(255, 255, 255, 0.02)',
+            borderRadius: '16px',
+            border: '1px solid rgba(255, 255, 255, 0.1)'
+          }}>
+            <BarChart3 style={{ width: '40px', height: '40px', margin: '0 auto' }} strokeWidth={1.5} />
+          </div>
+          <p style={{ fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>{t('statistics.noStatsTitle')}</p>
+          <p style={{ fontSize: '14px' }}>{t('statistics.noStatsSubtitle')}</p>
+        </section>
       )}
     </div>
   );
@@ -617,34 +864,56 @@ interface ChartCardProps {
   type: 'area' | 'bar';
   dataKey: string;
   valueFormatter: (value: number) => string;
-  shouldAnimate: boolean;
-  getAnimationProps: (config?: any) => any;
 }
 
-function StatisticsChartCard({ icon: Icon, title, data, type, dataKey, valueFormatter, shouldAnimate, getAnimationProps }: ChartCardProps) {
+function StatisticsChartCard({ icon: Icon, title, data, type, dataKey, valueFormatter }: ChartCardProps) {
   const { t } = useTranslation();
-  const hasData = data.length > 0;
+  const hasData = data && data.length > 0;
 
   return (
-    <motion.section
-      initial={shouldAnimate ? { opacity: 0, y: 20 } : false}
-      animate={shouldAnimate ? { opacity: 1, y: 0 } : false}
-      transition={getAnimationProps({ duration: 0.3 })}
-      className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-surface-elevated/90 to-surface-base/70 p-6 lg:p-8 shadow-lg backdrop-blur-sm"
+    <section
+      style={{
+        position: 'relative',
+        overflow: 'hidden',
+        borderRadius: '24px',
+        border: '1px solid rgba(255, 255, 255, 0.1)',
+        background: 'linear-gradient(to bottom right, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02))',
+        padding: '24px 32px',
+        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+        backdropFilter: 'blur(12px)'
+      }}
     >
       {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-[0.03] bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDAgTCA0MCAwIEwgNDAgNDAgTCAwIDQwIFoiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')]" />
-      <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 to-transparent" />
-      
-      <div className="relative z-10">
-        <div className="flex items-center gap-4 mb-6">
-          <motion.div
-            className="p-3 bg-gradient-to-br from-primary-500/20 to-primary-600/15 rounded-xl border border-primary-500/30 shadow-sm shadow-primary-500/10"
-            whileHover={shouldAnimate ? { scale: 1.1, rotate: 5 } : undefined}
-          >
-            <Icon size={22} className="text-primary-400" strokeWidth={2.5} />
-          </motion.div>
-          <h2 className="text-xl lg:text-2xl font-bold text-heading">{title}</h2>
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        opacity: 0.03,
+        backgroundImage: 'url("data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDAgTCA0MCAwIEwgNDAgNDAgTCAwIDQwIFoiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+")'
+      }} />
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: 'linear-gradient(to bottom right, rgba(99, 102, 241, 0.05), transparent)'
+      }} />
+
+      <div style={{ position: 'relative', zIndex: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
+          <div style={{
+            padding: '12px',
+            background: 'linear-gradient(to bottom right, rgba(99, 102, 241, 0.2), rgba(99, 102, 241, 0.15))',
+            borderRadius: '12px',
+            border: '1px solid rgba(99, 102, 241, 0.3)',
+            boxShadow: '0 4px 6px -1px rgba(99, 102, 241, 0.1)'
+          }}>
+            <Icon size={22} style={{ color: 'rgba(167, 139, 250, 1)' }} strokeWidth={2.5} />
+          </div>
+          <h2 style={{ fontSize: '20px', fontWeight: 700 }}>{title}</h2>
         </div>
         {hasData ? (
           <ResponsiveContainer width="100%" height={300}>
@@ -681,10 +950,10 @@ function StatisticsChartCard({ icon: Icon, title, data, type, dataKey, valueForm
             )}
           </ResponsiveContainer>
         ) : (
-          <div className="flex items-center justify-center h-[300px] text-body-muted font-medium">{t('statistics.chart.noData')}</div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '300px' }}>{t('statistics.chart.noData')}</div>
         )}
       </div>
-    </motion.section>
+    </section>
   );
 }
 
@@ -693,33 +962,55 @@ interface PieCardProps {
   icon: React.ComponentType<any>;
   data: Array<{ name: string; value: number; duration?: number; sessions?: number }>;
   formatter: (value: number) => string;
-  shouldAnimate: boolean;
-  getAnimationProps: (config?: any) => any;
 }
 
-function StatisticsPieCard({ title, icon: Icon, data, formatter, shouldAnimate, getAnimationProps }: PieCardProps) {
+function StatisticsPieCard({ title, icon: Icon, data, formatter }: PieCardProps) {
   const { t } = useTranslation();
 
   return (
-    <motion.section
-      initial={shouldAnimate ? { opacity: 0, y: 20 } : false}
-      animate={shouldAnimate ? { opacity: 1, y: 0 } : false}
-      transition={getAnimationProps({ duration: 0.3 })}
-      className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-surface-elevated/90 to-surface-base/70 p-6 lg:p-8 shadow-lg backdrop-blur-sm"
+    <section
+      style={{
+        position: 'relative',
+        overflow: 'hidden',
+        borderRadius: '24px',
+        border: '1px solid rgba(255, 255, 255, 0.1)',
+        background: 'linear-gradient(to bottom right, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02))',
+        padding: '24px 32px',
+        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+        backdropFilter: 'blur(12px)'
+      }}
     >
       {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-[0.03] bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDAgTCA0MCAwIEwgNDAgNDAgTCAwIDQwIFoiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')]" />
-      <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 to-transparent" />
-      
-      <div className="relative z-10">
-        <div className="flex items-center gap-4 mb-6">
-          <motion.div
-            className="p-3 bg-gradient-to-br from-primary-500/20 to-primary-600/15 rounded-xl border border-primary-500/30 shadow-sm shadow-primary-500/10"
-            whileHover={shouldAnimate ? { scale: 1.1, rotate: 5 } : undefined}
-          >
-            <Icon size={22} className="text-primary-400" strokeWidth={2.5} />
-          </motion.div>
-          <h2 className="text-xl lg:text-2xl font-bold text-heading">{title}</h2>
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        opacity: 0.03,
+        backgroundImage: 'url("data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDAgTCA0MCAwIEwgNDAgNDAgTCAwIDQwIFoiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+")'
+      }} />
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: 'linear-gradient(to bottom right, rgba(99, 102, 241, 0.05), transparent)'
+      }} />
+
+      <div style={{ position: 'relative', zIndex: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
+          <div style={{
+            padding: '12px',
+            background: 'linear-gradient(to bottom right, rgba(99, 102, 241, 0.2), rgba(99, 102, 241, 0.15))',
+            borderRadius: '12px',
+            border: '1px solid rgba(99, 102, 241, 0.3)',
+            boxShadow: '0 4px 6px -1px rgba(99, 102, 241, 0.1)'
+          }}>
+            <Icon size={22} style={{ color: 'rgba(167, 139, 250, 1)' }} strokeWidth={2.5} />
+          </div>
+          <h2 style={{ fontSize: '20px', fontWeight: 700 }}>{title}</h2>
         </div>
         <ResponsiveContainer width="100%" height={300}>
           <PieChart>
@@ -735,7 +1026,7 @@ function StatisticsPieCard({ title, icon: Icon, data, formatter, shouldAnimate, 
           </PieChart>
         </ResponsiveContainer>
       </div>
-    </motion.section>
+    </section>
   );
 }
 
@@ -743,33 +1034,55 @@ interface BarCardProps {
   title: string;
   icon: React.ComponentType<any>;
   data: Array<{ name: string; launches: number }>;
-  shouldAnimate: boolean;
-  getAnimationProps: (config?: any) => any;
 }
 
-function StatisticsBarCard({ title, icon: Icon, data, shouldAnimate, getAnimationProps }: BarCardProps) {
+function StatisticsBarCard({ title, icon: Icon, data }: BarCardProps) {
   const { t } = useTranslation();
 
   return (
-    <motion.section
-      initial={shouldAnimate ? { opacity: 0, y: 20 } : false}
-      animate={shouldAnimate ? { opacity: 1, y: 0 } : false}
-      transition={getAnimationProps({ duration: 0.3 })}
-      className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-surface-elevated/90 to-surface-base/70 p-6 lg:p-8 shadow-lg backdrop-blur-sm"
+    <section
+      style={{
+        position: 'relative',
+        overflow: 'hidden',
+        borderRadius: '24px',
+        border: '1px solid rgba(255, 255, 255, 0.1)',
+        background: 'linear-gradient(to bottom right, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02))',
+        padding: '24px 32px',
+        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+        backdropFilter: 'blur(12px)'
+      }}
     >
       {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-[0.03] bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDAgTCA0MCAwIEwgNDAgNDAgTCAwIDQwIFoiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')]" />
-      <div className="absolute inset-0 bg-gradient-to-br from-primary-500/5 to-transparent" />
-      
-      <div className="relative z-10">
-        <div className="flex items-center gap-4 mb-6">
-          <motion.div
-            className="p-3 bg-gradient-to-br from-primary-500/20 to-primary-600/15 rounded-xl border border-primary-500/30 shadow-sm shadow-primary-500/10"
-            whileHover={shouldAnimate ? { scale: 1.1, rotate: 5 } : undefined}
-          >
-            <Icon size={22} className="text-primary-400" strokeWidth={2.5} />
-          </motion.div>
-          <h2 className="text-xl lg:text-2xl font-bold text-heading">{title}</h2>
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        opacity: 0.03,
+        backgroundImage: 'url("data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAwIDAgTCA0MCAwIEwgNDAgNDAgTSAwIDQwIFoiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzAwMCIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+")'
+      }} />
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: 'linear-gradient(to bottom right, rgba(99, 102, 241, 0.05), transparent)'
+      }} />
+
+      <div style={{ position: 'relative', zIndex: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
+          <div style={{
+            padding: '12px',
+            background: 'linear-gradient(to bottom right, rgba(99, 102, 241, 0.2), rgba(99, 102, 241, 0.15))',
+            borderRadius: '12px',
+            border: '1px solid rgba(99, 102, 241, 0.3)',
+            boxShadow: '0 4px 6px -1px rgba(99, 102, 241, 0.1)'
+          }}>
+            <Icon size={22} style={{ color: 'rgba(167, 139, 250, 1)' }} strokeWidth={2.5} />
+          </div>
+          <h2 style={{ fontSize: '20px', fontWeight: 700 }}>{title}</h2>
         </div>
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={data} layout="vertical">
@@ -785,6 +1098,6 @@ function StatisticsBarCard({ title, icon: Icon, data, shouldAnimate, getAnimatio
           </BarChart>
         </ResponsiveContainer>
       </div>
-    </motion.section>
+    </section>
   );
 }

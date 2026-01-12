@@ -34,8 +34,26 @@ clear/cls - Clear console`;
     return ['help', 'help user', 'status'];
   }
 
-  async execute(args: string[], rl: readline.Interface): Promise<void> {
+  async execute(args: string[], rl: readline.Interface, commandName?: string): Promise<void> {
     const sub = args[0]?.toLowerCase();
+
+    // Если вызвана как "status" без аргументов
+    if (commandName === 'status' && args.length === 0) {
+      await this.handleStatus();
+      return;
+    }
+
+    // Если вызвана как "dashboard" без аргументов
+    if (commandName === 'dashboard' && args.length === 0) {
+      await this.handleDashboard();
+      return;
+    }
+
+    // Если вызвана как "clear" или "cls" без аргументов
+    if ((commandName === 'clear' || commandName === 'cls') && args.length === 0) {
+      process.stdout.write('\x1b[2J\x1b[0f');
+      return;
+    }
 
     // Нет аргументов: показать общий help
     if (!sub) {
@@ -132,6 +150,28 @@ clear/cls - Clear console`;
           console.log('  file list 1.12.2');
           console.log('  file delete 1.12.2 libraries/.../forge-1.12.2-14.23.5.2860.jar');
           console.log('  file delete-all 1.12.2');
+          console.log('  file cleanup - Remove files with empty clientDirectory from database');
+          return;
+        case 'user':
+          console.log('\x1b[1mCommand:\x1b[0m user');
+          console.log('\x1b[1mDescription:\x1b[0m User management commands');
+          console.log('\x1b[1mUsage:\x1b[0m');
+          console.log('  user list [--all] - List all users (--all includes banned)');
+          console.log('  user create <username> <password> [--email <email>] [--role <USER|ADMIN>] - Create new user');
+          console.log('  user delete <username> - Delete user');
+          console.log('  user ban <username> [--reason <reason>] - Ban user');
+          console.log('  user unban <username> - Unban user');
+          console.log('  user role <username> <USER|ADMIN> - Change user role');
+          console.log('  user info <username> - Show user information');
+          console.log('\x1b[1mExamples:\x1b[0m');
+          console.log('  user list');
+          console.log('  user list --all');
+          console.log('  user create testuser password123');
+          console.log('  user create admin admin123 --role ADMIN');
+          console.log('  user ban testuser --reason "Violation of rules"');
+          console.log('  user unban testuser');
+          console.log('  user role testuser ADMIN');
+          console.log('  user info testuser');
           return;
         default:
           this.printError(`Unknown command: ${commandName}`);
@@ -149,7 +189,7 @@ clear/cls - Clear console`;
       { name: 'Profiles', commands: ['profile list', 'profile info', 'profile add', 'profile sync', 'profile set-jvm', 'profile enable', 'profile disable', 'profile delete'] },
       { name: 'Client Download', commands: ['client download', 'client list'] },
       { name: 'Client Versions', commands: ['version list', 'version sync', 'version verify', 'version stats'] },
-      { name: 'Files', commands: ['file sync', 'file verify', 'file stats', 'file list', 'file delete', 'file delete-all'] },
+      { name: 'Files', commands: ['file sync', 'file verify', 'file stats', 'file list', 'file delete', 'file delete-all', 'file cleanup'] },
       { name: 'Assets', commands: ['assets download', 'assets list', 'assets check'] },
       { name: 'Launcher', commands: ['launcher list', 'launcher create', 'launcher enable', 'launcher disable'] },
       { name: 'Notifications', commands: ['notify send', 'notify list', 'notify clear'] },

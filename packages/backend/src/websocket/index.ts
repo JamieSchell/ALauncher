@@ -113,8 +113,17 @@ export function initializeWebSocket(server: HTTPServer) {
 export function closeWebSocketServer(): Promise<void> {
   return new Promise((resolve) => {
     if (!wss) {
+      logger.info('WebSocket server not initialized, skipping close...');
       resolve();
       return;
+    }
+
+    // Check if server has clients
+    const clientCount = wss.clients.size;
+    if (clientCount === 0) {
+      logger.info('WebSocket server has no clients, closing...');
+    } else {
+      logger.info(`WebSocket server has ${clientCount} client(s), closing...`);
     }
 
     if (heartbeatInterval) {
@@ -123,21 +132,37 @@ export function closeWebSocketServer(): Promise<void> {
     }
 
     // Close all client connections
+    let closedClients = 0;
     clients.forEach((client) => {
       try {
-        client.ws.close();
+        if (client.ws.readyState === WebSocket.OPEN || client.ws.readyState === WebSocket.CONNECTING) {
+          client.ws.close();
+          closedClients++;
+        }
       } catch (error) {
         // Ignore errors when closing
       }
     });
     clients.clear();
+    logger.info(`Closed ${closedClients} WebSocket clients`);
 
     // Close WebSocket server
-    wss.close(() => {
+    try {
+      wss.close((err) => {
+        if (err) {
+          // Server may already be closing or closed
+          logger.warn('WebSocket server close warning:', err.message);
+        } else {
+          logger.info('WebSocket server closed');
+        }
+        wss = null;
+        resolve();
+      });
+    } catch (error) {
+      logger.warn('WebSocket server close error:', (error as Error).message);
       wss = null;
-      logger.info('WebSocket server closed');
       resolve();
-    });
+    }
   });
 }
 

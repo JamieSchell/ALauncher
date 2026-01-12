@@ -10,7 +10,6 @@
  */
 
 import { useMemo } from 'react';
-import { motion } from 'framer-motion';
 
 interface PlayersChartProps {
   online: number;
@@ -34,10 +33,10 @@ export default function PlayersChart({ online, max, className = '' }: PlayersCha
   }, [online, max]);
 
   return (
-    <div className={`relative ${className}`}>
+    <div className={className} style={{ position: 'relative' }}>
       {/* Circular Progress */}
-      <div className="relative w-32 h-32 mx-auto">
-        <svg className="transform -rotate-90 w-32 h-32">
+      <div style={{ position: 'relative', width: '128px', height: '128px', margin: '0 auto' }}>
+        <svg style={{ transform: 'rotate(-90deg)', width: '128px', height: '128px' }}>
           {/* Background circle */}
           <circle
             cx="64"
@@ -48,7 +47,7 @@ export default function PlayersChart({ online, max, className = '' }: PlayersCha
             fill="none"
           />
           {/* Progress circle */}
-          <motion.circle
+          <circle
             cx="64"
             cy="64"
             r={radius}
@@ -57,9 +56,8 @@ export default function PlayersChart({ online, max, className = '' }: PlayersCha
             fill="none"
             strokeLinecap="round"
             strokeDasharray={circumference}
-            initial={{ strokeDashoffset: circumference }}
-            animate={{ strokeDashoffset: offset }}
-            transition={{ duration: 1, ease: "easeOut" }}
+            strokeDashoffset={offset}
+            style={{ transition: 'stroke-dashoffset 1s ease-out' }}
           />
           <defs>
             <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -68,22 +66,21 @@ export default function PlayersChart({ online, max, className = '' }: PlayersCha
             </linearGradient>
           </defs>
         </svg>
-        
+
         {/* Center text */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <div className="text-3xl font-bold text-white">{online}</div>
-          <div className="text-xs text-gray-400">of {max}</div>
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ fontSize: '24px', fontWeight: 'bold', color: 'white' }}>{online}</div>
+          <div style={{ fontSize: '12px', color: '#9ca3af' }}>of {max}</div>
         </div>
       </div>
 
       {/* Stats below */}
-      <div className="mt-4 text-center">
-        <div className="text-sm text-gray-400 mb-1">Players Online</div>
-        <div className="text-lg font-semibold text-white">
+      <div style={{ marginTop: '16px', textAlign: 'center' }}>
+        <div style={{ fontSize: '14px', color: '#9ca3af', marginBottom: '4px' }}>Players Online</div>
+        <div style={{ fontSize: '18px', fontWeight: 600, color: 'white' }}>
           {percentage.toFixed(0)}% Capacity
         </div>
       </div>
     </div>
   );
 }
-

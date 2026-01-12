@@ -41,7 +41,7 @@ version disable <version> - Disable version`;
     ];
   }
 
-  async execute(args: string[], rl: readline.Interface): Promise<void> {
+  async execute(args: string[], rl: readline.Interface, commandName?: string): Promise<void> {
     if (args.length === 0) {
       this.printError('Subcommand required. Use "version list", "version sync", etc.');
       this.printInfo('Type "help version" for usage information');

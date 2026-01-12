@@ -227,7 +227,7 @@ function getPlatformFromJarName(jarName: string): 'linux' | 'windows' | 'macos' 
 /**
  * Извлечь natives из JAR файла в директорию natives с учетом платформы
  */
-async function extractNativesFromJar(jarPath: string, nativesDir: string): Promise<void> {
+export async function extractNativesFromJar(jarPath: string, nativesDir: string): Promise<void> {
   try {
     const jarName = path.basename(jarPath);
     const platform = getPlatformFromJarName(jarName);
@@ -251,7 +251,7 @@ async function extractNativesFromJar(jarPath: string, nativesDir: string): Promi
 /**
  * Извлечь все natives библиотеки из скачанных JAR файлов
  */
-async function extractAllNatives(librariesDir: string, clientDir: string, onProgress?: (stage: string, progress: number, message: string) => void): Promise<void> {
+export async function extractAllNatives(librariesDir: string, clientDir: string, onProgress?: (stage: string, progress: number, message: string) => void): Promise<void> {
   const versionDir = path.join(config.paths.updates, clientDir);
   const nativesDir = path.join(versionDir, 'natives');
 

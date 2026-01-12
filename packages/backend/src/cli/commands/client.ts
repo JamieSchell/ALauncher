@@ -32,7 +32,7 @@ client list - List all downloaded clients`;
     ];
   }
 
-  async execute(args: string[], rl: readline.Interface): Promise<void> {
+  async execute(args: string[], rl: readline.Interface, commandName?: string): Promise<void> {
     if (args.length === 0) {
       this.printError('Usage: client <command>');
       this.printInfo('Commands: download, list');

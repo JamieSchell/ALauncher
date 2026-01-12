@@ -4,10 +4,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { motion } from 'framer-motion';
-import { Trash2, Ban, Unlock, Search, Loader2, RefreshCw, Shield, User, Mail, Calendar, X, Filter, ChevronDown, Edit } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Trash2, Ban, Unlock, Search, Loader2, RefreshCw, Shield, User, Mail, Calendar, X, Filter, ChevronDown, Edit, ArrowLeft } from 'lucide-react';
 import { usersAPI, UserListItem } from '../api/users';
 import { useAuthStore } from '../stores/authStore';
+import { Card, Button, Input } from '../components/ui';
+import { useTranslation } from '../hooks/useTranslation';
+import { tauriApi, isTauri } from '../api/tauri';
 
 // Simple debounce hook
 function useDebounce<T>(value: T, delay: number): T {
@@ -27,8 +30,10 @@ function useDebounce<T>(value: T, delay: number): T {
 }
 
 export default function UsersManagementPage() {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { playerProfile } = useAuthStore();
+  const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('');
   const [bannedFilter, setBannedFilter] = useState<string>('');
@@ -60,12 +65,20 @@ export default function UsersManagementPage() {
 
   const handleBan = async (user: UserListItem, banned: boolean) => {
     if (user.id === playerProfile?.uuid) {
-      alert('Cannot ban yourself');
+      await tauriApi.showMessageBox({
+        title: 'ALauncher - Error',
+        message: 'Cannot ban yourself',
+        type: 'error',
+      });
       return;
     }
 
     if (user.role === 'ADMIN' && banned) {
-      alert('Cannot ban another administrator');
+      await tauriApi.showMessageBox({
+        title: 'ALauncher - Error',
+        message: 'Cannot ban another administrator',
+        type: 'error',
+      });
       return;
     }
 
@@ -85,10 +98,18 @@ export default function UsersManagementPage() {
         setBanReason('');
         setSelectedUser(null);
       } else {
-        alert(result.error || 'Failed to update user ban status');
+        await tauriApi.showMessageBox({
+          title: 'ALauncher - Error',
+          message: result.error || 'Failed to update user ban status',
+          type: 'error',
+        });
       }
     } catch (error: any) {
-      alert(error.response?.data?.error || error.message || 'An error occurred');
+      await tauriApi.showMessageBox({
+        title: 'ALauncher - Error',
+        message: error.response?.data?.error || error.message || 'An error occurred',
+        type: 'error',
+      });
     } finally {
       setBanningId(null);
     }
@@ -99,7 +120,11 @@ export default function UsersManagementPage() {
 
     // Prevent editing other admins (except yourself)
     if (selectedUser.role === 'ADMIN' && selectedUser.id !== playerProfile?.uuid) {
-      alert('Cannot edit another administrator');
+      await tauriApi.showMessageBox({
+        title: 'ALauncher - Error',
+        message: 'Cannot edit another administrator',
+        type: 'error',
+      });
       return;
     }
 
@@ -132,10 +157,18 @@ export default function UsersManagementPage() {
         setEditEmail('');
         setEditRole('USER');
       } else {
-        alert(result.error || 'Failed to update user');
+        await tauriApi.showMessageBox({
+          title: 'ALauncher - Error',
+          message: result.error || 'Failed to update user',
+          type: 'error',
+        });
       }
     } catch (error: any) {
-      alert(error.response?.data?.error || error.message || 'An error occurred');
+      await tauriApi.showMessageBox({
+        title: 'ALauncher - Error',
+        message: error.response?.data?.error || error.message || 'An error occurred',
+        type: 'error',
+      });
     } finally {
       setEditingId(null);
     }
@@ -143,11 +176,21 @@ export default function UsersManagementPage() {
 
   const handleDelete = async (id: string, username: string) => {
     if (id === playerProfile?.uuid) {
-      alert('Cannot delete yourself');
+      await tauriApi.showMessageBox({
+        title: 'ALauncher - Error',
+        message: 'Cannot delete yourself',
+        type: 'error',
+      });
       return;
     }
 
-    if (!confirm(`Are you sure you want to delete user "${username}"? This action cannot be undone.`)) {
+    const confirmed = await tauriApi.showConfirmDialog({
+      title: 'ALauncher - Confirm Deletion',
+      message: `Are you sure you want to delete user "${username}"? This action cannot be undone.`,
+      type: 'warning',
+    });
+
+    if (!confirmed) {
       return;
     }
 
@@ -158,10 +201,18 @@ export default function UsersManagementPage() {
         await queryClient.invalidateQueries({ queryKey: ['users'] });
         await refetch();
       } else {
-        alert(result.error || 'Failed to delete user');
+        await tauriApi.showMessageBox({
+          title: 'ALauncher - Error',
+          message: result.error || 'Failed to delete user',
+          type: 'error',
+        });
       }
     } catch (error: any) {
-      alert(error.response?.data?.error || error.message || 'An error occurred');
+      await tauriApi.showMessageBox({
+        title: 'ALauncher - Error',
+        message: error.response?.data?.error || error.message || 'An error occurred',
+        type: 'error',
+      });
     } finally {
       setDeletingId(null);
     }
@@ -190,316 +241,426 @@ export default function UsersManagementPage() {
   const showInitialLoading = isLoading && !debouncedSearchTerm && !roleFilter && !bannedFilter;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-in-up">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-bold text-white mb-2">Manage Users</h1>
-          <p className="text-gray-400">View, ban, and manage user accounts</p>
+          <button 
+            onClick={() => navigate('/admin/dashboard')} 
+            className="flex items-center gap-2 text-gray-400 hover:text-white mb-2 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" /> {t('ui.backToDashboard')}
+          </button>
+          <h1 className="text-base font-display font-bold text-white">{t('admin.userManagement')}</h1>
+          <p className="text-gray-400 text-xs">{t('ui.viewBanManage')}</p>
         </div>
-        <button
+        <Button
+          variant="secondary"
+          leftIcon={<RefreshCw className="w-4 h-4" />}
           onClick={() => refetch()}
-          className="px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg transition-colors flex items-center gap-2"
         >
-          <RefreshCw size={18} />
-          <span>Refresh</span>
-        </button>
+          Refresh
+        </Button>
       </div>
 
       {/* Filters */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl p-4 space-y-4 shadow-lg"
-      >
-        <div className="flex items-center gap-2 mb-2">
-          <Filter size={18} className="text-gray-400" />
-          <span className="text-sm font-medium text-gray-300">Filters</span>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
-            <label className="block text-xs text-gray-400 mb-1">Search</label>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search by username or email..."
-                className="w-full pl-10 pr-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-              />
-            </div>
+      <Card>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-techno-cyan" />
+            <h3 className="text-xs font-display font-bold text-white uppercase tracking-wider">{t('ui.filters')}</h3>
           </div>
-          <div>
-            <label className="block text-xs text-gray-400 mb-1">Role</label>
+          {hasFilters && (
+            <Button
+              variant="ghost"
+              leftIcon={<X className="w-3 h-3" />}
+              onClick={handleClearFilters}
+              className="text-xs h-7"
+            >
+              {t('ui.clearAll')}
+            </Button>
+          )}
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Input
+            label="Search"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search by username or email..."
+            leftIcon={<Search className="w-3 h-3" />}
+            className="text-xs"
+          />
+          
+          <div className="w-full">
+            <label className="flex items-center gap-2 text-xs font-bold text-techno-cyan mb-2 uppercase tracking-widest opacity-80">
+              <Shield className="w-3 h-3" />
+              Role
+            </label>
             <div className="relative">
               <select
                 value={roleFilter}
                 onChange={(e) => setRoleFilter(e.target.value)}
-                className="w-full pl-3 pr-10 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none cursor-pointer hover:bg-white/10 transition-colors"
+                className="w-full bg-dark-panel/80 backdrop-blur-md border border-white/5 clip-cyber-corner text-white text-xs py-2 px-4 pr-10 focus:outline-none focus:border-techno-cyan transition-colors font-mono appearance-none cursor-pointer"
               >
-                <option value="" className="bg-gray-800">All Roles</option>
-                <option value="USER" className="bg-gray-800">User</option>
-                <option value="ADMIN" className="bg-gray-800">Admin</option>
+                <option value="" className="bg-dark-panel">All Roles</option>
+                <option value="USER" className="bg-dark-panel">User</option>
+                <option value="ADMIN" className="bg-dark-panel">Admin</option>
               </select>
-              <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
             </div>
           </div>
-          <div>
-            <label className="block text-xs text-gray-400 mb-1">Ban Status</label>
+          
+          <div className="w-full">
+            <label className="flex items-center gap-2 text-xs font-bold text-techno-cyan mb-2 uppercase tracking-widest opacity-80">
+              <Ban className="w-3 h-3" />
+              Ban Status
+            </label>
             <div className="relative">
               <select
                 value={bannedFilter}
                 onChange={(e) => setBannedFilter(e.target.value)}
-                className="w-full pl-3 pr-10 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none cursor-pointer hover:bg-white/10 transition-colors"
+                className="w-full bg-dark-panel/80 backdrop-blur-md border border-white/5 clip-cyber-corner text-white text-xs py-2 px-4 pr-10 focus:outline-none focus:border-techno-cyan transition-colors font-mono appearance-none cursor-pointer"
               >
-                <option value="" className="bg-gray-800">All</option>
-                <option value="false" className="bg-gray-800">Not Banned</option>
-                <option value="true" className="bg-gray-800">Banned</option>
+                <option value="" className="bg-dark-panel">All</option>
+                <option value="false" className="bg-dark-panel">Not Banned</option>
+                <option value="true" className="bg-dark-panel">Banned</option>
               </select>
-              <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
             </div>
           </div>
-          <div className="flex items-end">
-            {hasFilters && (
-              <button
-                onClick={handleClearFilters}
-                className="w-full px-3 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg transition-colors flex items-center justify-center gap-2 text-sm"
-              >
-                <X size={16} />
-                <span>Clear</span>
-              </button>
-            )}
-          </div>
         </div>
-      </motion.div>
+      </Card>
 
       {/* Users List */}
       {showInitialLoading ? (
-        <div className="space-y-md">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {Array.from({ length: 5 }).map((_, i) => (
-            <motion.div
+            <div
               key={i}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1 }}
-              className="flex items-center gap-base p-base bg-surface-elevated/90 border border-white/10 rounded-lg"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '16px',
+                padding: '16px',
+                background: 'rgba(255, 255, 255, 0.02)',
+                border: '1px solid rgba(255, 255, 255, 0.05)',
+                borderRadius: '8px'
+              }}
             >
-              <div className="w-12 h-12 bg-gray-700/50 rounded-full animate-pulse" />
-              <div className="flex-1 space-y-sm">
-                <div className="h-5 w-32 bg-gray-700/50 rounded-lg animate-pulse" />
-                <div className="h-4 w-48 bg-gray-700/30 rounded-lg animate-pulse" />
+              <div style={{ width: '48px', height: '48px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '50%', animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }} />
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ height: '20px', width: '128px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px', animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }} />
+                <div style={{ height: '16px', width: '192px', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '8px', animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }} />
               </div>
-              <div className="h-8 w-20 bg-gray-700/50 rounded-lg animate-pulse" />
-            </motion.div>
+              <div style={{ height: '32px', width: '80px', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '8px', animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }} />
+            </div>
           ))}
         </div>
       ) : users.length === 0 ? (
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <User className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-            <p className="text-gray-400">No users found</p>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '256px' }}>
+          <div style={{ textAlign: 'center' }}>
+            <User size={64} style={{ color: 'rgba(75, 85, 99, 1)', margin: '0 auto 16px' }} />
+            <p style={{ fontSize: '14px' }}>No users found</p>
           </div>
         </div>
       ) : (
-        <div className="relative">
+        <div style={{ position: 'relative' }}>
           {isFetching && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="absolute top-0 right-0 z-10 p-2 bg-surface-elevated/90 border border-white/10 rounded-lg backdrop-blur-sm"
-            >
-              <div className="flex items-center gap-2">
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                >
-                  <Loader2 className="w-4 h-4 text-primary-500" />
-                </motion.div>
-                <span className="text-xs text-gray-400">Refreshing...</span>
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              zIndex: 10,
+              padding: '8px',
+              background: 'rgba(255, 255, 255, 0.02)',
+              border: '1px solid rgba(255, 255, 255, 0.05)',
+              borderRadius: '8px',
+              backdropFilter: 'blur(12px)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Loader2 size={16} style={{ color: 'rgba(99, 102, 241, 1)', animation: 'spin 1s linear infinite' }} />
+                <span style={{ fontSize: '12px' }}>Refreshing...</span>
               </div>
-            </motion.div>
+            </div>
           )}
-          <div className="space-y-sm">
-          {users.map((user) => (
-            <motion.div
-              key={user.id}
-              initial={false}
-              animate={false}
-              className={`bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-xl p-4 hover:bg-white/5 transition-colors shadow-lg ${
-                user.banned ? 'border-l-4 border-red-500' : ''
-              }`}
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    {user.role === 'ADMIN' ? (
-                      <Shield className="w-5 h-5 text-primary-400" />
-                    ) : (
-                      <User className="w-5 h-5 text-gray-400" />
-                    )}
-                    <span className="text-lg font-semibold text-white">{user.username}</span>
-                    {user.role === 'ADMIN' && (
-                      <span className="px-2 py-0.5 bg-primary-500/20 text-primary-300 rounded text-xs font-medium">
-                        Admin
-                      </span>
-                    )}
-                    {user.banned && (
-                      <span className="px-2 py-0.5 bg-red-500/20 text-red-300 rounded text-xs font-medium">
-                        Banned
-                      </span>
-                    )}
-                  </div>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                    {user.email && (
-                      <div className="flex items-center gap-2 text-gray-400">
-                        <Mail size={14} />
-                        <span className="truncate">{user.email}</span>
-                      </div>
-                    )}
-                    <div className="flex items-center gap-2 text-gray-400">
-                      <Calendar size={14} />
-                      <span>Joined: {formatDate(user.createdAt)}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-gray-400">
-                      <Calendar size={14} />
-                      <span>Last login: {formatDate(user.lastLogin)}</span>
-                    </div>
-                    {user.banned && user.banReason && (
-                      <div className="flex items-center gap-2 text-red-400">
-                        <Ban size={14} />
-                        <span className="truncate" title={user.banReason}>
-                          Reason: {user.banReason}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => {
-                      setSelectedUser(user);
-                      setEditUsername(user.username);
-                      setEditEmail(user.email || '');
-                      setEditRole(user.role);
-                      setShowEditModal(true);
-                    }}
-                    disabled={editingId === user.id}
-                    className="p-2 hover:bg-blue-500/20 text-blue-400 rounded-lg transition-colors disabled:opacity-50"
-                    title="Edit user"
-                  >
-                    {editingId === user.id ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : (
-                      <Edit size={18} />
-                    )}
-                  </button>
-                  {user.id !== playerProfile?.uuid && user.role !== 'ADMIN' && (
-                    <>
-                      {user.banned ? (
-                        <button
-                          onClick={() => handleBan(user, false)}
-                          disabled={banningId === user.id}
-                          className="p-2 hover:bg-green-500/20 text-green-400 rounded-lg transition-colors disabled:opacity-50"
-                          title="Unban user"
-                        >
-                          {banningId === user.id ? (
-                            <Loader2 className="w-5 h-5 animate-spin" />
-                          ) : (
-                            <Unlock size={18} />
-                          )}
-                        </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {users.map((user) => (
+              <div
+                key={user.id}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.02)',
+                  backdropFilter: 'blur(24px)',
+                  border: user.banned ? '2px solid rgba(239, 68, 68, 1)' : '1px solid rgba(255, 255, 255, 0.1)',
+                  borderRadius: '12px',
+                  padding: '16px',
+                  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px' }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+                      {user.role === 'ADMIN' ? (
+                        <Shield size={20} style={{ color: 'rgba(99, 102, 241, 1)' }} />
                       ) : (
+                        <User size={20} style={{ color: 'rgba(156, 163, 175, 1)' }} />
+                      )}
+                      <span style={{ fontSize: '18px', fontWeight: 600 }}>{user.username}</span>
+                      {user.role === 'ADMIN' && (
+                        <span style={{
+                          padding: '4px 8px',
+                          background: 'rgba(99, 102, 241, 0.2)',
+                          color: 'rgba(167, 139, 250, 1)',
+                          borderRadius: '4px',
+                          fontSize: '12px',
+                          fontWeight: 500
+                        }}>
+                          Admin
+                        </span>
+                      )}
+                      {user.banned && (
+                        <span style={{
+                          padding: '4px 8px',
+                          background: 'rgba(239, 68, 68, 0.2)',
+                          color: 'rgba(248, 113, 113, 1)',
+                          borderRadius: '4px',
+                          fontSize: '12px',
+                          fontWeight: 500
+                        }}>
+                          Banned
+                        </span>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                      {user.email && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <Mail size={14} />
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.email}</span>
+                        </div>
+                      )}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Calendar size={14} />
+                        <span>Joined: {formatDate(user.createdAt)}</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Calendar size={14} />
+                        <span>Last login: {formatDate(user.lastLogin)}</span>
+                      </div>
+                      {user.banned && user.banReason && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <Ban size={14} />
+                          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={user.banReason}>
+                            Reason: {user.banReason}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <button
+                      onClick={() => {
+                        setSelectedUser(user);
+                        setEditUsername(user.username);
+                        setEditEmail(user.email || '');
+                        setEditRole(user.role);
+                        setShowEditModal(true);
+                      }}
+                      disabled={editingId === user.id}
+                      style={{
+                        padding: '8px',
+                        background: 'rgba(59, 130, 246, 0.2)',
+                        border: 'none',
+                        borderRadius: '8px',
+                        color: 'rgba(96, 165, 250, 1)',
+                        cursor: editingId === user.id ? 'not-allowed' : 'pointer',
+                        opacity: editingId === user.id ? 0.5 : 1
+                      }}
+                      title="Edit user"
+                    >
+                      {editingId === user.id ? (
+                        <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} />
+                      ) : (
+                        <Edit size={18} />
+                      )}
+                    </button>
+                    {user.id !== playerProfile?.uuid && user.role !== 'ADMIN' && (
+                      <>
+                        {user.banned ? (
+                          <button
+                            onClick={() => handleBan(user, false)}
+                            disabled={banningId === user.id}
+                            style={{
+                              padding: '8px',
+                              background: 'rgba(34, 197, 94, 0.2)',
+                              border: 'none',
+                              borderRadius: '8px',
+                              color: 'rgba(74, 222, 128, 1)',
+                              cursor: banningId === user.id ? 'not-allowed' : 'pointer',
+                              opacity: banningId === user.id ? 0.5 : 1
+                            }}
+                            title="Unban user"
+                          >
+                            {banningId === user.id ? (
+                              <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} />
+                            ) : (
+                              <Unlock size={18} />
+                            )}
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleBan(user, true)}
+                            disabled={banningId === user.id}
+                            style={{
+                              padding: '8px',
+                              background: 'rgba(239, 68, 68, 0.2)',
+                              border: 'none',
+                              borderRadius: '8px',
+                              color: 'rgba(248, 113, 113, 1)',
+                              cursor: banningId === user.id ? 'not-allowed' : 'pointer',
+                              opacity: banningId === user.id ? 0.5 : 1
+                            }}
+                            title="Ban user"
+                          >
+                            {banningId === user.id ? (
+                              <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} />
+                            ) : (
+                              <Ban size={18} />
+                            )}
+                          </button>
+                        )}
                         <button
-                          onClick={() => handleBan(user, true)}
-                          disabled={banningId === user.id}
-                          className="p-2 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors disabled:opacity-50"
-                          title="Ban user"
+                          onClick={() => handleDelete(user.id, user.username)}
+                          disabled={deletingId === user.id}
+                          style={{
+                            padding: '8px',
+                            background: 'rgba(239, 68, 68, 0.2)',
+                            border: 'none',
+                            borderRadius: '8px',
+                            color: 'rgba(248, 113, 113, 1)',
+                            cursor: deletingId === user.id ? 'not-allowed' : 'pointer',
+                            opacity: deletingId === user.id ? 0.5 : 1
+                          }}
+                          title="Delete user"
                         >
-                          {banningId === user.id ? (
-                            <Loader2 className="w-5 h-5 animate-spin" />
+                          {deletingId === user.id ? (
+                            <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} />
                           ) : (
-                            <Ban size={18} />
+                            <Trash2 size={18} />
                           )}
                         </button>
-                      )}
-                      <button
-                        onClick={() => handleDelete(user.id, user.username)}
-                        disabled={deletingId === user.id}
-                        className="p-2 hover:bg-red-500/20 text-red-400 rounded-lg transition-colors disabled:opacity-50"
-                        title="Delete user"
-                      >
-                        {deletingId === user.id ? (
-                          <Loader2 className="w-5 h-5 animate-spin" />
-                        ) : (
-                          <Trash2 size={18} />
-                        )}
-                      </button>
-                    </>
-                  )}
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
-            </motion.div>
-          ))}
+            ))}
           </div>
         </div>
       )}
 
       {/* Ban Modal */}
       {showBanModal && selectedUser && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-2xl p-6 max-w-md w-full shadow-lg"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-bold text-white">Ban User</h2>
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.5)',
+          backdropFilter: 'blur(4px)',
+          zIndex: 50,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '16px'
+        }}>
+          <div style={{
+            background: 'rgba(255, 255, 255, 0.02)',
+            backdropFilter: 'blur(24px)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: '16px',
+            padding: '24px',
+            maxWidth: '448px',
+            width: '100%',
+            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <h2 style={{ fontSize: '24px', fontWeight: 700 }}>Ban User</h2>
               <button
                 onClick={() => {
                   setShowBanModal(false);
                   setBanReason('');
                   setSelectedUser(null);
                 }}
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                style={{ padding: '8px', background: 'rgba(255, 255, 255, 0.05)', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
               >
-                <X size={20} className="text-gray-400" />
+                <X size={20} style={{ color: 'rgba(156, 163, 175, 1)' }} />
               </button>
             </div>
-            <div className="space-y-4">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div>
-                <p className="text-gray-300 mb-2">
-                  Are you sure you want to ban <span className="font-semibold text-white">{selectedUser.username}</span>?
+                <p style={{ marginBottom: '8px' }}>
+                  Are you sure you want to ban <span style={{ fontWeight: 600 }}>{selectedUser.username}</span>?
                 </p>
               </div>
               <div>
-                <label className="block text-sm text-gray-400 mb-2">Ban Reason (optional)</label>
+                <label style={{ display: 'block', fontSize: '14px', marginBottom: '8px' }}>Ban Reason (optional)</label>
                 <textarea
                   value={banReason}
                   onChange={(e) => setBanReason(e.target.value)}
                   placeholder="Enter reason for banning this user..."
-                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    borderRadius: '8px',
+                    color: 'white',
+                    fontSize: '14px',
+                    resize: 'none'
+                  }}
                   rows={3}
                 />
               </div>
-              <div className="flex gap-3">
+              <div style={{ display: 'flex', gap: '12px' }}>
                 <button
                   onClick={() => {
                     setShowBanModal(false);
                     setBanReason('');
                     setSelectedUser(null);
                   }}
-                  className="flex-1 px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg transition-colors"
+                  style={{
+                    flex: 1,
+                    padding: '8px 16px',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    border: 'none',
+                    borderRadius: '8px',
+                    color: 'white',
+                    cursor: 'pointer'
+                  }}
                 >
                   Cancel
                 </button>
                 <button
                   onClick={() => handleBan(selectedUser, true)}
                   disabled={banningId === selectedUser.id}
-                  className="flex-1 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  style={{
+                    flex: 1,
+                    padding: '8px 16px',
+                    background: 'rgba(239, 68, 68, 1)',
+                    border: 'none',
+                    borderRadius: '8px',
+                    color: 'white',
+                    cursor: banningId === selectedUser.id ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    opacity: banningId === selectedUser.id ? 0.5 : 1
+                  }}
                 >
                   {banningId === selectedUser.id ? (
                     <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
                       <span>Banning...</span>
                     </>
                   ) : (
@@ -508,20 +669,38 @@ export default function UsersManagementPage() {
                 </button>
               </div>
             </div>
-          </motion.div>
+          </div>
         </div>
       )}
 
       {/* Edit Modal */}
       {showEditModal && selectedUser && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-gray-900/60 backdrop-blur-xl border border-white/15 rounded-2xl p-6 max-w-md w-full shadow-lg"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-bold text-white">Edit User</h2>
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.5)',
+          backdropFilter: 'blur(4px)',
+          zIndex: 50,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '16px'
+        }}>
+          <div style={{
+            background: 'rgba(255, 255, 255, 0.02)',
+            backdropFilter: 'blur(24px)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: '16px',
+            padding: '24px',
+            maxWidth: '448px',
+            width: '100%',
+            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+              <h2 style={{ fontSize: '24px', fontWeight: 700 }}>Edit User</h2>
               <button
                 onClick={() => {
                   setShowEditModal(false);
@@ -530,51 +709,80 @@ export default function UsersManagementPage() {
                   setEditRole('USER');
                   setSelectedUser(null);
                 }}
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                style={{ padding: '8px', background: 'rgba(255, 255, 255, 0.05)', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
               >
-                <X size={20} className="text-gray-400" />
+                <X size={20} style={{ color: 'rgba(156, 163, 175, 1)' }} />
               </button>
             </div>
-            <div className="space-y-4">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div>
-                <label className="block text-sm text-gray-400 mb-2">Username</label>
+                <label style={{ display: 'block', fontSize: '14px', marginBottom: '8px' }}>Username</label>
                 <input
                   type="text"
                   value={editUsername}
                   onChange={(e) => setEditUsername(e.target.value)}
-                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    borderRadius: '8px',
+                    color: 'white',
+                    fontSize: '14px'
+                  }}
                   placeholder="Enter username"
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-400 mb-2">Email</label>
+                <label style={{ display: 'block', fontSize: '14px', marginBottom: '8px' }}>Email</label>
                 <input
                   type="email"
                   value={editEmail}
                   onChange={(e) => setEditEmail(e.target.value)}
-                  className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    borderRadius: '8px',
+                    color: 'white',
+                    fontSize: '14px'
+                  }}
                   placeholder="Enter email (optional)"
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-400 mb-2">Role</label>
-                <div className="relative">
+                <label style={{ display: 'block', fontSize: '14px', marginBottom: '8px' }}>Role</label>
+                <div style={{ position: 'relative' }}>
                   <select
                     value={editRole}
                     onChange={(e) => setEditRole(e.target.value as 'USER' | 'ADMIN')}
                     disabled={selectedUser.role === 'ADMIN' && selectedUser.id !== playerProfile?.uuid}
-                    className="w-full pl-3 pr-10 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none cursor-pointer hover:bg-white/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{
+                      width: '100%',
+                      paddingLeft: '12px',
+                      paddingRight: '40px',
+                      padding: '8px',
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      borderRadius: '8px',
+                      color: 'white',
+                      fontSize: '14px',
+                      cursor: 'pointer',
+                      appearance: 'none',
+                      opacity: (selectedUser.role === 'ADMIN' && selectedUser.id !== playerProfile?.uuid) ? 0.5 : 1
+                    }}
                   >
-                    <option value="USER" className="bg-gray-800">User</option>
-                    <option value="ADMIN" className="bg-gray-800">Admin</option>
+                    <option value="USER" style={{ background: 'rgba(31, 41, 55, 1)' }}>User</option>
+                    <option value="ADMIN" style={{ background: 'rgba(31, 41, 55, 1)' }}>Admin</option>
                   </select>
-                  <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                  <ChevronDown style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', width: '16px', height: '16px', color: 'rgba(156, 163, 175, 1)', pointerEvents: 'none' }} />
                 </div>
                 {selectedUser.role === 'ADMIN' && selectedUser.id !== playerProfile?.uuid && (
-                  <p className="text-xs text-gray-500 mt-1">Cannot change role of another administrator</p>
+                  <p style={{ fontSize: '12px', marginTop: '4px' }}>Cannot change role of another administrator</p>
                 )}
               </div>
-              <div className="flex gap-3">
+              <div style={{ display: 'flex', gap: '12px' }}>
                 <button
                   onClick={() => {
                     setShowEditModal(false);
@@ -582,18 +790,39 @@ export default function UsersManagementPage() {
                     setEditEmail('');
                     setSelectedUser(null);
                   }}
-                  className="flex-1 px-4 py-2 bg-white/5 hover:bg-white/10 text-white rounded-lg transition-colors"
+                  style={{
+                    flex: 1,
+                    padding: '8px 16px',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    border: 'none',
+                    borderRadius: '8px',
+                    color: 'white',
+                    cursor: 'pointer'
+                  }}
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleEdit}
                   disabled={editingId === selectedUser.id || !editUsername.trim()}
-                  className="flex-1 px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  style={{
+                    flex: 1,
+                    padding: '8px 16px',
+                    background: 'rgba(99, 102, 241, 1)',
+                    border: 'none',
+                    borderRadius: '8px',
+                    color: 'white',
+                    cursor: (editingId === selectedUser.id || !editUsername.trim()) ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    opacity: (editingId === selectedUser.id || !editUsername.trim()) ? 0.5 : 1
+                  }}
                 >
                   {editingId === selectedUser.id ? (
                     <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
                       <span>Saving...</span>
                     </>
                   ) : (
@@ -602,17 +831,16 @@ export default function UsersManagementPage() {
                 </button>
               </div>
             </div>
-          </motion.div>
+          </div>
         </div>
       )}
 
       {/* Pagination Info */}
       {usersData?.pagination && (
-        <div className="text-center text-sm text-gray-400">
+        <div style={{ textAlign: 'center', fontSize: '14px' }}>
           Showing {users.length} of {usersData.pagination.total} users
         </div>
       )}
     </div>
   );
 }
-

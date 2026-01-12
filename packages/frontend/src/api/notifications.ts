@@ -16,7 +16,7 @@ export const notificationsAPI = {
    * Get user notifications
    */
   async getNotifications(params?: GetNotificationsParamsDTO): Promise<ApiResponse<NotificationDTO[]>> {
-    const response = await apiClient.get<ApiResponse<NotificationDTO[]>>('/notifications', { params });
+    const response = await apiClient.get('/notifications', { params });
     return response.data;
   },
 
@@ -24,7 +24,7 @@ export const notificationsAPI = {
    * Create a notification (Admin only or for self)
    */
   async createNotification(data: CreateNotificationRequestDTO): Promise<NotificationDTO> {
-    const response = await apiClient.post<ApiResponse<NotificationDTO>>('/notifications', data);
+    const response = await apiClient.post('/notifications', data);
     return response.data.data!;
   },
 
@@ -32,7 +32,7 @@ export const notificationsAPI = {
    * Mark notification as read
    */
   async markAsRead(notificationId: string): Promise<NotificationDTO> {
-    const response = await apiClient.patch<ApiResponse<NotificationDTO>>(
+    const response = await apiClient.patch(
       `/notifications/${notificationId}/read`,
     );
     return response.data.data!;
@@ -55,7 +55,7 @@ export const notificationsAPI = {
   /**
    * Delete all notifications (or filtered)
    */
-  async deleteAllNotifications(params?: { readOnly?: boolean; type?: NotificationType }): Promise<void> {
+  async deleteAllNotifications(params?: { readOnly?: boolean; type?: string }): Promise<void> {
     await apiClient.delete('/notifications', { params });
   },
 
@@ -63,8 +63,10 @@ export const notificationsAPI = {
    * Get unread notifications count
    */
   async getUnreadCount(): Promise<number> {
-    const response = await apiClient.get<ApiResponse<{ count: number }>>('/notifications/unread-count');
+    const response = await apiClient.get('/notifications/unread-count');
     return response.data.data!.count;
   },
 };
 
+// Export types for compatibility
+export type { NotificationDTO as Notification, NotificationTypeDTO as NotificationType } from '@modern-launcher/shared';

@@ -37,7 +37,7 @@ notify types - List available notification types`;
     ];
   }
 
-  async execute(args: string[], rl: readline.Interface): Promise<void> {
+  async execute(args: string[], rl: readline.Interface, commandName?: string): Promise<void> {
     if (args.length === 0) {
       this.printError('Subcommand required. Use "notify send", "notify list", etc.');
       this.printInfo('Type "help notify" for usage information');

@@ -224,6 +224,7 @@ export const ru = {
 
   // Settings
   settings: {
+    launcherBehavior: 'Поведение лаунчера',
     title: 'Настройки',
     general: 'Общие',
     game: 'Игра',
@@ -286,6 +287,11 @@ export const ru = {
     updateCheckElectronOnly: 'Проверка обновлений доступна только в приложении Electron',
     updateCheckDesktopOnly: 'Проверка обновлений доступна только в десктопном приложении',
     updateCheckNotImplemented: 'Проверка обновлений пока не реализована',
+    keepLauncherOpenDesc: 'Не закрывать окно после запуска игры',
+    discordRichPresenceDesc: 'Показывать статус в профиле Discord',
+    fullscreenModeDesc: 'Запускать игру в полноэкранном режиме',
+    useOptimizationModsDesc: 'Автоматически внедряет Sodium/Lithium',
+    audioSettingsDesc: 'Звуки лаунчера и уведомления появятся в обновлении v2.1.',
   },
 
   // Errors
@@ -349,6 +355,85 @@ export const ru = {
     markAsRead: 'Отметить как прочитанное',
     delete: 'Удалить',
     settings: 'Настройки уведомлений',
+  },
+
+  // Home Page
+  home: {
+    dimensionBrowser: 'БРАУЗЕР ИЗМЕРЕНИЙ',
+    selectDestination: 'ВЫБЕРИТЕ ПРОТОКОЛ НАЗНАЧЕНИЯ',
+    initializeLink: 'ИНИЦИАЛИЗИРОВАТЬ СВЯЗЬ',
+    processing: 'ОБРАБОТКА...',
+  },
+
+  // Server Details
+  serverDetails: {
+    playerActivity: 'Активность игроков',
+    topContributors: 'Топ контрибьюторов',
+    readyToDive: 'Готовы начать?',
+    allocatedRAM: 'Выделено RAM',
+    modloader: 'Загрузчик модов',
+    modpackInfo: 'Информация о модпаке',
+    modsLoaded: 'Загружено модов',
+    lastUpdated: 'Последнее обновление',
+    size: 'Размер',
+    downloading: 'ЗАГРУЗКА...',
+    launching: 'ЗАПУСК...',
+    downloadAndLaunch: 'ЗАГРУЗИТЬ И ЗАПУСТИТЬ',
+    noLeaderboardData: 'Нет данных таблицы лидеров',
+    economyDisabled: 'Система экономики отключена',
+  },
+
+  // Settings
+  settingsLabels: {
+    keepLauncherOpen: 'Держать лаунчер открытым',
+    discordRichPresence: 'Discord Rich Presence',
+    memoryAllocation: 'Выделение памяти (RAM)',
+    javaRuntime: 'Среда выполнения Java',
+    notificationSettings: 'Настройки уведомлений',
+    resolution: 'Разрешение',
+    fullscreenMode: 'Полноэкранный режим',
+    optimization: 'Оптимизация',
+    useOptimizationMods: 'Использовать моды оптимизации',
+    audioSettings: 'Настройки звука управляются в игре',
+  },
+
+  // Admin
+  admin: {
+    commandCenter: 'ЦЕНТР УПРАВЛЕНИЯ АДМИНИСТРАТОРА',
+    userManagement: 'Управление пользователями',
+    crashReports: 'ОТЧЕТЫ О КРАШАХ',
+    manageProfiles: 'Управление профилями',
+    systemHealth: 'Целостность системы',
+    databaseLatency: 'Задержка базы данных',
+    authServerLoad: 'Нагрузка сервера авторизации',
+    cdnThroughput: 'Пропускная способность CDN',
+  },
+
+  // Statistics
+  statisticsLabels: {
+    networkStatistics: 'СЕТЕВАЯ СТАТИСТИКА',
+    globalInfrastructure: 'ГЛОБАЛЬНЫЙ МОНИТОРИНГ ИНФРАСТРУКТУРЫ',
+    trafficAnalysis: 'Анализ трафика (24ч)',
+    serverLoadDistribution: 'Распределение нагрузки серверов',
+    downloadReport: 'Скачать еженедельный отчет',
+    getDetailedAnalytics: 'Получить подробную аналитику в формате CSV или PDF.',
+  },
+
+  // Login
+  login: {
+    initiateHandshake: 'ИНИЦИИРОВАТЬ РУКОПОЖАТИЕ',
+    processing: 'ОБРАБОТКА...',
+  },
+
+  // Common UI
+  ui: {
+    backToDashboard: 'Вернуться к панели управления',
+    filters: 'ФИЛЬТРЫ',
+    clearAll: 'Очистить все',
+    viewBanManage: 'Просмотр, блокировка и управление учетными записями пользователей',
+    createEditDelete: 'Создание, редактирование и удаление профилей Minecraft',
+    categories: 'Категории',
+    allocated: 'Выделено',
   },
 };
 

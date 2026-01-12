@@ -3,9 +3,6 @@
  * Displays progress with percentage and optional message
  */
 
-import { motion } from 'framer-motion';
-import { CheckCircle2, AlertCircle } from 'lucide-react';
-
 interface ProgressBarProps {
   progress: number; // 0-100
   message?: string;
@@ -25,17 +22,17 @@ export default function ProgressBar({
   animated = true,
   showIcon = false,
 }: ProgressBarProps) {
-  const heightClasses = {
-    sm: 'h-1.5',
-    md: 'h-2',
-    lg: 'h-3',
+  const heightStyles: Record<string, string> = {
+    sm: '6px',
+    md: '8px',
+    lg: '12px',
   };
 
-  const colorClasses = {
-    primary: 'bg-gradient-to-r from-primary-500 to-primary-600',
-    success: 'bg-gradient-to-r from-success-500 to-success-600',
-    warning: 'bg-gradient-to-r from-warning-500 to-warning-600',
-    error: 'bg-gradient-to-r from-error-500 to-error-600',
+  const colorStyles: Record<string, { background: string }> = {
+    primary: { background: 'linear-gradient(to right, rgb(99, 102, 241), rgb(79, 70, 229))' },
+    success: { background: 'linear-gradient(to right, rgb(74, 222, 128), rgb(34, 197, 94))' },
+    warning: { background: 'linear-gradient(to right, rgb(250, 204, 21), rgb(234, 179, 8))' },
+    error: { background: 'linear-gradient(to right, rgb(248, 113, 113), rgb(239, 68, 68))' },
   };
 
   const clampedProgress = Math.max(0, Math.min(100, progress));
@@ -43,83 +40,67 @@ export default function ProgressBar({
   const isError = color === 'error';
 
   return (
-    <div className="w-full space-y-2">
+    <div style={{ width: '100%' }}>
       {(message || showPercentage) && (
-        <div className="flex items-center justify-between text-sm">
-          <div className="flex items-center gap-2">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', fontSize: '14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             {showIcon && isComplete && !isError && (
-              <CheckCircle2 size={16} className="text-success-400" />
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgb(74, 222, 128)" strokeWidth="2">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+              </svg>
             )}
             {showIcon && isError && (
-              <AlertCircle size={16} className="text-error-400" />
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgb(248, 113, 113)" strokeWidth="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="15" y1="9" x2="9" y2="15"></line>
+                <line x1="9" y1="9" x2="15" y2="15"></line>
+              </svg>
             )}
             {message && (
-              <span className={`font-medium ${
-                isError ? 'text-error-400' : 
-                isComplete ? 'text-success-400' : 
-                'text-body'
-              }`}>
+              <span style={{
+                fontWeight: 500,
+                color: isError ? 'rgb(248, 113, 113)' :
+                  isComplete ? 'rgb(74, 222, 128)' :
+                    '#d1d5db'
+              }}>
                 {message}
               </span>
             )}
           </div>
           {showPercentage && (
-            <span className={`font-semibold ${
-              isError ? 'text-error-400' : 
-              isComplete ? 'text-success-400' : 
-              'text-body-muted'
-            }`}>
+            <span style={{
+              fontWeight: 600,
+              color: isError ? 'rgb(248, 113, 113)' :
+                isComplete ? 'rgb(74, 222, 128)' :
+                  '#9ca3af'
+            }}>
               {Math.round(clampedProgress)}%
             </span>
           )}
         </div>
       )}
-      
-      <div className={`relative ${heightClasses[size]} bg-gray-800/50 rounded-full overflow-hidden`}>
-        {/* Animated background */}
-        {animated && !isComplete && !isError && (
-          <motion.div
-            className={`absolute inset-0 ${colorClasses[color]} opacity-20`}
-            animate={{
-              backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
-            }}
-            transition={{
-              duration: 3,
-              repeat: Infinity,
-              ease: 'linear',
-            }}
-            style={{
-              backgroundSize: '200% 200%',
-            }}
-          />
-        )}
-        
+
+      <div style={{
+        position: 'relative',
+        height: heightStyles[size],
+        backgroundColor: 'rgba(31, 41, 55, 0.5)',
+        borderRadius: '9999px',
+        overflow: 'hidden'
+      }}>
         {/* Progress fill */}
-        <motion.div
-          className={`absolute inset-y-0 left-0 ${colorClasses[color]} rounded-full shadow-lg ${
-            animated && !isComplete ? 'transition-all duration-300' : ''
-          }`}
-          initial={{ width: 0 }}
-          animate={{ width: `${clampedProgress}%` }}
-          transition={{ duration: animated ? 0.3 : 0, ease: 'easeOut' }}
-        >
-          {/* Shine effect */}
-          {animated && !isComplete && !isError && (
-            <motion.div
-              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
-              animate={{
-                x: ['-100%', '200%'],
-              }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                ease: 'linear',
-              }}
-            />
-          )}
-        </motion.div>
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          bottom: 0,
+          left: 0,
+          width: `${clampedProgress}%`,
+          borderRadius: '9999px',
+          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+          transition: animated ? 'width 0.3s ease-out' : 'none',
+          ...colorStyles[color]
+        }} />
       </div>
     </div>
   );
 }
-

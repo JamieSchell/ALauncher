@@ -83,7 +83,7 @@ export default function ServerStatusChart({ status, isLoading = false, serverAdd
     {
       enabled: !!serverAddress && !!status?.online,
       refetchInterval: 60000, // Обновлять каждую минуту
-    }
+    } as any
   );
 
   // Мемоизируем форматирование данных для оптимизации производительности
@@ -114,16 +114,16 @@ export default function ServerStatusChart({ status, isLoading = false, serverAdd
       const data = payload[0].payload;
       
       return (
-        <div className="bg-gray-900/95 border border-white/20 rounded-lg p-3 shadow-xl backdrop-blur-sm">
-          <p className="text-white text-sm font-semibold mb-2">{data.time}</p>
+        <div className="bg-dark-panel/95 border border-techno-cyan/30 rounded-lg p-3 shadow-xl backdrop-blur-sm">
+          <p className="text-white text-xs font-semibold mb-2 font-mono">{data.time}</p>
           {payload.map((entry: any, index: number) => {
             const labels = ['Онлайн', 'Средний', 'Минимум'];
             const value = entry.value || 0;
             
             return (
               <div key={index} className="mb-1">
-                <p className="text-xs" style={{ color: entry.color }}>
-                  {labels[index]}: <span className="text-white font-semibold">{value}</span> игроков
+                <p className="text-xs font-mono" style={{ color: entry.color }}>
+                  {labels[index]}: <span className="text-white font-semibold">{value}</span>
                 </p>
               </div>
             );
@@ -196,16 +196,17 @@ export default function ServerStatusChart({ status, isLoading = false, serverAdd
           
           <CartesianGrid 
             strokeDasharray="3 3" 
-            stroke="rgba(255, 255, 255, 0.1)" 
+            stroke="rgba(255, 255, 255, 0.05)" 
             vertical={false}
           />
           
           <XAxis 
             dataKey="time" 
-            stroke="rgba(255, 255, 255, 0.5)"
-            style={{ fontSize: '10px' }}
-            tick={{ fill: 'rgba(255, 255, 255, 0.6)' }}
-            axisLine={{ stroke: 'rgba(255, 255, 255, 0.2)' }}
+            stroke="#6B7280"
+            fontSize={10}
+            tickLine={false}
+            axisLine={false}
+            tick={{ fill: '#6B7280' }}
             interval={23} // Показывать каждую 24-ю метку (примерно каждый час) для читаемости
             angle={-45}
             textAnchor="end"
@@ -213,43 +214,47 @@ export default function ServerStatusChart({ status, isLoading = false, serverAdd
           />
           
           <YAxis 
-            stroke="rgba(255, 255, 255, 0.5)"
-            style={{ fontSize: '11px' }}
-            tick={{ fill: 'rgba(255, 255, 255, 0.6)' }}
-            axisLine={{ stroke: 'rgba(255, 255, 255, 0.2)' }}
+            stroke="#6B7280"
+            fontSize={10}
+            tickLine={false}
+            axisLine={false}
+            tick={{ fill: '#6B7280' }}
             domain={[0, maxYValue]}
             ticks={yAxisTicks}
             tickFormatter={(value) => `${value}`}
           />
           
-          <Tooltip content={<CustomTooltipMemo />} />
+          <Tooltip 
+            content={<CustomTooltipMemo />}
+            contentStyle={{ backgroundColor: '#1A2332', border: '1px solid rgba(0,245,255,0.3)', borderRadius: '4px' }}
+          />
           
-          {/* Три линии графика как на скриншоте - волнистые и плавные */}
+          {/* Три линии графика - обновленные цвета под дизайн */}
           <Line
             type="monotone"
             dataKey="value1"
-            stroke="#8b5cf6"
-            strokeWidth={2.5}
+            stroke="#B026FF"
+            strokeWidth={2}
             dot={false}
-            activeDot={{ r: 6, fill: '#8b5cf6', stroke: '#fff', strokeWidth: 2 }}
+            activeDot={{ r: 5, fill: '#B026FF', stroke: '#fff', strokeWidth: 2 }}
             filter="url(#glow1)"
           />
           <Line
             type="monotone"
             dataKey="value2"
-            stroke="#3b82f6"
-            strokeWidth={2.5}
+            stroke="#00F5FF"
+            strokeWidth={2}
             dot={false}
-            activeDot={{ r: 6, fill: '#3b82f6', stroke: '#fff', strokeWidth: 2 }}
+            activeDot={{ r: 5, fill: '#00F5FF', stroke: '#fff', strokeWidth: 2 }}
             filter="url(#glow2)"
           />
           <Line
             type="monotone"
             dataKey="value3"
-            stroke="#ec4899"
-            strokeWidth={2.5}
+            stroke="#4A9EFF"
+            strokeWidth={2}
             dot={false}
-            activeDot={{ r: 6, fill: '#ec4899', stroke: '#fff', strokeWidth: 2 }}
+            activeDot={{ r: 5, fill: '#4A9EFF', stroke: '#fff', strokeWidth: 2 }}
             filter="url(#glow3)"
           />
         </LineChart>

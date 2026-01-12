@@ -3,14 +3,49 @@
  * Отвечает за запуск игровых клиентов и отслеживание их состояния
  */
 
-import { invoke } from '@tauri-apps/api/core';
+import { tauriApi } from '../api/tauri';
 import { useAuthStore } from '../stores/authStore';
+import { crashesAPI } from '../api/crashes';
 import { useSettingsStore } from '../stores/settingsStore';
 import ErrorLoggerService from './errorLogger';
-import { ClientProfile } from '../api/types';
+import { GameProfile } from '../api/types';
+import { platformAPI } from '../api/platformSimple';
+import { path } from '@tauri-apps/api';
+
+// Динамический импорт invoke для Tauri
+let invoke: Function | null = null;
+
+// Загружаем invoke при инициализации модуля
+if (typeof window !== 'undefined' && (
+  window.location?.protocol === 'tauri:' ||
+  '__TAURI__' in window ||
+  '__TAURI_INTERNALS__' in window
+)) {
+  import('@tauri-apps/api/core').then(module => {
+    invoke = module.invoke;
+    console.log('[GameLauncher] ✅ Tauri invoke API loaded');
+  }).catch((e) => {
+    console.error('[GameLauncher] ❌ Failed to load Tauri invoke API:', e);
+  });
+}
+
+// Helper function to get invoke safely
+async function getInvoke(): Promise<Function> {
+  if (!invoke) {
+    // Try to load invoke if not loaded yet
+    try {
+      const module = await import('@tauri-apps/api/core');
+      invoke = module.invoke;
+      console.log('[GameLauncher] ✅ Tauri invoke API loaded on demand');
+    } catch (e) {
+      throw new Error('Tauri invoke API not available. Make sure you are running in Tauri environment.');
+    }
+  }
+  return invoke;
+}
 
 interface LaunchOptions {
-  profile: ClientProfile;
+  profile: GameProfile;
   username?: string;
   session?: string;
   serverAddress?: string;
@@ -78,35 +113,83 @@ class GameLauncherService {
         launcherVersion: await this.getLauncherVersion(),
       });
 
-      // Подготовка параметров запуска
+      // Получаем правильную директорию для обновлений через Tauri
+      let updatesDir = '/opt/ALauncher/packages/backend/updates'; // fallback
+      try {
+        const invokeFn = await getInvoke();
+        updatesDir = await invokeFn<string>('get_updates_dir', {});
+        console.log('[GameLauncher] Using updates directory:', updatesDir);
+      } catch (e) {
+        console.warn('[GameLauncher] Failed to get updates dir, using fallback:', e);
+      }
+
+      const gameDir = await path.join(updatesDir, profile.clientDirectory || profile.version);
+      const assetsDir = await path.join(updatesDir, 'assets');
+
+      // Подготовка параметров запуска (все поля в snake_case как в Rust)
       const launchParams = {
-        profileId: profile.id,
+        profile_id: profile.id,
         username: username || 'Player',
         uuid: this.generateUUID(),
-        accessToken: accessToken || session || 'demo',
-        gameDir: `/opt/ALauncher/packages/backend/updates/${profile.clientDirectory || profile.version}`,
-        assetsDir: '/opt/ALauncher/packages/backend/updates/assets',
+        access_token: accessToken || session || 'demo',
+        game_dir: gameDir,
+        assets_dir: assetsDir,
         resolution: {
           width: width || 854,
           height: height || 480,
         },
-        fullScreen: fullScreen || false,
-        javaPath: javaPath || 'java',
-        javaVersion: profile.jvmVersion || '17',
-        ram: ram || '2048',
-        jvmArgs: profile.jvmArgs || [],
-        clientArgs: profile.clientArgs || [],
-        mainClass: profile.mainClass,
-        classPath: profile.classPath || [],
-        serverAddress: serverAddress || profile.serverAddress,
-        serverPort: serverPort || profile.serverPort,
+        full_screen: fullScreen || false,
+        java_path: javaPath || 'java',
+        java_version: profile.jvmVersion || '17',
+        ram: String(ram || '2048'),
+        jvm_args: profile.jvmArgs || [],
+        client_args: profile.clientArgs || [],
+        main_class: profile.mainClass,
+        class_path: profile.classPath || [],
+        server_address: serverAddress || profile.serverAddress,
+        server_port: serverPort || profile.serverPort,
       };
 
-      // Запуск процесса через Tauri
-      const result = await invoke<{ success: boolean; processId?: string; error?: string }>(
-        'launch_game_client',
-        { launchParams }
-      );
+      console.log('[GameLauncher] Launch params prepared:', JSON.stringify(launchParams, null, 2));
+
+      // Проверка обязательных полей
+      if (!profile.mainClass) {
+        const error = 'mainClass is not defined in profile';
+        console.error('[GameLauncher]', error);
+        await ErrorLoggerService.logError(error, {
+          component: 'GameLauncher',
+          action: 'launch_game_failed',
+          profileId: profile.id,
+          errorType: 'MISSING_REQUIRED_FIELD',
+          statusCode: 500,
+        });
+        return { success: false, error };
+      }
+
+      // Получаем invoke безопасно
+      const invokeFn = await getInvoke();
+
+      console.log('[GameLauncher] Invoking launch_game_client command...');
+
+      let result;
+      try {
+        result = await invokeFn<{ success: boolean; processId?: string; error?: string }>(
+          'launch_game_client',
+          { launchParams }
+        );
+        console.log('[GameLauncher] Launch result:', JSON.stringify(result, null, 2));
+      } catch (invokeError) {
+        const errorMsg = `Invoke error: ${invokeError}`;
+        console.error('[GameLauncher]', errorMsg, invokeError);
+        await ErrorLoggerService.logError(errorMsg, {
+          component: 'GameLauncher',
+          action: 'launch_game_invoke_error',
+          profileId: profile.id,
+          errorType: 'INVOKE_ERROR',
+          statusCode: 500,
+        });
+        return { success: false, error: errorMsg };
+      }
 
       if (result.success && result.processId) {
         // Регистрация процесса
@@ -132,6 +215,8 @@ class GameLauncherService {
         return { success: true, processId: result.processId };
       } else {
         const error = result.error || 'Unknown error occurred';
+
+        console.error('[GameLauncher] Launch failed. Full result:', JSON.stringify(result, null, 2));
 
         await ErrorLoggerService.logError(error, {
           component: 'GameLauncher',
@@ -170,7 +255,8 @@ class GameLauncherService {
       // Проверяем статус процесса каждую секунду
       const checkInterval = setInterval(async () => {
         try {
-          const status = await invoke<{
+          const invokeFn = await getInvoke();
+          const status = await invokeFn<{
             running: boolean;
             exitCode?: number;
             stdout?: string;
@@ -205,6 +291,10 @@ class GameLauncherService {
               exitCode: status.exitCode,
               crashed: process.status === 'crashed',
             });
+
+            console.log(`[GameLauncher] Process ${processId} ended with code ${status.exitCode}.`);
+            console.log(`[GameLauncher] stdout:`, status.stdout);
+            console.error(`[GameLauncher] stderr:`, status.stderr);
           }
         } catch (error) {
           console.error(`Error monitoring process ${processId}:`, error);
@@ -228,10 +318,9 @@ class GameLauncherService {
     if (!process.crashReport) return;
 
     try {
-      const { crashesAPI } = await import('../api/crashes');
       const { playerProfile } = useAuthStore.getState();
 
-      await crashesAPI.logGameCrash({
+      await crashesAPI.logCrash({
         exitCode: process.crashReport.exitCode,
         errorMessage: process.crashReport.errorMessage,
         stackTrace: process.crashReport.stderrOutput,
@@ -261,7 +350,8 @@ class GameLauncherService {
       for (const [processId, process] of this.activeProcesses.entries()) {
         if (process.status === 'starting' || process.status === 'running') {
           try {
-            const status = await invoke<{ running: boolean }>('check_game_process', { processId });
+            const invokeFn = await getInvoke();
+            const status = await invokeFn<{ running: boolean }>('check_game_process', { processId });
 
             if (!status.running && process.status === 'running') {
               // Процесс неожиданно завершился
@@ -304,8 +394,7 @@ class GameLauncherService {
    */
   private static async getLauncherVersion(): Promise<string> {
     try {
-      const { tauriApi } = await import('../api/tauri');
-      return await tauriApi.getAppVersion();
+            return await tauriApi.getAppVersion();
     } catch {
       return '1.0.0';
     }
@@ -339,7 +428,8 @@ class GameLauncherService {
    */
   static async killGame(processId: string): Promise<boolean> {
     try {
-      await invoke('kill_game_process', { processId });
+      const invokeFn = await getInvoke();
+      await invokeFn('kill_game_process', { processId });
 
       const process = this.activeProcesses.get(processId);
       if (process) {

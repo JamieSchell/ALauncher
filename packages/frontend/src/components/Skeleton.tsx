@@ -3,8 +3,6 @@
  * Displays skeleton placeholders while content is loading
  */
 
-import { motion } from 'framer-motion';
-
 interface SkeletonProps {
   className?: string;
   variant?: 'text' | 'circular' | 'rectangular';
@@ -13,57 +11,52 @@ interface SkeletonProps {
   lines?: number;
 }
 
-export function Skeleton({ 
-  className = '', 
+export function Skeleton({
+  className = '',
   variant = 'rectangular',
   width,
   height,
   lines = 1
 }: SkeletonProps) {
-  const baseClasses = 'bg-gray-700/50 rounded animate-pulse';
-  
+  const baseStyle = {
+    backgroundColor: 'rgba(55, 65, 81, 0.5)',
+    borderRadius: variant === 'circular' ? '50%' : variant === 'text' ? '4px' : '8px',
+    animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+  };
+
   if (variant === 'text' && lines > 1) {
     return (
-      <div className={`space-y-2 ${className}`}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }} className={className}>
         {Array.from({ length: lines }).map((_, i) => (
-          <motion.div
+          <div
             key={i}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: i * 0.1 }}
-            className={`${baseClasses} ${i === lines - 1 ? 'w-3/4' : 'w-full'}`}
-            style={{ height: height || '1rem' }}
+            style={{
+              ...baseStyle,
+              height: height || '16px',
+              width: i === lines - 1 ? '75%' : '100%',
+            }}
           />
         ))}
       </div>
     );
   }
 
-  const style: React.CSSProperties = {};
-  if (width) style.width = typeof width === 'number' ? `${width}px` : width;
-  if (height) style.height = typeof height === 'number' ? `${height}px` : height;
+  const style: React.CSSProperties = {
+    ...baseStyle,
+    width: typeof width === 'number' ? `${width}px` : width,
+    height: typeof height === 'number' ? `${height}px` : height,
+  };
 
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className={`${baseClasses} ${
-        variant === 'circular' ? 'rounded-full' : 
-        variant === 'text' ? 'rounded' : 
-        'rounded-lg'
-      } ${className}`}
-      style={style}
-    />
-  );
+  return <div style={style} className={className} />;
 }
 
 // Predefined skeleton components
 export function SkeletonCard() {
   return (
-    <div className="bg-surface-elevated/90 border border-white/15 rounded-2xl p-lg space-y-base">
+    <div style={{ backgroundColor: 'rgba(30, 41, 59, 0.9)', border: '1px solid rgba(255, 255, 255, 0.15)', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
       <Skeleton variant="rectangular" height="24px" width="60%" />
       <Skeleton variant="text" lines={2} />
-      <div className="grid grid-cols-2 gap-md">
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
         <Skeleton variant="rectangular" height="60px" />
         <Skeleton variant="rectangular" height="60px" />
       </div>
@@ -73,19 +66,19 @@ export function SkeletonCard() {
 
 export function SkeletonServerCard() {
   return (
-    <div className="bg-surface-elevated/90 border border-white/15 rounded-2xl p-lg space-y-base">
-      <div className="flex items-start justify-between">
-        <div className="space-y-2 flex-1">
+    <div style={{ backgroundColor: 'rgba(30, 41, 59, 0.9)', border: '1px solid rgba(255, 255, 255, 0.15)', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
           <Skeleton variant="rectangular" height="28px" width="70%" />
           <Skeleton variant="rectangular" height="16px" width="50%" />
         </div>
         <Skeleton variant="rectangular" height="24px" width="80px" />
       </div>
-      <div className="flex gap-2">
+      <div style={{ display: 'flex', gap: '8px' }}>
         <Skeleton variant="rectangular" height="24px" width="60px" />
         <Skeleton variant="rectangular" height="24px" width="60px" />
       </div>
-      <div className="grid grid-cols-2 gap-md">
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
         <Skeleton variant="rectangular" height="60px" />
         <Skeleton variant="rectangular" height="60px" />
       </div>
@@ -95,11 +88,11 @@ export function SkeletonServerCard() {
 
 export function SkeletonTable() {
   return (
-    <div className="space-y-3">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
       {Array.from({ length: 5 }).map((_, i) => (
-        <div key={i} className="flex items-center gap-4 p-4 bg-surface-elevated/90 border border-white/10 rounded-lg">
+        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', backgroundColor: 'rgba(30, 41, 59, 0.9)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '8px' }}>
           <Skeleton variant="circular" width={40} height={40} />
-          <div className="flex-1 space-y-2">
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <Skeleton variant="rectangular" height="16px" width="40%" />
             <Skeleton variant="rectangular" height="12px" width="60%" />
           </div>
@@ -109,4 +102,3 @@ export function SkeletonTable() {
     </div>
   );
 }
-

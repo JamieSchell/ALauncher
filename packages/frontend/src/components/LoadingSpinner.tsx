@@ -3,8 +3,6 @@
  * Informative loading indicator with messages
  */
 
-import { motion } from 'framer-motion';
-import { Loader2 } from 'lucide-react';
 import { useTranslation } from '../hooks/useTranslation';
 
 interface LoadingSpinnerProps {
@@ -14,43 +12,42 @@ interface LoadingSpinnerProps {
   fullScreen?: boolean;
 }
 
-export default function LoadingSpinner({ 
+export default function LoadingSpinner({
   message,
   subMessage,
   size = 'md',
   fullScreen = false
 }: LoadingSpinnerProps) {
   const { t } = useTranslation();
-  
-  const sizeClasses = {
-    sm: 'w-6 h-6',
-    md: 'w-12 h-12',
-    lg: 'w-16 h-16',
+
+  const sizeStyles: Record<string, React.CSSProperties> = {
+    sm: { width: '24px', height: '24px' },
+    md: { width: '48px', height: '48px' },
+    lg: { width: '64px', height: '64px' },
   };
 
   const spinner = (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={{ opacity: 1, scale: 1 }}
-      className="text-center"
-    >
-      <motion.div
-        animate={{ rotate: 360 }}
-        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-        className={`${sizeClasses[size]} border-4 border-primary-500/30 border-t-primary-500 rounded-full mx-auto mb-4`}
-      />
+    <div style={{ textAlign: 'center' }}>
+      <div style={{
+        ...sizeStyles[size],
+        border: '4px solid rgba(99, 102, 241, 0.3)',
+        borderTopColor: 'rgb(99, 102, 241)',
+        borderRadius: '50%',
+        margin: '0 auto 16px',
+        animation: 'spin 1s linear infinite'
+      }} />
       {message && (
-        <p className="text-gray-300 text-lg font-medium mb-1">{message}</p>
+        <p style={{ color: '#ccc', fontSize: '18px', fontWeight: 500, marginBottom: '4px' }}>{message}</p>
       )}
       {subMessage && (
-        <p className="text-gray-500 text-sm">{subMessage}</p>
+        <p style={{ color: '#888', fontSize: '14px' }}>{subMessage}</p>
       )}
-    </motion.div>
+    </div>
   );
 
   if (fullScreen) {
     return (
-      <div className="flex items-center justify-center h-full min-h-[400px]">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: '400px' }}>
         {spinner}
       </div>
     );
@@ -66,24 +63,23 @@ interface LoadingButtonProps {
   className?: string;
 }
 
-export function LoadingButton({ 
-  isLoading, 
-  children, 
+export function LoadingButton({
+  isLoading,
+  children,
   loadingText,
   className = ''
 }: LoadingButtonProps) {
   return (
-    <div className={`flex items-center justify-center gap-2 ${className}`}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }} className={className}>
       {isLoading && (
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-        >
-          <Loader2 size={16} className="text-current" />
-        </motion.div>
+        <div style={{ animation: 'spin 1s linear infinite' }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" strokeOpacity="0.3" />
+            <path d="M12 2C17.5228 2 22 6.47715 22 12" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
+          </svg>
+        </div>
       )}
       <span>{isLoading ? loadingText : children}</span>
     </div>
   );
 }
-

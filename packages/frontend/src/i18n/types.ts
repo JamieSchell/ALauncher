@@ -44,17 +44,17 @@ type _StructureValidation = StructureCheck<typeof ru, typeof en>;
 /**
  * Вспомогательный тип для получения значения по ключу
  */
-export type TranslationValue<K extends TranslationKey> = K extends `${infer Key}.${infer Rest}`
-  ? Key extends keyof TranslationStructure
-    ? TranslationStructure[Key] extends object
-      ? Rest extends NestedKeyOf<TranslationStructure[Key]>
+export type TranslationValue<K extends TranslationKey> = K extends `${infer KeyPart}.${infer Rest}`
+  ? KeyPart extends keyof TranslationStructure
+    ? TranslationStructure[KeyPart] extends object
+      ? Rest extends NestedKeyOf<TranslationStructure[KeyPart]>
         ? string // Вложенное значение всегда строка
         : never
       : never
     : never
-  : Key extends keyof TranslationStructure
-  ? TranslationStructure[Key] extends string
-    ? TranslationStructure[Key]
+  : K extends keyof TranslationStructure
+  ? TranslationStructure[K] extends string
+    ? TranslationStructure[K]
     : never
   : never;
 

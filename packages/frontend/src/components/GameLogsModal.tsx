@@ -7,6 +7,8 @@
 import React from 'react';
 import { X, Terminal, Search, Download, FileText } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { platformAPI, isElectron } from '../api/platformSimple';
+import { tauriApi } from '../api/tauri';
 
 interface GameLogsModalProps {
   isOpen: boolean;
@@ -144,8 +146,12 @@ export default function GameLogsModal({ isOpen, onClose, logs }: GameLogsModalPr
   };
 
   const handleExportLogs = async () => {
-    if (!window.electronAPI || logs.length === 0) {
-      alert('Cannot export logs: Electron API not available or no logs to export');
+    if (!isElectron || logs.length === 0) {
+      await tauriApi.showMessageBox({
+        title: 'ALauncher - Error',
+        message: 'Cannot export logs: Electron API not available or no logs to export',
+        type: 'error',
+      });
       return;
     }
 
@@ -153,21 +159,28 @@ export default function GameLogsModal({ isOpen, onClose, logs }: GameLogsModalPr
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       const fileName = `game-logs-${timestamp}.txt`;
       const logsText = logs.join('\n');
-      const logsData = new TextEncoder().encode(logsText);
 
       // Get user's Documents folder or use temp
-      const appPaths = await window.electronAPI.getAppPaths();
+      const appPaths = await (window as any).electronAPI.getAppPaths();
       const exportPath = `${appPaths.userData}/${fileName}`;
 
       // Ensure directory exists
-      await window.electronAPI.ensureDir(appPaths.userData);
-      
+      await platformAPI.ensureDir(appPaths.userData);
+
       // Write file
-      await window.electronAPI.writeFile(exportPath, logsData);
-      
-      alert(`Logs exported successfully to:\n${exportPath}`);
+      await platformAPI.writeFile(exportPath, logsText);
+
+      await tauriApi.showMessageBox({
+        title: 'ALauncher - Success',
+        message: `Logs exported successfully to:\n${exportPath}`,
+        type: 'info',
+      });
     } catch (error: any) {
-      alert(`Failed to export logs: ${error.message}`);
+      await tauriApi.showMessageBox({
+        title: 'ALauncher - Error',
+        message: `Failed to export logs: ${error.message}`,
+        type: 'error',
+      });
     }
   };
 

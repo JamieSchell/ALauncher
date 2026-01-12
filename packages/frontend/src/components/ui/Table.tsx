@@ -1,66 +1,33 @@
 /**
- * Table Component
- *
- * Универсальный компонент таблицы с поддержкой сортировки и адаптивности.
- * Использует дизайн-систему для консистентного стиля.
- *
- * @module components/ui/Table
+ * Simple Table Component - No Design
  */
 
 import React from 'react';
-import { tableBase, tableHeader, tableHeaderCell, tableBody, tableRow, tableCell, cn } from '../../styles/design-system';
 
 export interface TableColumn<T = any> {
-  /** Ключ данных для колонки */
   key: string;
-  /** Заголовок колонки */
   header: React.ReactNode;
-  /** Функция рендеринга ячейки */
   render?: (value: any, row: T, index: number) => React.ReactNode;
-  /** Выравнивание текста */
   align?: 'left' | 'center' | 'right';
-  /** Ширина колонки */
   width?: string | number;
-  /** Скрыть на мобильных */
-  hideOnMobile?: boolean;
 }
 
 export interface TableProps<T = any> {
-  /** Данные для таблицы */
   data: T[];
-  /** Конфигурация колонок */
   columns: TableColumn<T>[];
-  /** Ключ для уникальной идентификации строк */
   rowKey?: string | ((row: T, index: number) => string);
-  /** Обработчик клика по строке */
   onRowClick?: (row: T, index: number) => void;
-  /** Показывать пустое состояние */
   emptyMessage?: React.ReactNode;
-  /** Дополнительные классы */
   className?: string;
 }
 
-/**
- * Table Component
- *
- * @example
- * ```tsx
- * const columns = [
- *   { key: 'name', header: 'Name' },
- *   { key: 'email', header: 'Email' },
- *   { key: 'role', header: 'Role', render: (value) => <Badge>{value}</Badge> },
- * ];
- *
- * <Table data={users} columns={columns} rowKey="id" />
- * ```
- */
 export default function Table<T = any>({
   data,
   columns,
   rowKey = 'id',
   onRowClick,
   emptyMessage = 'No data available',
-  className,
+  className = '',
 }: TableProps<T>) {
   const getRowKey = (row: T, index: number): string => {
     if (typeof rowKey === 'function') {
@@ -69,41 +36,77 @@ export default function Table<T = any>({
     return (row as any)[rowKey] || `row-${index}`;
   };
 
+  const tableStyle: React.CSSProperties = {
+    width: '100%',
+    borderCollapse: 'collapse',
+    fontSize: '14px',
+  };
+
+  const thStyle: React.CSSProperties = {
+    border: '1px solid #e5e7eb',
+    padding: '8px 12px',
+    textAlign: 'left',
+    backgroundColor: '#f9fafb',
+    fontWeight: 'bold',
+  };
+
+  const tdStyle: React.CSSProperties = {
+    border: '1px solid #e5e7eb',
+    padding: '8px 12px',
+  };
+
+  const trClickableStyle: React.CSSProperties = {
+    cursor: 'pointer',
+  };
+
+  const trHoverStyle: React.CSSProperties = {
+    ...trClickableStyle,
+    backgroundColor: '#f9fafb',
+  };
+
   if (data.length === 0) {
     return (
-      <div className={cn('text-center py-12 text-body-muted', className)}>
+      <div style={{ textAlign: 'center', padding: '48px 0' }} className={className}>
         {emptyMessage}
       </div>
     );
   }
 
   return (
-    <div className={cn('overflow-x-auto', className)}>
-      <table className={tableBase}>
-        <thead className={tableHeader}>
+    <div style={{ overflowX: 'auto' }} className={className}>
+      <table style={tableStyle}>
+        <thead>
           <tr>
             {columns.map((column) => (
               <th
                 key={column.key}
-                className={cn(
-                  tableHeaderCell,
-                  column.align === 'center' && 'text-center',
-                  column.align === 'right' && 'text-right',
-                  column.hideOnMobile && 'hidden md:table-cell'
-                )}
-                style={column.width ? { width: column.width } : undefined}
+                style={{
+                  ...thStyle,
+                  textAlign: column.align || 'left',
+                  width: column.width,
+                }}
               >
                 {column.header}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className={tableBody}>
+        <tbody>
           {data.map((row, index) => (
             <tr
               key={getRowKey(row, index)}
-              className={cn(tableRow, onRowClick && 'cursor-pointer')}
+              style={onRowClick ? trClickableStyle : undefined}
               onClick={() => onRowClick?.(row, index)}
+              onMouseEnter={(e) => {
+                if (onRowClick) {
+                  e.currentTarget.style.backgroundColor = '#f9fafb';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (onRowClick) {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }
+              }}
             >
               {columns.map((column) => {
                 const value = (row as any)[column.key];
@@ -114,12 +117,10 @@ export default function Table<T = any>({
                 return (
                   <td
                     key={column.key}
-                    className={cn(
-                      tableCell,
-                      column.align === 'center' && 'text-center',
-                      column.align === 'right' && 'text-right',
-                      column.hideOnMobile && 'hidden md:table-cell'
-                    )}
+                    style={{
+                      ...tdStyle,
+                      textAlign: column.align || 'left',
+                    }}
                   >
                     {content}
                   </td>
@@ -132,4 +133,3 @@ export default function Table<T = any>({
     </div>
   );
 }
-

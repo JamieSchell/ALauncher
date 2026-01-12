@@ -34,7 +34,7 @@ assets check <version> - Check if assets are downloaded for a version`;
     ];
   }
 
-  async execute(args: string[], rl: readline.Interface): Promise<void> {
+  async execute(args: string[], rl: readline.Interface, commandName?: string): Promise<void> {
     if (args.length === 0) {
       this.printError('Subcommand required. Use "assets download", "assets list", or "assets check"');
       this.printInfo('Type "help assets" for usage information');

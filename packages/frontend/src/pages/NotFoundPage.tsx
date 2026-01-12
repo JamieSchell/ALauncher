@@ -1,44 +1,36 @@
 /**
- * 404 Not Found Page
- * 
- * Страница, отображаемая при переходе на несуществующий маршрут.
+ * 404 Not Found Page - Functionality Only
  */
 
 import { Link } from 'react-router-dom';
 import { Home, AlertCircle } from 'lucide-react';
 import { useTranslation } from '../hooks/useTranslation';
-import { motion } from 'framer-motion';
 
 export default function NotFoundPage() {
   const { t } = useTranslation();
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.3 }}
-        className="max-w-md w-full"
-      >
-        <div className="mb-8">
-          <AlertCircle className="w-24 h-24 mx-auto text-primary-500 mb-4" />
-          <h1 className="text-6xl font-bold text-text-primary mb-2">404</h1>
-          <h2 className="text-2xl font-semibold text-text-secondary mb-4">
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', textAlign: 'center', padding: '16px' }}>
+      <div style={{ maxWidth: '448px', width: '100%' }}>
+        <div style={{ marginBottom: '32px' }}>
+          <AlertCircle style={{ width: '96px', height: '96px', margin: '0 auto 16px', color: '#6366f1' }} />
+          <h1 style={{ fontSize: '48px', fontWeight: 'bold', marginBottom: '8px' }}>404</h1>
+          <h2 style={{ fontSize: '24px', fontWeight: '600', marginBottom: '16px' }}>
             {t('errors.pageNotFound') || 'Page Not Found'}
           </h2>
-          <p className="text-text-tertiary mb-8">
+          <p style={{ marginBottom: '32px' }}>
             {t('errors.pageNotFoundDescription') || 'The page you are looking for does not exist.'}
           </p>
         </div>
 
         <Link
           to="/"
-          className="inline-flex items-center gap-2 px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium transition-colors duration-200"
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '12px 24px', backgroundColor: '#6366f1', color: 'white', borderRadius: '8px', fontWeight: '500', textDecoration: 'none' }}
         >
-          <Home className="w-5 h-5" />
+          <Home style={{ width: '20px', height: '20px' }} />
           {t('nav.home') || 'Go Home'}
         </Link>
-      </motion.div>
+      </div>
     </div>
   );
 }

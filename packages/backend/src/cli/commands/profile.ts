@@ -46,7 +46,7 @@ profile delete <id> - Delete profile`;
     ];
   }
 
-  async execute(args: string[], rl: readline.Interface): Promise<void> {
+  async execute(args: string[], rl: readline.Interface, commandName?: string): Promise<void> {
     if (args.length === 0) {
       this.printError('Subcommand required. Use "profile list", "profile info", etc.');
       this.printInfo('Type "help profile" for usage information');

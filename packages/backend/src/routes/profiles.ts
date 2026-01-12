@@ -86,6 +86,7 @@ router.post(
     body('clientArgs').isArray().withMessage('Client args must be an array'),
     body('sortIndex').isInt().withMessage('Sort index must be an integer'),
     body('assetIndex').trim().notEmpty().withMessage('Asset index is required'),
+    body('clientDirectory').optional().trim().notEmpty().withMessage('Client directory cannot be empty'),
   ],
   async (req: AuthRequest, res, next) => {
   try {
@@ -96,12 +97,22 @@ router.post(
 
     const profileData = req.body;
 
+      // Sanitize clientDirectory or generate from title
+      let clientDirectory = profileData.clientDirectory;
+      if (!clientDirectory) {
+        clientDirectory = profileData.title.replace(/[^a-zA-Z0-9_.-]/g, '_');
+      }
+      // Basic path traversal protection
+      clientDirectory = clientDirectory.replace(/\.\.\//g, '').replace(/\.\.\\/g, '');
+
+
       // Ensure arrays are properly formatted
     const profile = await prisma.clientProfile.create({
         data: {
           version: profileData.version,
           title: profileData.title,
           description: profileData.description || null,
+          clientDirectory: clientDirectory,
           serverAddress: profileData.serverAddress,
           serverPort: profileData.serverPort,
           mainClass: profileData.mainClass,
@@ -148,6 +159,7 @@ router.put(
     body('classPath').optional().isArray().withMessage('Class path must be an array'),
     body('jvmArgs').optional().isArray().withMessage('JVM args must be an array'),
     body('clientArgs').optional().isArray().withMessage('Client args must be an array'),
+    body('clientDirectory').optional().trim().notEmpty().withMessage('Client directory cannot be empty'),
   ],
   async (req: AuthRequest, res, next) => {
   try {
@@ -189,6 +201,10 @@ router.put(
       if (profileData.tags !== undefined) updateData.tags = Array.isArray(profileData.tags) ? profileData.tags : [];
       if (profileData.enabled !== undefined) updateData.enabled = profileData.enabled;
       if (profileData.economyConfig !== undefined) updateData.economyConfig = profileData.economyConfig;
+      if (profileData.clientDirectory !== undefined) {
+        // Basic path traversal protection
+        updateData.clientDirectory = profileData.clientDirectory.replace(/\.\.\//g, '').replace(/\.\.\\/g, '');
+      }
 
     const profile = await prisma.clientProfile.update({
       where: { id },

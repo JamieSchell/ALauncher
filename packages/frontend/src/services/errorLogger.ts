@@ -5,6 +5,7 @@
 
 import { crashesAPI } from '../api/crashes';
 import { useAuthStore } from '../stores/authStore';
+import { isElectron } from '../api/platformSimple';
 
 // LauncherErrorType enum (matching backend)
 type LauncherErrorType =
@@ -30,6 +31,12 @@ interface ErrorContext {
   os?: string;
   osVersion?: string;
   launcherVersion?: string;
+  systemInfo?: string;
+  profileId?: string;
+  processId?: string | number;
+  serverAddress?: string;
+  serverPort?: number;
+  [key: string]: any; // Allow additional properties
 }
 
 class ErrorLoggerService {
@@ -45,9 +52,9 @@ class ErrorLoggerService {
   static async initialize() {
     try {
       // Get launcher version
-      if (window.electronAPI) {
+      if (isElectron) {
         try {
-          this.launcherVersion = await window.electronAPI.getAppVersion();
+          this.launcherVersion = await (window as any).electronAPI.getAppVersion();
         } catch (error) {
           console.warn('[ErrorLogger] Failed to get launcher version:', error);
         }
@@ -437,10 +444,21 @@ class ErrorLoggerService {
     window.addEventListener('error', (event) => {
       if (event.target !== window) {
         const element = event.target as HTMLElement;
+        const url = (element as any).src || (element as any).href;
+        
+        // Skip logging for image loading errors (404s are expected for missing server images)
+        // Images are handled gracefully with fallbacks in components
+        if (element.tagName === 'IMG') {
+          // Check if it's a server image URL (expected to potentially fail)
+          if (url && (url.includes('/uploads/server/') || url.includes('/uploads/textures/'))) {
+            return; // Silently ignore - these are handled by onError handlers
+          }
+        }
+        
         this.logError(new Error(`Resource loading failed: ${element.tagName}`), {
           component: 'ResourceLoader',
           action: 'resource_load_error',
-          url: (element as any).src || (element as any).href,
+          url,
           statusCode: 404,
         });
       }

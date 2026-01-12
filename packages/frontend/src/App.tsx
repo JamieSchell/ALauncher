@@ -18,13 +18,13 @@ function App() {
 
   useEffect(() => {
     // Initialize all app systems
-    AppInitializer.initialize().catch((error) => {
+    AppInitializer.initialize().catch(async (error) => {
       console.error('Failed to initialize app:', error);
-      showError('Failed to initialize application properly');
+      await showError('Failed to initialize application properly');
     });
 
     // Global error handlers
-    const handleError = (event: ErrorEvent) => {
+    const handleError = async (event: ErrorEvent) => {
       const error = event.error || new Error(event.message);
       
       // Log error
@@ -40,11 +40,11 @@ function App() {
                             errorMessage.toLowerCase().includes('connection');
       
       if (!isNetworkError && !errorMessage.includes('ResizeObserver')) {
-        showError('An unexpected error occurred. Please try refreshing the page.', 8000);
+        await showError('An unexpected error occurred. Please try refreshing the page.', 8000);
       }
     };
 
-    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+    const handleUnhandledRejection = async (event: PromiseRejectionEvent) => {
       const reason = event.reason;
       
       // Log error
@@ -64,7 +64,7 @@ function App() {
       if (!isNetworkError && 
           !errorMessage.includes('ResizeObserver') &&
           !errorMessage.includes('Non-Error promise rejection')) {
-        showError('An operation failed. Please try again.', 6000);
+        await showError('An operation failed. Please try again.', 6000);
       }
     };
 

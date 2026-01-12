@@ -37,7 +37,7 @@ launcher delete <version> - Delete launcher version`;
     ];
   }
 
-  async execute(args: string[], rl: readline.Interface): Promise<void> {
+  async execute(args: string[], rl: readline.Interface, commandName?: string): Promise<void> {
     if (args.length === 0) {
       this.printError('Subcommand required. Use "launcher list", "launcher create", etc.');
       this.printInfo('Type "help launcher" for usage information');

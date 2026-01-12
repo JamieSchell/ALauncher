@@ -6,6 +6,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Download, AlertCircle, CheckCircle, Loader2, RefreshCw } from 'lucide-react';
+import { platformAPI, isElectron } from '../api/platformSimple';
 
 interface UpdateInfo {
   version: string;
@@ -68,9 +69,9 @@ export default function LauncherUpdateModal({
       setStatus('error');
     };
 
-    window.electronAPI.onLauncherUpdateProgress(handleProgress);
-    window.electronAPI.onLauncherUpdateComplete(handleComplete);
-    window.electronAPI.onLauncherUpdateError(handleError);
+    isElectron && (window as any).electronAPI.onLauncherUpdateProgress(handleProgress);
+    isElectron && (window as any).electronAPI.onLauncherUpdateComplete(handleComplete);
+    isElectron && (window as any).electronAPI.onLauncherUpdateError(handleError);
 
     return () => {
       // Cleanup listeners
@@ -82,19 +83,19 @@ export default function LauncherUpdateModal({
     setStatus('downloading');
     setError(null);
     setDownloadProgress(0);
-    window.electronAPI.downloadLauncherUpdate(updateInfo, apiUrl);
+    if (isElectron) (window as any).electronAPI.downloadLauncherUpdate(updateInfo, apiUrl);
   };
 
   const handleInstall = async (path: string) => {
     try {
       setStatus('installing');
-      const result = await window.electronAPI.installLauncherUpdate(path, updateInfo.version);
+      const result = isElectron ? await (window as any).electronAPI.installLauncherUpdate(path, updateInfo.version) : { success: false, error: 'Not supported' };
       
       if (result.success) {
         setStatus('complete');
         // Auto-restart after 2 seconds
         setTimeout(() => {
-          window.electronAPI.restartLauncher();
+          if (isElectron) (window as any).electronAPI.restartLauncher();
         }, 2000);
       } else {
         setError(result.error || 'Installation failed');
@@ -108,7 +109,7 @@ export default function LauncherUpdateModal({
 
   const handleCancel = () => {
     if (status === 'downloading') {
-      window.electronAPI.cancelLauncherUpdate();
+      if (isElectron) (window as any).electronAPI.cancelLauncherUpdate();
     }
     if (!isRequired) {
       onClose();

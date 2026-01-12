@@ -15,7 +15,8 @@ declare global {
 import { API_CONFIG } from '../config/api';
 import { useAuthStore } from '../stores/authStore';
 import { useTranslation } from '../hooks/useTranslation';
-import { invoke } from '@tauri-apps/api/core';
+import { isElectron, isTauri } from '../api/platformSimple';
+import { tauriApi } from '../api/tauri';
 
 interface UpdateInfo {
   version: string;
@@ -45,18 +46,18 @@ export function useLauncherUpdate() {
     const getVersion = async () => {
       try {
         // Check if running in Tauri
-        if (window.__TAURI__) {
-          const version = await invoke('get_app_version');
+        if (isTauri) {
+          const version = await tauriApi.getAppVersion();
           console.log('[LauncherUpdate] Current Tauri version:', version);
-          setCurrentVersion(version);
+          setCurrentVersion(String(version));
           return;
         }
 
         // Check if running in Electron (legacy)
-        if (window.electronAPI) {
-          const version = await window.electronAPI.getAppVersion();
+        if (isElectron) {
+          const version = await (window as any).electronAPI.getAppVersion();
           console.log('[LauncherUpdate] Current Electron version:', version);
-          setCurrentVersion(version);
+          setCurrentVersion(String(version));
           return;
         }
 
@@ -87,13 +88,13 @@ export function useLauncherUpdate() {
 
     try {
       // Check if running in Tauri
-      if (window.__TAURI__) {
+      if (isTauri) {
         // For Tauri, updates are handled differently - use Tauri's built-in updater
         // For now, disable update checks in Tauri mode
         console.log('[LauncherUpdate] Running in Tauri mode, update check not yet implemented');
         setUpdateCheckResult({
           hasUpdate: false,
-          error: t('settings.updateCheckNotImplemented'),
+          error: undefined,
         });
         if (!silent) {
           setIsChecking(false);
@@ -102,8 +103,8 @@ export function useLauncherUpdate() {
       }
 
       // Check if running in Electron (legacy)
-      if (window.electronAPI) {
-        const result = await window.electronAPI.checkLauncherUpdate(currentVersion, API_CONFIG.baseUrl, accessToken || undefined);
+      if (isElectron) {
+        const result = await (window as any).electronAPI.checkLauncherUpdate(currentVersion, API_CONFIG.baseUrl, accessToken || undefined);
 
         console.log('[LauncherUpdate] Update check result:', result);
 
@@ -147,17 +148,18 @@ export function useLauncherUpdate() {
     }
   }, [currentVersion, t, accessToken]);
 
-  // Auto-check on mount (silent)
+  // Auto-check on mount (silent) - only run once
   useEffect(() => {
     if (currentVersion) {
       // Wait a bit before checking to avoid blocking initial load
       const timer = setTimeout(() => {
         checkForUpdates(true);
       }, 3000);
-      
+
       return () => clearTimeout(timer);
     }
-  }, [currentVersion, checkForUpdates]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentVersion]); // Only run when currentVersion changes, not on checkForUpdates changes
 
   return {
     updateCheckResult,
