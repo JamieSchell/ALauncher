@@ -15,6 +15,7 @@ import { initializeDatabase, disconnectDatabase } from './services/database';
 import { initializeKeys } from './services/crypto';
 import { apiLimiter } from './middleware/rateLimiter';
 import { requestIdMiddleware } from './middleware/requestId';
+import { auditMiddleware, cleanupOldAuditLogs } from './services/auditLog';
 
 // Import routes
 import authRoutes from './routes/auth';
@@ -157,6 +158,15 @@ async function bootstrap() {
     },
   }));
 
+  // Audit logging middleware (tracks sensitive operations)
+  // Logs to database for security audit trail
+  app.use(auditMiddleware([
+    '/api/auth',
+    '/api/users',
+    '/api/profiles',
+    '/api/admin',
+  ]));
+
   // Request logging (only errors)
   // Removed verbose request logging for cleaner console output
 
@@ -195,6 +205,21 @@ async function bootstrap() {
     }
   }, SESSION_CLEANUP_INTERVAL);
   console.log('   ✅ Session cleanup scheduled (every hour)');
+
+  // Periodic audit log cleanup (removes old logs)
+  // Runs daily to remove audit logs older than 90 days
+  const AUDIT_CLEANUP_INTERVAL = 24 * 60 * 60 * 1000; // 24 hours
+  const auditCleanupInterval = setInterval(async () => {
+    try {
+      const deleted = await cleanupOldAuditLogs(90); // Keep 90 days
+      if (deleted > 0) {
+        console.log(`[Cleanup] Removed ${deleted} old audit log(s) from database`);
+      }
+    } catch (error) {
+      console.error('[Cleanup] Failed to clean up old audit logs:', error);
+    }
+  }, AUDIT_CLEANUP_INTERVAL);
+  console.log('   ✅ Audit log cleanup scheduled (daily)');
 
   // CLI is now started separately via "npm run cli" command
   // Do not start CLI here to avoid conflicts with server startup
@@ -359,7 +384,19 @@ async function bootstrap() {
     }
 
     try {
-      // Step 4: Stop file watcher
+      // Step 4: Stop audit log cleanup interval
+      clearInterval(auditCleanupInterval);
+      logger.info('[Shutdown] ✓ Audit log cleanup interval stopped');
+    } catch (error) {
+      shutdownErrors.push({
+        component: 'Audit cleanup',
+        error: error instanceof Error ? error : new Error(String(error))
+      });
+      logger.error('[Shutdown] Error stopping audit cleanup:', error);
+    }
+
+    try {
+      // Step 5: Stop file watcher
       if (fileWatcherInitialized) {
         logger.info('[Shutdown] Stopping file watcher...');
         const { stopFileWatcher } = await import('./services/fileSyncService');
@@ -375,7 +412,7 @@ async function bootstrap() {
     }
 
     try {
-      // Step 5: Close database connection
+      // Step 6: Close database connection
       logger.info('[Shutdown] Closing database connection...');
       await disconnectDatabase();
       logger.info('[Shutdown] ✓ Database connection closed');

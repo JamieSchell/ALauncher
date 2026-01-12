@@ -498,3 +498,28 @@ model LauncherVersion {
   @@index([createdAt])
   @@map("launcher_versions")
 }
+
+// Audit Log - журнал аудита чувствительных операций
+model AuditLog {
+  id            String   @id @default(uuid())
+  userId        String?  // ID пользователя (если авторизован)
+  username      String?  // Имя пользователя
+  action        String   // Действие (POST /api/users, DELETE /api/profiles/123, etc.)
+  method        String   // HTTP метод
+  path          String   // Путь запроса
+  statusCode    Int      // HTTP статус код
+  ipAddress     String?  // IP адрес
+  userAgent     String?  // User agent
+  requestId     String?  // ID запроса для трассировки
+  success       Boolean  // Успешность операции
+  errorMessage  String?  @db.Text // Сообщение об ошибке (если была)
+  metadata      Json?    // Дополнительные данные (JSON)
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+  @@index([userId, createdAt])
+  @@index([requestId])
+  @@map("audit_logs")
+}
