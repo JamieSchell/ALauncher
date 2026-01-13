@@ -7,7 +7,8 @@
  * - Роль пользователя (USER/ADMIN)
  * - Состояние авторизации
  *
- * Использует Zustand с persist middleware для сохранения состояния в localStorage.
+ * Использует Zustand с persist middleware для сохранения состояния.
+ * Чувствительные данные (токены) шифруются перед сохранением.
  * Бизнес-логика аутентификации находится в API слое (api/auth.ts).
  *
  * @module stores/authStore
@@ -16,6 +17,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { PlayerProfile } from '@modern-launcher/shared';
+import { createSecureStorage } from '../utils/secureStorage';
 
 /**
  * Состояние аутентификации
@@ -70,6 +72,10 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
+      // Use encrypted storage to protect access tokens
+      storage: createSecureStorage({
+        prefix: 'secure-',
+      }),
     }
   )
 );

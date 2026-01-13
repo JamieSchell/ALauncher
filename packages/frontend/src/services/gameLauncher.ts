@@ -71,6 +71,9 @@ interface GameProcess {
     stderrOutput?: string;
     stdoutOutput?: string;
   };
+  // Track intervals for cleanup
+  monitorInterval?: NodeJS.Timeout;
+  cleanupTimeout?: NodeJS.Timeout;
 }
 
 class GameLauncherService {
@@ -264,7 +267,11 @@ class GameLauncherService {
           }>('check_game_process', { processId });
 
           if (!status.running) {
+            // Clear intervals
             clearInterval(checkInterval);
+            if (process.cleanupTimeout) {
+              clearTimeout(process.cleanupTimeout);
+            }
 
             // Процесс завершился
             process.status = 'stopped';
@@ -284,6 +291,9 @@ class GameLauncherService {
               await this.reportCrash(process);
             }
 
+            // Remove from active processes after completion
+            this.activeProcesses.delete(processId);
+
             await ErrorLoggerService.logInfo('GAME_PROCESS_ENDED', {
               component: 'GameLauncher',
               action: 'process_ended',
@@ -298,16 +308,35 @@ class GameLauncherService {
           }
         } catch (error) {
           console.error(`Error monitoring process ${processId}:`, error);
+          // Clear intervals on error
           clearInterval(checkInterval);
+          if (process.cleanupTimeout) {
+            clearTimeout(process.cleanupTimeout);
+          }
+          // Remove from active processes
+          this.activeProcesses.delete(processId);
         }
       }, 1000);
 
+      // Store interval reference for cleanup
+      process.monitorInterval = checkInterval;
+
       // Очистка через 10 минут (если процесс все еще работает)
-      setTimeout(() => {
+      const cleanupTimeout = setTimeout(() => {
         clearInterval(checkInterval);
+        // Remove from active processes if still present
+        if (this.activeProcesses.has(processId)) {
+          console.warn(`[GameLauncher] Process ${processId} timeout, cleaning up`);
+          this.activeProcesses.delete(processId);
+        }
       }, 10 * 60 * 1000);
+
+      // Store timeout reference
+      process.cleanupTimeout = cleanupTimeout;
     } catch (error) {
       console.error(`Failed to monitor process ${processId}:`, error);
+      // Clean up on failure
+      this.activeProcesses.delete(processId);
     }
   }
 
@@ -415,12 +444,30 @@ class GameLauncherService {
    * Очистка ресурсов
    */
   static cleanup() {
+    // Clear crash monitoring interval
     if (this.crashMonitoringInterval) {
       clearInterval(this.crashMonitoringInterval);
       this.crashMonitoringInterval = null;
     }
 
+    // Clear all process intervals and timeouts
+    for (const [processId, process] of this.activeProcesses.entries()) {
+      // Clear monitor interval
+      if (process.monitorInterval) {
+        clearInterval(process.monitorInterval);
+      }
+
+      // Clear cleanup timeout
+      if (process.cleanupTimeout) {
+        clearTimeout(process.cleanupTimeout);
+      }
+
+      console.log(`[GameLauncher] Cleaned up process ${processId}`);
+    }
+
+    // Clear all processes
     this.activeProcesses.clear();
+    console.log('[GameLauncher] All processes cleaned up');
   }
 
   /**
@@ -433,12 +480,36 @@ class GameLauncherService {
 
       const process = this.activeProcesses.get(processId);
       if (process) {
+        // Clear intervals
+        if (process.monitorInterval) {
+          clearInterval(process.monitorInterval);
+        }
+        if (process.cleanupTimeout) {
+          clearTimeout(process.cleanupTimeout);
+        }
+
         process.status = 'stopped';
+
+        // Remove from active processes
+        this.activeProcesses.delete(processId);
       }
 
       return true;
     } catch (error) {
       console.error(`Failed to kill process ${processId}:`, error);
+
+      // Clean up from active processes even if kill failed
+      const process = this.activeProcesses.get(processId);
+      if (process) {
+        if (process.monitorInterval) {
+          clearInterval(process.monitorInterval);
+        }
+        if (process.cleanupTimeout) {
+          clearTimeout(process.cleanupTimeout);
+        }
+        this.activeProcesses.delete(processId);
+      }
+
       return false;
     }
   }

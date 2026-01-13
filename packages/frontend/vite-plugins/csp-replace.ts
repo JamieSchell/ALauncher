@@ -98,22 +98,23 @@ export function cspReplace(): Plugin {
       const connectSrc = isDev
         ? `'self' http://localhost:* http://${hostPattern} http://${hostname}:* ws://localhost:* ws://${hostPattern} ws://${hostname}:* ws://${wsHostPattern} ws://${wsHostname}:* ws://${wsHostname}:* wss://localhost:* wss://${hostPattern} wss://${hostname}:* wss://${wsHostPattern} wss://${wsHostname}:* wss://${wsHostname}:*`
         : `'self' http: https: ws: wss: http://${hostPattern} https://${hostPattern} ws://${hostPattern} wss://${hostPattern}`;
-      
+
       // Script source: in production, remove unsafe-eval (only needed for dev HMR)
       // unsafe-inline may be needed for some inline scripts, but we try to minimize it
       // In production, Vite bundles all scripts, so we can use 'self' only
+      // For Tauri desktop apps in production, we still need to be restrictive
       const scriptSrc = isDev
         ? `'self' 'unsafe-inline' 'unsafe-eval' http://localhost:* http://${hostPattern} http://${hostname}:*`
-        : `'self'`;
-      
-      // Default source: For Tauri desktop apps, allow external resources
+        : `'self'`; // Production: ONLY self, no unsafe-* directives
+
+      // Default source: More restrictive for production
       const defaultSrc = isDev
         ? `'self' 'unsafe-inline' 'unsafe-eval' data: blob: http://localhost:* http://${hostPattern} http://${hostname}:* ws://localhost:* ws://${hostPattern} ws://${hostname}:* ws://${wsHostPattern} ws://${wsHostname}:* ws://${wsHostname}:* wss://localhost:* wss://${hostPattern} wss://${hostname}:* wss://${wsHostPattern} wss://${wsHostname}:* wss://${wsHostname}:*`
-        : `'self' data: blob: http: https: ws: wss: http://${hostPattern} https://${hostPattern} ws://${hostPattern} wss://${hostPattern}`;
-      
+        : `'self' data: blob: http: https: ws: wss:`; // Production: restrictive but allows external resources
+
       // Style source: unsafe-inline is acceptable for inline styles (common in React apps)
       // This is a reasonable trade-off between security and functionality
-      const csp = `default-src ${defaultSrc}; script-src ${scriptSrc}; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: http: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src ${connectSrc} https://fonts.googleapis.com https://fonts.gstatic.com;`;
+      const csp = `default-src ${defaultSrc}; script-src ${scriptSrc}; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: http: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src ${connectSrc} https://fonts.googleapis.com https://fonts.gstatic.com; object-src 'none'; frame-src 'none'; base-uri 'self'; form-action 'self';`;
       
       // Always log for debugging in production
       console.log('[CSP Plugin] API URL:', apiUrl);
