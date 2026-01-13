@@ -10,7 +10,11 @@
     "build": "npm run build:shared && npm run build --workspaces",
     "build:shared": "cd packages/shared && npm run build",
     "tauri:build": "cd packages/frontend && npm run tauri:build",
-    "clean": "rm -rf dist-builds packages/frontend/dist packages/backend/dist packages/shared dist node_modules"
+    "clean": "rm -rf dist-builds packages/frontend/dist packages/backend/dist packages/shared dist node_modules",
+    "build:windows": "cd packages/frontend && npx tauri build --target nsis,msi",
+    "build:linux": "cd packages/frontend && npx tauri build --target deb,rpm",
+    "build:macos": "cd packages/frontend && npx tauri build --target dmg,app",
+    "build:all": "cd packages/frontend && npx tauri build --target deb,rpm,appimage,dmg,app,nsis,msi"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.9.6",

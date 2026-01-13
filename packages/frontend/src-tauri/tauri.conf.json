@@ -41,7 +41,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["deb", "rpm"],
+    "targets": ["appimage", "deb", "rpm", "nsis", "msi", "dmg"],
     "createUpdaterArtifacts": false,
     "category": "Game",
     "shortDescription": "Modern Minecraft Launcher",
