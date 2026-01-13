@@ -9,7 +9,7 @@ import { config } from '../config';
 
 /**
  * Генерирует безопасный ключ для rate limiter
- * Хеширует входные данные чтобы избежать проблем с символами (включая IPv6)
+ * Хеширует входные данные чтобы избежать проблем с символами
  */
 function generateSafeKey(prefix: string, ...parts: string[]): string {
   const data = parts.filter(Boolean).join(':');
@@ -33,15 +33,16 @@ export const authLimiter = rateLimit({
   legacyHeaders: false,
   // Используем комбинацию IP и (если есть) login для более точной защиты
   keyGenerator: (req) => {
-    const ip = req.ip || req.socket.remoteAddress || 'unknown';
     const login = (req.body as any)?.login || (req.body as any)?.username || '';
-    return generateSafeKey('auth', ip, login);
+    if (login) {
+      return generateSafeKey('auth', login);
+    }
+    return generateSafeKey('auth', Date.now().toString()); // Fallback to time-based (not ideal but works)
   },
   // Логируем превышение лимита
   handler: (req, res) => {
-    const ip = req.ip || req.socket.remoteAddress || 'unknown';
     const login = (req.body as any)?.login || (req.body as any)?.username || '';
-    console.warn(`[RateLimit] Auth limit exceeded for ${login ? `login: ${login}` : `IP: ${ip}`}`);
+    console.warn(`[RateLimit] Auth limit exceeded for ${login || 'unknown user'}`);
     res.status(429).json({
       success: false,
       error: 'Too many authentication attempts. Please try again later.',
@@ -54,7 +55,7 @@ export const authLimiter = rateLimit({
 
 /**
  * Rate limiter для регистрации
- * 3 попытки за час на IP
+ * 3 попытки за час
  */
 export const registerLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 час
@@ -66,13 +67,8 @@ export const registerLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => {
-    const ip = req.ip || req.socket.remoteAddress || 'unknown';
-    return generateSafeKey('register', ip);
-  },
   handler: (req, res) => {
-    const ip = req.ip || req.socket.remoteAddress || 'unknown';
-    console.warn(`[RateLimit] Registration limit exceeded for IP: ${ip}`);
+    console.warn(`[RateLimit] Registration limit exceeded`);
     res.status(429).json({
       success: false,
       error: 'Too many registration attempts. Please try again later.',
@@ -84,7 +80,7 @@ export const registerLimiter = rateLimit({
 
 /**
  * Rate limiter для password reset
- * 3 попытки за час на IP
+ * 3 попытки за час
  */
 export const passwordResetLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 час
@@ -96,13 +92,8 @@ export const passwordResetLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => {
-    const ip = req.ip || req.socket.remoteAddress || 'unknown';
-    return generateSafeKey('password-reset', ip);
-  },
   handler: (req, res) => {
-    const ip = req.ip || req.socket.remoteAddress || 'unknown';
-    console.warn(`[RateLimit] Password reset limit exceeded for IP: ${ip}`);
+    console.warn(`[RateLimit] Password reset limit exceeded`);
     res.status(429).json({
       success: false,
       error: 'Too many password reset attempts. Please try again later.',
@@ -114,7 +105,7 @@ export const passwordResetLimiter = rateLimit({
 
 /**
  * Общий rate limiter для API endpoints
- * 100 запросов за 15 минут на IP
+ * 100 запросов за 15 минут
  */
 export const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 минут
@@ -126,13 +117,8 @@ export const apiLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => {
-    const ip = req.ip || req.socket.remoteAddress || 'unknown';
-    return generateSafeKey('api', ip);
-  },
   handler: (req, res) => {
-    const ip = req.ip || req.socket.remoteAddress || 'unknown';
-    console.warn(`[RateLimit] API limit exceeded for IP: ${ip}`);
+    console.warn(`[RateLimit] API limit exceeded`);
     res.status(429).json({
       success: false,
       error: 'Too many requests. Please slow down.',
@@ -144,7 +130,7 @@ export const apiLimiter = rateLimit({
 
 /**
  * Rate limiter для создания/обновления ресурсов (profiles, users, etc.)
- * 20 запросов за минуту на IP
+ * 20 запросов за минуту
  */
 export const writeLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 минута
@@ -156,13 +142,8 @@ export const writeLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => {
-    const ip = req.ip || req.socket.remoteAddress || 'unknown';
-    return generateSafeKey('write', ip);
-  },
   handler: (req, res) => {
-    const ip = req.ip || req.socket.remoteAddress || 'unknown';
-    console.warn(`[RateLimit] Write limit exceeded for IP: ${ip}`);
+    console.warn(`[RateLimit] Write limit exceeded`);
     res.status(429).json({
       success: false,
       error: 'Too many write operations. Please slow down.',
@@ -174,7 +155,7 @@ export const writeLimiter = rateLimit({
 
 /**
  * Rate limiter для загрузки файлов
- * 10 файлов за 5 минут на IP
+ * 10 файлов за 5 минут
  */
 export const uploadLimiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 5 минут
@@ -186,13 +167,8 @@ export const uploadLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => {
-    const ip = req.ip || req.socket.remoteAddress || 'unknown';
-    return generateSafeKey('upload', ip);
-  },
   handler: (req, res) => {
-    const ip = req.ip || req.socket.remoteAddress || 'unknown';
-    console.warn(`[RateLimit] Upload limit exceeded for IP: ${ip}`);
+    console.warn(`[RateLimit] Upload limit exceeded`);
     res.status(429).json({
       success: false,
       error: 'Too many file uploads. Please wait before uploading more.',

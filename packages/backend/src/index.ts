@@ -11,7 +11,7 @@ import { config } from './config';
 import { logger } from './utils/logger';
 import { errorHandler } from './middleware/errorHandler';
 import { initializeWebSocket, closeWebSocketServer } from './websocket';
-import { initializeDatabase, disconnectDatabase } from './services/database';
+import { initializeDatabase, disconnectDatabase, checkDatabaseHealth } from './services/database';
 import { initializeKeys } from './services/crypto';
 import { apiLimiter } from './middleware/rateLimiter';
 import { requestIdMiddleware } from './middleware/requestId';
@@ -31,6 +31,7 @@ import crashRoutes from './routes/crashes';
 import statisticsRoutes from './routes/statistics';
 import notificationRoutes from './routes/notifications';
 import launcherRoutes from './routes/launcher';
+import auditRoutes from './routes/audit';
 
 async function bootstrap() {
   const app = express();
@@ -242,14 +243,21 @@ async function bootstrap() {
   app.use('/api/statistics', apiLimiter, statisticsRoutes);
   app.use('/api/notifications', apiLimiter, notificationRoutes);
   app.use('/api/launcher', apiLimiter, launcherRoutes);
+  app.use('/api/audit', apiLimiter, auditRoutes);
 
   // Health check
-  app.get('/health', (req, res) => {
+  app.get('/health', async (req, res) => {
+    const dbHealthy = await checkDatabaseHealth();
+    const metrics = metricsService.getSummary();
+
     res.json({
-      status: 'ok',
+      status: dbHealthy ? 'ok' : 'degraded',
       timestamp: new Date().toISOString(),
       version: '1.0.0',
-      metrics: metricsService.getSummary(),
+      checks: {
+        database: dbHealthy ? 'ok' : 'unreachable',
+      },
+      metrics,
     });
   });
 
