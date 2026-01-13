@@ -47,7 +47,7 @@ const Badge = React.memo(function Badge({
   className = '',
   animated = false,
 }: BadgeProps) {
-  const styles = statusStyles[status];
+  const styles = statusStyles[status] || statusStyles.info; // Fallback to 'info' for unknown status
   const sizeClass = sizeStyles[size];
   const dotClass = dotSize[size];
 

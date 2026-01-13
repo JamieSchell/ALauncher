@@ -8,7 +8,6 @@ import UpdateCheckButton from '../components/UpdateCheckButton';
 import React, { useMemo, useState } from 'react';
 import { useTranslation } from '../hooks/useTranslation';
 import { platformAPI, isElectron, isTauri } from '../api/platformSimple';
-import { open } from '@tauri-apps/plugin-dialog';
 import { useToastContext } from '../providers/ToastProvider';
 import { Card, Button, Input } from '../components/ui';
 import { tauriApi } from '../api/tauri';
@@ -48,12 +47,12 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<'general' | 'java' | 'notifications' | 'updates'>('general');
 
   const handleSave = async () => {
-    await showSuccess(t('settings.saveSuccess'));
+    showSuccess(t('settings.saveSuccess'));
   };
 
   const handleAutoDetectJava = async () => {
     if (!isTauri && !isElectron) {
-      await showError('This feature is only available in the desktop app.');
+      showError('This feature is only available in the desktop app.');
       return;
     }
 
@@ -65,10 +64,10 @@ export default function SettingsPage() {
         setJavaDetections(result.installations);
         setShowJavaList(true);
       } else {
-        await showInfo(t('settings.autoDetectNoJava'));
+        showInfo(t('settings.autoDetectNoJava'));
       }
     } catch (error: any) {
-      await showError(`${t('settings.autoDetectFail')}: ${error.message}`);
+      showError(`${t('settings.autoDetectFail')}: ${error.message}`);
     } finally {
       setDetectingJava(false);
     }
@@ -81,12 +80,14 @@ export default function SettingsPage() {
 
   const handleBrowseJava = async () => {
     if (!isTauri && !isElectron) {
-      await showError(t('errors.unknownError'));
+      showError(t('errors.unknownError'));
       return;
     }
 
     if (isTauri) {
       try {
+        // Dynamic import to avoid errors in browser
+        const { open } = await import('@tauri-apps/plugin-dialog');
         const selectedPath = await open({
           multiple: false,
           filters: [{
@@ -98,22 +99,22 @@ export default function SettingsPage() {
         if (selectedPath) {
           const javaPath = Array.isArray(selectedPath) ? selectedPath[0] : selectedPath;
           settings.updateSettings({ javaPath });
-          await showSuccess(`${t('settings.javaPathLabel')}: ${javaPath}`);
+          showSuccess(`${t('settings.javaPathLabel')}: ${javaPath}`);
         }
       } catch (error: any) {
-        await showError(`${t('settings.browseFail')}: ${error.message}`);
+        showError(`${t('settings.browseFail')}: ${error.message}`);
       }
     } else if (isElectron) {
       try {
         const result = await (window as any).electronAPI.selectJavaFile();
         if (result.success && result.path) {
           settings.updateSettings({ javaPath: result.path });
-          await showSuccess(`${t('settings.javaPathLabel')}: ${result.path}\n${t('common.version') ?? 'Version'}: ${result.version || 'unknown'}`);
+          showSuccess(`${t('settings.javaPathLabel')}: ${result.path}\n${t('common.version') ?? 'Version'}: ${result.version || 'unknown'}`);
         } else if (!result.canceled) {
-          await showError(result.error || t('settings.browseFail'));
+          showError(result.error || t('settings.browseFail'));
         }
       } catch (error: any) {
-        await showError(`${t('settings.browseFail')}: ${error.message}`);
+        showError(`${t('settings.browseFail')}: ${error.message}`);
       }
     }
   };
@@ -127,7 +128,7 @@ export default function SettingsPage() {
     
     if (confirmed) {
       settings.resetSettings();
-      await showSuccess(t('settings.resetSuccess'));
+      showSuccess(t('settings.resetSuccess'));
     }
   };
 

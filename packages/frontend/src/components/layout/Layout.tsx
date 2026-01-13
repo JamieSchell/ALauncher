@@ -7,6 +7,7 @@ import { ReactNode, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import TitleBar from './TitleBar';
 import Sidebar from './Sidebar';
+import { isTauri } from '../../api/tauri';
 
 interface LayoutProps {
   children: ReactNode;
@@ -29,12 +30,15 @@ export default function Layout({ children }: LayoutProps) {
       </div>
 
       {/* TitleBar - Fixed at top, full width */}
+      {/* In browser: returns null (no padding needed) */}
+      {/* In Tauri: renders drag region and window controls */}
       <div className="fixed top-0 left-0 right-0 z-40">
         <TitleBar />
       </div>
 
       {/* Main Content Area - Below TitleBar */}
-      <div className="flex flex-1 min-w-0 pt-14 overflow-hidden">
+      {/* Add padding only in Tauri where TitleBar exists */}
+      <div className={`flex flex-1 min-w-0 ${isTauri ? 'pt-14' : ''} overflow-hidden`}>
         {!hideSidebar && <Sidebar />}
 
         {/* Main Content Area */}

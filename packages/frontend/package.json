@@ -1,6 +1,7 @@
 {
   "name": "@modern-launcher/frontend",
   "version": "1.0.280",
+  "type": "module",
   "description": "Modern Minecraft Launcher - Tauri Frontend",
   "homepage": "https://github.com/modern-launcher/modern-launcher",
   "author": {
@@ -8,13 +9,19 @@
     "email": "team@modern-launcher.com"
   },
   "scripts": {
+    "dev": "vite",
     "build": "vite build",
     "build:analyze": "vite build --mode analyze",
-    "tauri:build": "tauri build"
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build",
+    "tauri:build:windows": "tauri build --target nsis,msi",
+    "tauri:build:linux": "tauri build --target deb,rpm,appimage",
+    "tauri:build:windows-cross": "tauri build --runner cargo-xwin --target x86_64-pc-windows-msvc"
   },
   "dependencies": {
     "@modern-launcher/shared": "*",
-    "@tanstack/react-query": "^5.90.11",
+    "@tanstack/react-query": "5.59.20",
     "@tauri-apps/api": "^2.9.1",
     "@tauri-apps/plugin-dialog": "^2.4.2",
     "@tauri-apps/plugin-fs": "^2.4.4",
@@ -24,21 +31,27 @@
     "axios": "^1.13.2",
     "crypto-js": "^4.2.0",
     "dompurify": "^3.3.1",
-    "framer-motion": "^12.23.24",
-    "lucide-react": "^0.555.0",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "react-router-dom": "^7.9.6",
+    "framer-motion": "11.15.0",
+    "lucide-react": "^0.400.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-router-dom": "^6.26.0",
     "zod": "^4.3.5",
-    "zustand": "^5.0.8"
+    "zustand": "^4.5.0"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.1.18",
     "@tauri-apps/cli": "^2.9.6",
     "@types/crypto-js": "^4.2.2",
     "@types/dompurify": "^3.0.5",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
     "rollup-plugin-visualizer": "^5.14.0",
+    "tailwindcss": "^3.4.17",
     "typescript": "^5.9.3",
     "vite": "^7.2.4"
+  },
+  "overrides": {
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
   }
 }

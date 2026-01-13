@@ -23,7 +23,7 @@ import { API_CONFIG } from '../config/api';
 
 // Helper function to get server image URL
 const getServerImageUrl = (serverName: string): string => {
-  const baseUrl = API_CONFIG.baseUrl.replace('/api', '');
+  const baseUrl = API_CONFIG.baseUrlWithoutApi;
   // Sanitize server name for filename (remove special characters, keep alphanumeric and hyphens)
   const sanitizedName = serverName.replace(/[^a-zA-Z0-9-]/g, '-').replace(/-+/g, '-');
   return `${baseUrl}/uploads/server/${sanitizedName}.png`;
@@ -31,7 +31,7 @@ const getServerImageUrl = (serverName: string): string => {
 
 // Helper function to get default server image URL
 const getDefaultServerImageUrl = (): string => {
-  const baseUrl = API_CONFIG.baseUrl.replace('/api', '');
+  const baseUrl = API_CONFIG.baseUrlWithoutApi;
   return `${baseUrl}/uploads/server/Default.png`;
 };
 

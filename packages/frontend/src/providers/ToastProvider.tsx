@@ -9,11 +9,11 @@ import { ToastContainer } from '../components/Toast';
 import { Toast } from '../components/Toast';
 
 interface ToastContextType {
-  showToast: (message: string, type?: 'success' | 'error' | 'info' | 'warning', duration?: number) => Promise<string>;
-  showSuccess: (message: string, duration?: number) => Promise<string>;
-  showError: (message: string, duration?: number) => Promise<string>;
-  showWarning: (message: string, duration?: number) => Promise<string>;
-  showInfo: (message: string, duration?: number) => Promise<string>;
+  showToast: (message: string, type?: 'success' | 'error' | 'info' | 'warning', duration?: number) => string;
+  showSuccess: (message: string, duration?: number) => string;
+  showError: (message: string, duration?: number) => string;
+  showWarning: (message: string, duration?: number) => string;
+  showInfo: (message: string, duration?: number) => string;
 }
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);

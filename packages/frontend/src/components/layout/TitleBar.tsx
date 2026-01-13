@@ -96,8 +96,18 @@ export default function TitleBar() {
     }
   };
 
+  // В браузере скрываем TitleBar полностью (не занимаем место)
+  if (!isTauri) {
+    return null;
+  }
+
   return (
-    <header className="h-14 bg-dark-secondary/80 backdrop-blur-md border-b border-white/5 flex items-center justify-between px-6 select-none draggable region z-30" role="banner" aria-label="Application title bar">
+    <header
+      data-tauri-drag-region
+      className="h-14 bg-dark-secondary/80 backdrop-blur-md border-b border-white/5 flex items-center justify-between px-6 select-none z-30"
+      role="banner"
+      aria-label="Application title bar"
+    >
       <div className="flex items-center gap-3">
          <div className="flex space-x-1">
            <div className="w-1 h-6 bg-techno-cyan animate-pulse" />

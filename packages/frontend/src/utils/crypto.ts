@@ -27,7 +27,8 @@ const getEncryptionKey = (): string => {
     envKey = process.env.VITE_ENCRYPTION_KEY;
   }
 
-  if (envKey && envKey.length >= 32) {
+  if (envKey && envKey.length >= 16) {
+    // Use key directly - CryptoJS will handle it with PBKDF2
     return envKey;
   }
 

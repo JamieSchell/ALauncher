@@ -7,6 +7,7 @@
 
 import { StateStorage } from 'zustand/middleware';
 import { encrypt, decrypt } from './crypto';
+import CryptoJS from 'crypto-js';
 
 /**
  * Configuration for secure storage
@@ -32,6 +33,27 @@ interface SecureStorageConfig {
    */
   prefix?: string;
 }
+
+/**
+ * Try to decrypt with legacy SHA256 key (for backward compatibility)
+ */
+const tryLegacyDecrypt = (value: string, envKey: string): string | null => {
+  try {
+    // Try with SHA256 hashed key (old format)
+    const hashedKey = CryptoJS.SHA256(envKey).toString();
+    const bytes = CryptoJS.AES.decrypt(value, hashedKey);
+    const decrypted = bytes.toString(CryptoJS.enc.Utf8);
+
+    if (decrypted) {
+      console.warn('[secureStorage] Decrypted with legacy SHA256 key, will re-encrypt');
+      return decrypted;
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+};
 
 /**
  * Create a secure storage adapter with encryption
@@ -62,6 +84,17 @@ interface SecureStorageConfig {
 export const createSecureStorage = (config: SecureStorageConfig = {}): StateStorage => {
   const { storage = localStorage, prefix = 'secure-' } = config;
 
+  // Get env key for legacy decryption attempts
+  const getEnvKey = (): string | undefined => {
+    if (typeof import.meta !== 'undefined' && import.meta && import.meta.env) {
+      return import.meta.env.VITE_ENCRYPTION_KEY;
+    }
+    if (typeof process !== 'undefined' && process && process.env) {
+      return process.env.VITE_ENCRYPTION_KEY;
+    }
+    return undefined;
+  };
+
   return {
     getItem: (name: string): string | null => {
       try {
@@ -72,11 +105,20 @@ export const createSecureStorage = (config: SecureStorageConfig = {}): StateStor
           return null;
         }
 
-        // Try to decrypt the value
+        // Try to decrypt the value with current key
         try {
           const decrypted = decrypt(value);
           return decrypted;
-        } catch {
+        } catch (currentError) {
+          // Try legacy SHA256 key for backward compatibility
+          const envKey = getEnvKey();
+          if (envKey) {
+            const legacyDecrypted = tryLegacyDecrypt(value, envKey);
+            if (legacyDecrypted) {
+              return legacyDecrypted;
+            }
+          }
+
           // If decryption fails, return as-is (might be legacy unencrypted data)
           console.warn(`[secureStorage] Failed to decrypt ${name}, returning as-is`);
           return value;

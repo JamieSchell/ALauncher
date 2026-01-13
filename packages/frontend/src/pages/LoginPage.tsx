@@ -14,6 +14,7 @@ import { useTranslation } from '../hooks/useTranslation';
 import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
 import { usernameSchema, passwordSchema, validateInput } from '../utils/validation';
+import { tauriApi, isTauri } from '../api/tauri';
 
 const SAVED_USERNAME_KEY = 'alauncher-saved-username';
 
@@ -94,14 +95,14 @@ export default function LoginPage() {
           console.warn('Failed to save username:', error);
         }
         
-        await showSuccess('Login successful! Redirecting...');
+        showSuccess('Login successful! Redirecting...');
         setTimeout(() => {
           navigate('/');
         }, 1000);
       } else {
         setStage('ERROR');
         setError(result.error || 'Login failed. Please check your credentials.');
-        await showError(result.error || 'Login failed');
+        showError(result.error || 'Login failed');
         setTimeout(() => setStage('IDLE'), 2000);
       }
     } catch (error: any) {
@@ -109,7 +110,7 @@ export default function LoginPage() {
       setStage('ERROR');
       const errorMessage = error.message || 'An unexpected error occurred';
       setError(errorMessage);
-      await showError(errorMessage);
+      showError(errorMessage);
       setTimeout(() => setStage('IDLE'), 2000);
     } finally {
       setLoading(false);
@@ -121,11 +122,41 @@ export default function LoginPage() {
     handleLogin();
   };
 
+  const handleMinimize = async () => {
+    if (!isTauri) return;
+    try {
+      await tauriApi.minimizeWindow();
+    } catch (error) {
+      console.error('Failed to minimize window:', error);
+    }
+  };
+
+  const handleMaximize = async () => {
+    if (!isTauri) return;
+    try {
+      await tauriApi.maximizeWindow();
+    } catch (error) {
+      console.error('Failed to maximize window:', error);
+    }
+  };
+
+  const handleClose = async () => {
+    if (!isTauri) return;
+    try {
+      await tauriApi.closeWindow();
+    } catch (error) {
+      console.error('Failed to close window:', error);
+    }
+  };
+
   return (
     <div className="h-screen w-full flex flex-col bg-dark-primary relative overflow-hidden font-mono text-white">
       {/* Window Title Bar */}
-      <header className="h-14 flex items-center justify-between px-6 z-50 select-none bg-dark-secondary/80 backdrop-blur-md border-b border-white/10">
-        <div className="flex items-center gap-3">
+      <header
+        data-tauri-drag-region
+        className="h-14 flex items-center justify-between px-6 z-50 select-none bg-dark-secondary/80 backdrop-blur-md border-b border-white/10"
+      >
+        <div className="flex items-center gap-3" data-tauri-drag-region>
           <div className="flex space-x-1">
             <div className="w-1 h-6 bg-techno-cyan animate-pulse" />
             <div className="w-1 h-4 bg-magic-purple mt-2" />
@@ -136,15 +167,31 @@ export default function LoginPage() {
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <button className="w-8 h-8 flex items-center justify-center hover:bg-white/10 text-white border border-white/20 hover:border-white/40 transition-all duration-200 rounded">
-            <Minus className="w-4 h-4" />
-          </button>
-          <button className="w-8 h-8 flex items-center justify-center hover:bg-white/10 text-white border border-white/20 hover:border-white/40 transition-all duration-200 rounded">
-            <Square className="w-3 h-3" />
-          </button>
-          <button className="w-8 h-8 flex items-center justify-center hover:bg-status-error hover:text-white text-white border border-white/20 hover:border-status-error transition-all duration-200 rounded">
-            <X className="w-4 h-4" />
-          </button>
+          {isTauri && (
+            <>
+              <button
+                onClick={handleMinimize}
+                className="w-8 h-8 flex items-center justify-center hover:bg-white/10 text-white border border-white/20 hover:border-white/40 transition-all duration-200 rounded"
+                type="button"
+              >
+                <Minus className="w-4 h-4" />
+              </button>
+              <button
+                onClick={handleMaximize}
+                className="w-8 h-8 flex items-center justify-center hover:bg-white/10 text-white border border-white/20 hover:border-white/40 transition-all duration-200 rounded"
+                type="button"
+              >
+                <Square className="w-3 h-3" />
+              </button>
+              <button
+                onClick={handleClose}
+                className="w-8 h-8 flex items-center justify-center hover:bg-status-error hover:text-white text-white border border-white/20 hover:border-status-error transition-all duration-200 rounded"
+                type="button"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </>
+          )}
         </div>
       </header>
 

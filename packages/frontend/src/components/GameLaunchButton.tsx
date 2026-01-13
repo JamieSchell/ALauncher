@@ -45,19 +45,19 @@ export default function GameLaunchButton({
     try {
       // Check if running in Tauri desktop mode
       if (!platformAPI.getPlatformInfo().isTauri) {
-        await showError('Game launch is only available in desktop mode. Please use the desktop app instead of web browser.');
+        showError('Game launch is only available in desktop mode. Please use the desktop app instead of web browser.');
         return;
       }
 
       // Проверяем авторизацию
       if (!playerProfile || !accessToken) {
-        await showError(t('login.required'));
+        showError(t('login.required'));
         return;
       }
 
       // Проверяем Java
       if (!javaPath) {
-        await showError(t('settings.javaPathRequired'));
+        showError(t('settings.javaPathRequired'));
         return;
       }
 
@@ -69,7 +69,7 @@ export default function GameLaunchButton({
       });
 
       if (result.success) {
-        await showSuccess(t('game.launchSuccess'));
+        showSuccess(t('game.launchSuccess'));
 
         // Обновляем список процессов
         setActiveProcesses(GameLauncherService.getActiveProcesses());
@@ -87,7 +87,7 @@ export default function GameLaunchButton({
             onLaunchEnd?.();
 
             if (gameProcess?.status === 'crashed') {
-              await showError(t('game.crashDetected'));
+              showError(t('game.crashDetected'));
             }
           }
         }, 1000);
@@ -99,12 +99,12 @@ export default function GameLaunchButton({
           onLaunchEnd?.();
         }, 10 * 60 * 1000);
       } else {
-        await showError(result.error || t('game.launchFailed'));
+        showError(result.error || t('game.launchFailed'));
         setIsLaunching(false);
         onLaunchEnd?.();
       }
     } catch (error: any) {
-      await showError(error.message || t('game.launchFailed'));
+      showError(error.message || t('game.launchFailed'));
       setIsLaunching(false);
       onLaunchEnd?.();
     }
@@ -114,10 +114,10 @@ export default function GameLaunchButton({
     if (currentProcess) {
       try {
         await GameLauncherService.killGame(currentProcess.id);
-        await showSuccess(t('game.stopped'));
+        showSuccess(t('game.stopped'));
         setActiveProcesses(GameLauncherService.getActiveProcesses());
       } catch (error: any) {
-        await showError(error.message || t('game.stopFailed'));
+        showError(error.message || t('game.stopFailed'));
       }
     }
   };

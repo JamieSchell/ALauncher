@@ -12,9 +12,10 @@
     "tauri:build": "cd packages/frontend && npm run tauri:build",
     "clean": "rm -rf dist-builds packages/frontend/dist packages/backend/dist packages/shared dist node_modules",
     "build:windows": "cd packages/frontend && npx tauri build --target nsis,msi",
-    "build:linux": "cd packages/frontend && npx tauri build --target deb,rpm",
+    "build:linux": "cd packages/frontend && npx tauri build --target deb,rpm,appimage",
     "build:macos": "cd packages/frontend && npx tauri build --target dmg,app",
-    "build:all": "cd packages/frontend && npx tauri build --target deb,rpm,appimage,dmg,app,nsis,msi"
+    "build:all": "cd packages/frontend && npx tauri build --target deb,rpm,appimage,dmg,app,nsis,msi",
+    "build:windows-cross": "cd packages/frontend && npm run tauri build -- --runner cargo-xwin --target x86_64-pc-windows-msvc"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.9.6",

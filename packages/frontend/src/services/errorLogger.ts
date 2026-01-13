@@ -239,7 +239,7 @@ class ErrorLoggerService {
       });
 
       // Only log if we have access token (user is authenticated)
-      // For critical errors, we might want to log even without auth
+      // Skip logging for unauthenticated users to avoid CSRF errors
       if (accessToken) {
         try {
           await crashesAPI.logLauncherError(errorData);
@@ -249,13 +249,8 @@ class ErrorLoggerService {
           console.error('[ErrorLogger] Failed to log error:', logError);
         }
       } else {
-        // For unauthenticated errors, we can still try to log (backend will handle it)
-        try {
-          await crashesAPI.logLauncherError(errorData);
-        } catch (logError) {
-          // Silently fail
-          console.error('[ErrorLogger] Failed to log error (no auth):', logError);
-        }
+        // Skip logging for unauthenticated users - just log to console
+        console.log('[ErrorLogger] Skipping error logging for unauthenticated user');
       }
     } catch (loggerError) {
       // Prevent infinite loops - don't log logger errors

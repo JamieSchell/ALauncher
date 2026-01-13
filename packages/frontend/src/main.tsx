@@ -1,4 +1,3 @@
-import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { HashRouter } from 'react-router-dom';
@@ -67,15 +66,13 @@ if (typeof window !== 'undefined') {
 
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <HashRouter>
-          <ToastProvider>
-            <App />
-          </ToastProvider>
-        </HashRouter>
-      </QueryClientProvider>
-    </ErrorBoundary>
-  </React.StrictMode>
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <HashRouter>
+        <ToastProvider>
+          <App />
+        </ToastProvider>
+      </HashRouter>
+    </QueryClientProvider>
+  </ErrorBoundary>
 );

@@ -19,15 +19,15 @@ function App() {
 
   useEffect(() => {
     // Initialize all app systems
-    AppInitializer.initialize().catch(async (error) => {
+    AppInitializer.initialize().catch((error) => {
       logger.error('Failed to initialize app:', error);
-      await showError('Failed to initialize application properly');
+      showError('Failed to initialize application properly');
     });
 
     // Global error handlers
-    const handleError = async (event: ErrorEvent) => {
+    const handleError = (event: ErrorEvent) => {
       const error = event.error || new Error(event.message);
-      
+
       // Log error
       ErrorLoggerService.logErrorAuto(error, {
         component: 'GlobalErrorHandler',
@@ -36,18 +36,18 @@ function App() {
 
       // Show toast for critical errors (not network errors or expected errors)
       const errorMessage = error.message || String(error);
-      const isNetworkError = errorMessage.toLowerCase().includes('network') || 
+      const isNetworkError = errorMessage.toLowerCase().includes('network') ||
                             errorMessage.toLowerCase().includes('fetch') ||
                             errorMessage.toLowerCase().includes('connection');
-      
+
       if (!isNetworkError && !errorMessage.includes('ResizeObserver')) {
-        await showError('An unexpected error occurred. Please try refreshing the page.', 8000);
+        showError('An unexpected error occurred. Please try refreshing the page.', 8000);
       }
     };
 
-    const handleUnhandledRejection = async (event: PromiseRejectionEvent) => {
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
       const reason = event.reason;
-      
+
       // Log error
       ErrorLoggerService.logErrorAuto(reason, {
         component: 'GlobalErrorHandler',
@@ -56,16 +56,16 @@ function App() {
 
       // Show toast for critical promise rejections
       const errorMessage = reason?.message || String(reason);
-      const isNetworkError = errorMessage.toLowerCase().includes('network') || 
+      const isNetworkError = errorMessage.toLowerCase().includes('network') ||
                             errorMessage.toLowerCase().includes('fetch') ||
                             errorMessage.toLowerCase().includes('connection');
-      
+
       // Don't show toast for network errors (they're handled by API interceptor)
       // Don't show for known non-critical errors
-      if (!isNetworkError && 
+      if (!isNetworkError &&
           !errorMessage.includes('ResizeObserver') &&
           !errorMessage.includes('Non-Error promise rejection')) {
-        await showError('An operation failed. Please try again.', 6000);
+        showError('An operation failed. Please try again.', 6000);
       }
     };
 

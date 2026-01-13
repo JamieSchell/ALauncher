@@ -4,13 +4,13 @@
  */
 
 import { tauriApi } from '../api/tauri';
+import { isTauri } from '../api/tauri';
 import { useAuthStore } from '../stores/authStore';
 import { crashesAPI } from '../api/crashes';
 import { useSettingsStore } from '../stores/settingsStore';
 import ErrorLoggerService from './errorLogger';
 import { GameProfile } from '../api/types';
 import { platformAPI } from '../api/platformSimple';
-import { path } from '@tauri-apps/api';
 
 // Динамический импорт invoke для Tauri
 let invoke: Function | null = null;
@@ -99,6 +99,14 @@ class GameLauncherService {
    * Запуск игрового клиента
    */
   static async launchGame(options: LaunchOptions): Promise<LaunchResult> {
+    // Проверка: игра запускается только в Tauri
+    if (!isTauri) {
+      return {
+        success: false,
+        error: 'Game launch is only available in Tauri desktop app. Please use the desktop application instead of web browser.',
+      };
+    }
+
     const { profile, username, session, serverAddress, serverPort } = options;
     const { accessToken } = useAuthStore.getState();
     const { javaPath, ram, width, height, fullScreen } = useSettingsStore.getState();
@@ -126,6 +134,8 @@ class GameLauncherService {
         console.warn('[GameLauncher] Failed to get updates dir, using fallback:', e);
       }
 
+      // Dynamic import of path module (Tauri only)
+      const { path } = await import('@tauri-apps/api');
       const gameDir = await path.join(updatesDir, profile.clientDirectory || profile.version);
       const assetsDir = await path.join(updatesDir, 'assets');
 

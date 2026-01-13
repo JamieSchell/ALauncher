@@ -248,9 +248,21 @@ export const validateInput = <T extends z.ZodType>(
   if (!result.success) {
     const errors: Record<string, string> = {};
 
-    for (const error of result.error.errors) {
-      const key = error.path.join('.');
-      errors[key] = error.message;
+    // Проверяем, что error.errors существует и является массивом
+    if (result.error && 'errors' in result.error && Array.isArray(result.error.errors)) {
+      for (const error of result.error.errors) {
+        const key = error.path?.join('.') || '';
+        errors[key] = error.message;
+      }
+    } else if (result.error && 'issues' in result.error && Array.isArray(result.error.issues)) {
+      // Zod может использовать 'issues' вместо 'errors' в некоторых версиях
+      for (const issue of result.error.issues) {
+        const key = issue.path?.join('.') || '';
+        errors[key] = issue.message;
+      }
+    } else {
+      // Fallback для неизвестного формата ошибки
+      errors['_'] = 'Validation failed';
     }
 
     return { success: false, errors };

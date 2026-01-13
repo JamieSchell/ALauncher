@@ -44,7 +44,7 @@ import { Card, Badge, Button } from '../components/ui';
 
 // Helper function to get server image URL
 const getServerImageUrl = (serverName: string): string => {
-  const baseUrl = API_CONFIG.baseUrl.replace('/api', '');
+  const baseUrl = API_CONFIG.baseUrlWithoutApi;
   // Sanitize server name for filename (remove special characters, keep alphanumeric and hyphens)
   const sanitizedName = serverName.replace(/[^a-zA-Z0-9-]/g, '-').replace(/-+/g, '-');
   return `${baseUrl}/uploads/server/${sanitizedName}.png`;
@@ -52,7 +52,7 @@ const getServerImageUrl = (serverName: string): string => {
 
 // Helper function to get default server image URL
 const getDefaultServerImageUrl = (): string => {
-  const baseUrl = API_CONFIG.baseUrl.replace('/api', '');
+  const baseUrl = API_CONFIG.baseUrlWithoutApi;
   return `${baseUrl}/uploads/server/Default.png`;
 };
 
@@ -462,9 +462,16 @@ export default function ServerDetailsPage() {
       }
     };
 
-    platformAPI.onGameExit(handleExit);
-    platformAPI.onGameError(handleError);
-    platformAPI.onGameLog((log: string) => console.log('Game log:', log));
+    // Only register game event listeners in desktop environment (Tauri)
+    if (platformAPI.onGameExit && typeof platformAPI.onGameExit === 'function') {
+      platformAPI.onGameExit(handleExit);
+    }
+    if (platformAPI.onGameError && typeof platformAPI.onGameError === 'function') {
+      platformAPI.onGameError(handleError);
+    }
+    if (platformAPI.onGameLog && typeof platformAPI.onGameLog === 'function') {
+      platformAPI.onGameLog((log: string) => console.log('Game log:', log));
+    }
 
     return () => {};
   }, [currentSessionId, playerProfile?.username, profileData?.profile]);

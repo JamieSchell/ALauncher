@@ -52,14 +52,15 @@ const SAFE_METHODS = ['GET', 'HEAD', 'OPTIONS'];
 
 /**
  * Paths that are exempt from CSRF protection
+ * Note: When middleware is mounted on '/api', req.path excludes the '/api' prefix
  */
 const EXEMPT_PATHS = [
-  '/api/auth/login',
-  '/api/auth/register',
-  '/api/v1/auth/login',
-  '/api/v1/auth/register',
-  '/api/csrf-token',
-  '/api/v1/csrf-token',
+  '/auth/login',
+  '/auth/register',
+  '/v1/auth/login',
+  '/v1/auth/register',
+  '/csrf-token',
+  '/v1/csrf-token',
   '/health',
 ];
 
