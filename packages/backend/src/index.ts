@@ -16,9 +16,11 @@ import { initializeKeys } from './services/crypto';
 import { apiLimiter } from './middleware/rateLimiter';
 import { requestIdMiddleware } from './middleware/requestId';
 import { metricsMiddleware } from './middleware/metrics';
+import { csrfMiddleware, getCsrfTokenHandler } from './middleware/csrf';
 import { auditMiddleware, cleanupOldAuditLogs } from './services/auditLog';
 import { metricsService } from './services/metrics';
 import { cacheService } from './services/cache';
+import { csrfService } from './services/csrf';
 
 // Import routes
 import authRoutes from './routes/auth';
@@ -231,8 +233,19 @@ async function bootstrap() {
   // CLI is now started separately via "npm run cli" command
   // Do not start CLI here to avoid conflicts with server startup
 
+  // CSRF Protection - Apply to all state-changing routes
+  // CSRF middleware validates tokens for POST/PUT/DELETE/PATCH requests
+  // Safe methods (GET, HEAD, OPTIONS) are exempt
+  // Auth endpoints are exempt (they generate their own tokens)
+  app.use('/api/v1', csrfMiddleware);
+  app.use('/api', csrfMiddleware);
+
   // Routes (with rate limiting)
   // Note: auth routes have their own rate limiters applied in the route file
+
+  // CSRF token endpoints (for getting fresh tokens)
+  app.get('/api/v1/csrf-token', getCsrfTokenHandler);
+  app.get('/api/csrf-token', getCsrfTokenHandler);
 
   // API v1 - Versioned endpoints
   // All endpoints are also available under /api/v1/ for future compatibility

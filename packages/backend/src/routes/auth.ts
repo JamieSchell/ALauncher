@@ -11,6 +11,8 @@ import { validate } from '../validation';
 import { logger } from '../utils/logger';
 import { createAuthLogData } from '../utils/logSanitizer';
 import { authLimiter, registerLimiter } from '../middleware/rateLimiter';
+import { csrfService } from '../services/csrf';
+import { CSRF_RESPONSE_HEADER } from '../middleware/csrf';
 
 const router = Router();
 
@@ -70,6 +72,13 @@ router.post(
       // Decode token to get role
       const payload = AuthService.verifyToken(result.accessToken!);
 
+      // Generate CSRF token for authenticated user
+      const sessionId = `user-${payload?.userId || result.playerProfile?.uuid || login}`;
+      const csrfToken = csrfService.generateToken(sessionId);
+
+      // Set CSRF token in response header
+      res.setHeader(CSRF_RESPONSE_HEADER, csrfToken);
+
       res.json({
         success: true,
         data: {
@@ -103,6 +112,13 @@ router.post(
       if (!result.success) {
         throw new AppError(400, result.error || 'Registration failed');
       }
+
+      // Generate CSRF token for newly registered user
+      const sessionId = `user-${result.userId}`;
+      const csrfToken = csrfService.generateToken(sessionId);
+
+      // Set CSRF token in response header
+      res.setHeader(CSRF_RESPONSE_HEADER, csrfToken);
 
       res.status(201).json({
         success: true,
@@ -155,6 +171,14 @@ router.post('/refresh', async (req: Request, res: Response, next: NextFunction) 
     if (!result.success) {
       throw new AppError(401, result.error || 'Token refresh failed');
     }
+
+    // Generate CSRF token for refreshed session
+    const payload = AuthService.verifyToken(result.accessToken!);
+    const sessionId = `user-${payload?.userId || 'unknown'}`;
+    const csrfToken = csrfService.generateToken(sessionId);
+
+    // Set CSRF token in response header
+    res.setHeader(CSRF_RESPONSE_HEADER, csrfToken);
 
     res.json({
       success: true,
