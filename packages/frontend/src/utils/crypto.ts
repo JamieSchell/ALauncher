@@ -14,8 +14,18 @@ import CryptoJS from 'crypto-js';
  * The default key should ONLY be used for local development.
  */
 const getEncryptionKey = (): string => {
-  // Try to get key from environment
-  const envKey = import.meta.env.VITE_ENCRYPTION_KEY;
+  // Try to get key from environment (Vite env variables)
+  let envKey: string | undefined;
+
+  // Try Vite env (works in browser/Vite context)
+  if (typeof import.meta !== 'undefined' && import.meta && import.meta.env) {
+    envKey = import.meta.env.VITE_ENCRYPTION_KEY;
+  }
+
+  // Try process.env (works in Node.js/test context)
+  if (!envKey && typeof process !== 'undefined' && process && process.env) {
+    envKey = process.env.VITE_ENCRYPTION_KEY;
+  }
 
   if (envKey && envKey.length >= 32) {
     return envKey;
@@ -23,10 +33,15 @@ const getEncryptionKey = (): string => {
 
   // Fallback: generate a device-specific key
   // This is better than a hardcoded key, but still not ideal for production
-  const deviceKey = `alauncher-${navigator.userAgent}-${navigator.language}`;
+  const userAgent = typeof navigator !== 'undefined' ? navigator.userAgent : 'node';
+  const language = typeof navigator !== 'undefined' ? navigator.language : 'en';
+  const deviceKey = `alauncher-${userAgent}-${language}`;
 
   // In development, warn about using fallback key
-  if (import.meta.env.DEV) {
+  const isDev = typeof import.meta !== 'undefined' && import.meta && import.meta.env && import.meta.env.DEV;
+  const isDevNode = typeof process !== 'undefined' && process && process.env && process.env.NODE_ENV === 'development';
+
+  if (isDev || isDevNode) {
     console.warn(
       '[crypto] Using fallback encryption key. Set VITE_ENCRYPTION_KEY env var for production!'
     );
