@@ -3,6 +3,8 @@
  * All API URLs and connection settings should be configured here
  */
 
+import { logger } from '../utils/logger';
+
 // Get API base URL from environment variable
 // Format: http://domain.com:port or https://domain.com:port
 const getApiBaseUrl = (): string => {
@@ -20,7 +22,7 @@ const getApiBaseUrl = (): string => {
   
   // Production fallback - use default production server if not configured
   // This prevents the app from crashing if env var is missing
-  console.warn(
+  logger.warn(
     '⚠️ VITE_API_URL is not configured. Using default production server.\n' +
     'Please set VITE_API_URL in .env.prod file.\n' +
     'Example: VITE_API_URL=http://your-server.com:7240'
@@ -87,7 +89,7 @@ export const API_CONFIG = {
 };
 
 // Log configuration (always log for troubleshooting)
-console.log('[API Config]', {
+logger.log('[API Config]', {
   baseUrl: API_CONFIG.baseUrl,
   apiBaseUrl: API_CONFIG.apiBaseUrl,
   wsUrl: API_CONFIG.wsUrl,

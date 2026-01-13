@@ -2,9 +2,52 @@
  * Simple Modal Component - No Design
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
+
+/**
+ * Focus trap hook for accessibility
+ * Keeps keyboard focus within modal when open
+ */
+function useFocusTrap(isActive: boolean, containerRef: React.RefObject<HTMLElement>) {
+  useEffect(() => {
+    if (!isActive || !containerRef.current) return;
+
+    const focusableElements = containerRef.current.querySelectorAll(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+
+    const firstElement = focusableElements[0] as HTMLElement;
+    const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+
+    // Focus first element when modal opens
+    if (firstElement) {
+      firstElement.focus();
+    }
+
+    const handleTab = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return;
+
+      if (e.shiftKey) {
+        // Shift + Tab
+        if (document.activeElement === firstElement) {
+          e.preventDefault();
+          lastElement?.focus();
+        }
+      } else {
+        // Tab
+        if (document.activeElement === lastElement) {
+          e.preventDefault();
+          firstElement?.focus();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleTab);
+    return () => document.removeEventListener('keydown', handleTab);
+  }, [isActive, containerRef]);
+}
 
 export type ModalSize = 'small' | 'default' | 'large';
 
@@ -31,6 +74,23 @@ export default function Modal({
   closeOnOverlayClick = true,
   className = '',
 }: ModalProps) {
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  // Focus trap for accessibility
+  useFocusTrap(isOpen, modalRef);
+
+  // Store the element that had focus before modal opened
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const previousActiveElement = document.activeElement as HTMLElement;
+
+    return () => {
+      // Restore focus when modal closes
+      previousActiveElement?.focus();
+    };
+  }, [isOpen]);
+
   useEffect(() => {
     if (!isOpen) return;
 
@@ -120,15 +180,27 @@ export default function Modal({
   const modal = (
     <>
       {isOpen && (
-        <div style={overlayStyle} onClick={closeOnOverlayClick ? onClose : undefined}>
-          <div style={modalStyle} className={className} onClick={(e) => e.stopPropagation()}>
+        <div
+          style={overlayStyle}
+          onClick={closeOnOverlayClick ? onClose : undefined}
+          aria-hidden="true"
+        >
+          <div
+            ref={modalRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={title ? "modal-title" : undefined}
+            style={modalStyle}
+            className={className}
+            onClick={(e) => e.stopPropagation()}
+          >
             {title && (
               <div style={headerStyle}>
                 <div style={{ flex: 1 }}>
                   {typeof title === 'string' ? (
-                    <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 'bold' }}>{title}</h2>
+                    <h2 id="modal-title" style={{ margin: 0, fontSize: '20px', fontWeight: 'bold' }}>{title}</h2>
                   ) : (
-                    title
+                    <div id="modal-title">{title}</div>
                   )}
                 </div>
                 {showCloseButton && (
@@ -136,6 +208,8 @@ export default function Modal({
                     onClick={onClose}
                     style={closeButtonStyle}
                     aria-label="Close modal"
+                    aria-keyshortcuts="Escape"
+                    type="button"
                   >
                     <X size={20} />
                   </button>

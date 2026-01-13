@@ -13,6 +13,7 @@ import { ToastContainer } from '../components/Toast';
 import { useTranslation } from '../hooks/useTranslation';
 import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
+import { usernameSchema, passwordSchema, validateInput } from '../utils/validation';
 
 const SAVED_USERNAME_KEY = 'alauncher-saved-username';
 
@@ -43,20 +44,9 @@ export default function LoginPage() {
   const [passwordError, setPasswordError] = useState('');
 
   const validateUsername = (value: string): boolean => {
-    if (!value || value.trim().length === 0) {
-      setUsernameError('Username is required');
-      return false;
-    }
-    if (value.length < 3) {
-      setUsernameError('Username must be at least 3 characters');
-      return false;
-    }
-    if (value.length > 20) {
-      setUsernameError('Username must be less than 20 characters');
-      return false;
-    }
-    if (!/^[a-zA-Z0-9_-]+$/.test(value)) {
-      setUsernameError('Username can only contain letters, numbers, underscore and dash');
+    const result = validateInput(usernameSchema, value);
+    if (!result.success) {
+      setUsernameError(result.errors.username || result.errors[''] || 'Invalid username');
       return false;
     }
     setUsernameError('');
@@ -64,12 +54,9 @@ export default function LoginPage() {
   };
 
   const validatePassword = (value: string): boolean => {
-    if (!value || value.trim().length === 0) {
-      setPasswordError('Password is required');
-      return false;
-    }
-    if (value.length < 6) {
-      setPasswordError('Password must be at least 6 characters');
+    const result = validateInput(passwordSchema, value);
+    if (!result.success) {
+      setPasswordError(result.errors.password || result.errors[''] || 'Invalid password');
       return false;
     }
     setPasswordError('');

@@ -1,8 +1,8 @@
 /**
- * Simple Tabs Component - No Design
+ * Simple Tabs Component with full accessibility support
  */
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 
 export interface Tab {
   id: string;
@@ -39,6 +39,40 @@ export default function Tabs({
     onChange?.(tabId);
   };
 
+  // Keyboard navigation for tabs
+  const handleKeyDown = useCallback((e: React.KeyboardEvent, tabId: string) => {
+    const tabIds = tabs.map(t => t.id);
+    const currentIndex = tabIds.indexOf(tabId);
+
+    let nextIndex: number;
+
+    switch (e.key) {
+      case 'ArrowLeft':
+        e.preventDefault();
+        nextIndex = currentIndex > 0 ? currentIndex - 1 : tabIds.length - 1;
+        handleTabChange(tabIds[nextIndex]);
+        break;
+      case 'ArrowRight':
+        e.preventDefault();
+        nextIndex = currentIndex < tabIds.length - 1 ? currentIndex + 1 : 0;
+        handleTabChange(tabIds[nextIndex]);
+        break;
+      case 'Home':
+        e.preventDefault();
+        handleTabChange(tabIds[0]);
+        break;
+      case 'End':
+        e.preventDefault();
+        handleTabChange(tabIds[tabIds.length - 1]);
+        break;
+      case 'Enter':
+      case ' ':
+        e.preventDefault();
+        handleTabChange(tabId);
+        break;
+    }
+  }, [tabs, value, onChange]);
+
   const containerStyle: React.CSSProperties = {
     width: '100%',
   };
@@ -74,15 +108,22 @@ export default function Tabs({
 
   return (
     <div style={containerStyle} className={className}>
-      <div style={tabsListStyle}>
-        {tabs.map((tab) => {
+      <div role="tablist" aria-orientation="horizontal" style={tabsListStyle}>
+        {tabs.map((tab, index) => {
           const isActive = tab.id === activeTab;
           const isDisabled = tab.disabled;
 
           return (
             <button
               key={tab.id}
+              role="tab"
+              id={`tab-${tab.id}`}
+              aria-selected={isActive}
+              aria-controls={`tabpanel-${tab.id}`}
+              aria-disabled={isDisabled}
+              tabIndex={isActive ? 0 : -1}
               onClick={() => !isDisabled && handleTabChange(tab.id)}
+              onKeyDown={(e) => !isDisabled && handleKeyDown(e, tab.id)}
               disabled={isDisabled}
               style={
                 isDisabled
@@ -92,7 +133,7 @@ export default function Tabs({
                   : tabButtonStyle
               }
             >
-              {tab.icon && <span style={{ marginRight: '8px' }}>{tab.icon}</span>}
+              {tab.icon && <span aria-hidden="true" style={{ marginRight: '8px' }}>{tab.icon}</span>}
               {tab.label}
             </button>
           );
@@ -100,7 +141,12 @@ export default function Tabs({
       </div>
 
       {currentTab && (
-        <div>
+        <div
+          role="tabpanel"
+          id={`tabpanel-${currentTab.id}`}
+          aria-labelledby={`tab-${currentTab.id}`}
+          tabIndex={0}
+        >
           {currentTab.content}
         </div>
       )}

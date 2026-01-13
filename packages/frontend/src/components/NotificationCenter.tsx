@@ -103,20 +103,27 @@ export default function NotificationCenter({ className = '' }: NotificationCente
       {/* Bell Icon Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
+        aria-expanded={isOpen}
+        aria-controls="notification-dropdown"
+        aria-label={`${t('notifications.title')} - ${unreadCount} unread`}
         className={`relative w-8 h-8 flex items-center justify-center hover:bg-white/5 transition-colors rounded-full ${
           isOpen ? 'text-techno-cyan bg-white/5' : 'text-gray-400 hover:text-white'
         }`}
-        aria-label={t('notifications.title')}
       >
-        <Bell className="w-4 h-4" />
+        <Bell className="w-4 h-4" aria-hidden="true" />
         {unreadCount > 0 && (
-          <span className="absolute top-1.5 right-2 w-2 h-2 bg-techno-cyan rounded-full animate-pulse shadow-[0_0_5px_#00F5FF]" />
+          <span className="absolute top-1.5 right-2 w-2 h-2 bg-techno-cyan rounded-full animate-pulse shadow-[0_0_5px_#00F5FF]" aria-hidden="true" />
         )}
       </button>
 
       {/* Dropdown Panel */}
       {isOpen && (
-        <div className="absolute top-16 right-4 w-96 z-50 animate-fade-in-up origin-top-right">
+        <div
+          id="notification-dropdown"
+          role="region"
+          aria-label="Notifications"
+          className="absolute top-16 right-4 w-96 z-50 animate-fade-in-up origin-top-right"
+        >
           {/* Container with Glassmorphism and Neon Glow */}
           <div className="relative bg-dark-secondary/95 backdrop-blur-xl border border-techno-cyan/30 clip-cyber-corner shadow-[0_0_30px_rgba(0,0,0,0.8)]">
             {/* Glow effect behind */}

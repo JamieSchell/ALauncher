@@ -28,5 +28,5 @@ export type { TableProps, TableColumn } from './Table';
 export { default as Tabs } from './Tabs';
 export type { TabsProps, Tab } from './Tabs';
 
-export { LaunchButton, default as LaunchButtonDefault } from '../LaunchButton';
-export type { LaunchButtonProps } from '../LaunchButton';
+export { default as LaunchButton } from '../GameLaunchButton';
+export type { GameLaunchButtonProps as LaunchButtonProps } from '../GameLaunchButton';

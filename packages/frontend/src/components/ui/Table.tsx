@@ -1,8 +1,8 @@
 /**
- * Simple Table Component - No Design
+ * Simple Table Component with full accessibility support
  */
 
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 
 export interface TableColumn<T = any> {
   key: string;
@@ -29,11 +29,21 @@ export default function Table<T = any>({
   emptyMessage = 'No data available',
   className = '',
 }: TableProps<T>) {
+  const tableRef = useRef<HTMLTableElement>(null);
+
   const getRowKey = (row: T, index: number): string => {
     if (typeof rowKey === 'function') {
       return rowKey(row, index);
     }
     return (row as any)[rowKey] || `row-${index}`;
+  };
+
+  // Keyboard navigation for table rows
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTableRowElement>, row: T, index: number) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onRowClick?.(row, index);
+    }
   };
 
   const tableStyle: React.CSSProperties = {
@@ -74,12 +84,14 @@ export default function Table<T = any>({
 
   return (
     <div style={{ overflowX: 'auto' }} className={className}>
-      <table style={tableStyle}>
+      <table ref={tableRef} style={tableStyle} role="grid" aria-label="Data table">
         <thead>
           <tr>
             {columns.map((column) => (
               <th
                 key={column.key}
+                scope="col"
+                role="columnheader"
                 style={{
                   ...thStyle,
                   textAlign: column.align || 'left',
@@ -97,6 +109,9 @@ export default function Table<T = any>({
               key={getRowKey(row, index)}
               style={onRowClick ? trClickableStyle : undefined}
               onClick={() => onRowClick?.(row, index)}
+              onKeyDown={(e) => handleKeyDown(e, row, index)}
+              tabIndex={onRowClick ? 0 : undefined}
+              role="row"
               onMouseEnter={(e) => {
                 if (onRowClick) {
                   e.currentTarget.style.backgroundColor = '#f9fafb';
@@ -117,6 +132,7 @@ export default function Table<T = any>({
                 return (
                   <td
                     key={column.key}
+                    role="gridcell"
                     style={{
                       ...tdStyle,
                       textAlign: column.align || 'left',

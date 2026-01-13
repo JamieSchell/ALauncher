@@ -14,6 +14,56 @@ import { logger } from '../utils/logger';
 // Check if we're in Tauri
 const isTauriApp = isTauri;
 
+/**
+ * Default request timeout in milliseconds
+ */
+const DEFAULT_TIMEOUT = 30000; // 30 seconds
+
+/**
+ * Fetch with timeout and abort controller support
+ * Prevents requests from hanging indefinitely and supports external cancellation
+ *
+ * @param url - URL to fetch
+ * @param options - Fetch options (can include signal for AbortController)
+ * @param timeout - Timeout in milliseconds (default: 30000)
+ * @returns Fetch response
+ * @throws Error if timeout occurs or request is aborted
+ */
+async function fetchWithTimeout(
+  url: string,
+  options: RequestInit = {},
+  timeout: number = DEFAULT_TIMEOUT
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+  // If the request already has a signal (external AbortController), chain them
+  if (options.signal) {
+    options.signal.addEventListener('abort', () => {
+      clearTimeout(timeoutId);
+      controller.abort();
+    });
+  }
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      // Use the combined signal (either timeout controller or passed signal)
+      signal: options.signal || controller.signal,
+    });
+    clearTimeout(timeoutId);
+    return response;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if ((error as Error).name === 'AbortError') {
+      throw new Error(options.signal?.aborted
+        ? 'Request cancelled'
+        : `Request timeout after ${timeout}ms`);
+    }
+    throw error;
+  }
+}
+
 // Tauri-based API client for production
 const createTauriClient = () => {
   return {
@@ -29,16 +79,23 @@ const createTauriClient = () => {
 
       try {
         // For Tauri, we can use fetch API which doesn't have CORS restrictions
-        const response = await fetch(fullURL, {
-          method: config.method?.toUpperCase() || 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'User-Agent': 'ALauncher/1.0',
-            ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-            ...config.headers,
+        // Now with timeout and abort controller support
+        const response = await fetchWithTimeout(
+          fullURL,
+          {
+            method: config.method?.toUpperCase() || 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'User-Agent': 'ALauncher/1.0',
+              ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+              ...config.headers,
+            },
+            body: config.data ? JSON.stringify(config.data) : undefined,
+            // Pass through AbortController signal if provided
+            signal: config.signal as AbortSignal | undefined,
           },
-          body: config.data ? JSON.stringify(config.data) : undefined,
-        });
+          config.timeout || DEFAULT_TIMEOUT
+        );
 
         const responseData = await response.json();
 
@@ -57,7 +114,7 @@ const createTauriClient = () => {
 
         // Convert to axios-like error
         const axiosError: any = new Error(error.message || 'Network Error');
-        axiosError.code = error.code || 'ERR_NETWORK';
+        axiosError.code = error.message?.includes('timeout') ? 'ECONNABORTED' : (error.code || 'ERR_NETWORK');
         axiosError.config = config;
         axiosError.response = error.response || { status: 0 };
         axiosError.url = fullURL;

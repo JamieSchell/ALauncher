@@ -10,6 +10,7 @@ import NotFoundPage from './pages/NotFoundPage';
 import { Layout } from './components/layout';
 import LoadingSpinner from './components/LoadingSpinner';
 import { useToastContext } from './providers/ToastProvider';
+import { logger } from './utils/logger';
 
 function App() {
   const { updateCheckResult, currentVersion } = useLauncherUpdate();
@@ -19,7 +20,7 @@ function App() {
   useEffect(() => {
     // Initialize all app systems
     AppInitializer.initialize().catch(async (error) => {
-      console.error('Failed to initialize app:', error);
+      logger.error('Failed to initialize app:', error);
       await showError('Failed to initialize application properly');
     });
 
@@ -82,10 +83,10 @@ function App() {
   // Show update modal when update is available
   useEffect(() => {
     if (updateCheckResult?.hasUpdate && updateCheckResult.updateInfo) {
-      console.log('[App] Update available, showing modal:', updateCheckResult.updateInfo.version);
+      logger.log('[App] Update available, showing modal:', updateCheckResult.updateInfo.version);
       setShowUpdateModal(true);
     } else if (updateCheckResult?.error) {
-      console.warn('[App] Update check error:', updateCheckResult.error);
+      logger.warn('[App] Update check error:', updateCheckResult.error);
     }
   }, [updateCheckResult]);
 

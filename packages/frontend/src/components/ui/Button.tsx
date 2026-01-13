@@ -15,9 +15,14 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   fullWidth?: boolean;
   variant?: ButtonVariant;
   children: React.ReactNode;
+  ariaLabel?: string; // For icon-only buttons or custom labels
 }
 
-export default function Button({
+/**
+ * Memoized Button component to prevent unnecessary re-renders
+ * Only re-renders when props actually change
+ */
+const Button = React.memo(function Button({
   isLoading = false,
   leftIcon,
   rightIcon,
@@ -26,6 +31,7 @@ export default function Button({
   className = '',
   disabled,
   children,
+  ariaLabel,
   ...props
 }: ButtonProps) {
   const baseStyles = "relative inline-flex items-center justify-center text-xs font-bold tracking-wider transition-all duration-200 group overflow-hidden";
@@ -38,24 +44,35 @@ export default function Button({
     hex: "bg-dark-card border border-magic-purple text-magic-purple hover:bg-magic-purple hover:text-white clip-hex-button px-8 py-3 shadow-[0_0_10px_rgba(176,38,255,0.2)]",
   };
 
+  // Generate accessible label from children if not provided
+  const getDefaultLabel = () => {
+    if (typeof children === 'string') return children;
+    if (typeof children === 'number') return String(children);
+    return undefined;
+  };
+
   return (
     <button
       className={`${baseStyles} ${variants[variant]} ${isLoading ? 'opacity-80 cursor-wait' : ''} ${fullWidth ? 'w-full' : ''} ${className}`}
       disabled={disabled || isLoading}
+      aria-busy={isLoading}
+      aria-disabled={disabled || isLoading}
+      aria-label={ariaLabel || getDefaultLabel()}
+      type={props.type || 'button'}
       {...props}
     >
       {/* Decorative circuitry lines for Primary/Hex */}
       {(variant === 'primary' || variant === 'hex') && (
-        <div className="absolute inset-0 pointer-events-none opacity-30">
+        <div className="absolute inset-0 pointer-events-none opacity-30" aria-hidden="true">
            <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-current" />
            <div className="absolute top-0 left-0 w-3 h-3 border-t-2 border-l-2 border-current" />
         </div>
       )}
 
       {isLoading ? (
-        <Loader2 className="w-5 h-5 animate-spin mr-2" />
+        <Loader2 className="w-5 h-5 animate-spin mr-2" aria-hidden="true" />
       ) : leftIcon ? (
-        <span className="mr-2">{leftIcon}</span>
+        <span className="mr-2" aria-hidden="true">{leftIcon}</span>
       ) : null}
 
       <span className="relative z-10 flex items-center gap-2">
@@ -63,8 +80,10 @@ export default function Button({
       </span>
 
       {rightIcon && !isLoading && (
-        <span className="ml-2">{rightIcon}</span>
+        <span className="ml-2" aria-hidden="true">{rightIcon}</span>
       )}
     </button>
   );
-}
+});
+
+export default Button;

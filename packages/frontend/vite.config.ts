@@ -2,14 +2,30 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 import { cspReplace } from './vite-plugins/csp-replace';
+import { visualizer } from 'rollup-plugin-visualizer';
 
-export default defineConfig({
-  plugins: [
+export default defineConfig(({ mode }) => {
+  const plugins = [
     react({
       jsxRuntime: 'automatic',
     }),
     cspReplace(),
-  ],
+  ];
+
+  // Add bundle analyzer only in analyze mode
+  if (mode === 'analyze') {
+    plugins.push(
+      visualizer({
+        open: true,
+        filename: 'dist/stats.html',
+        gzipSize: true,
+        brotliSize: true,
+      })
+    );
+  }
+
+  return {
+    plugins,
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -91,4 +107,5 @@ export default defineConfig({
       },
     },
   },
+  };
 });

@@ -375,6 +375,24 @@ class GameLauncherService {
     if (this.crashMonitoringInterval) return;
 
     this.crashMonitoringInterval = setInterval(async () => {
+      const now = Date.now();
+      const ZOMBIE_THRESHOLD = 30 * 60 * 1000; // 30 minutes
+
+      // Очистка zombie процессов
+      for (const [processId, process] of this.activeProcesses.entries()) {
+        if (now - process.startTime > ZOMBIE_THRESHOLD) {
+          console.warn(`[GameLauncher] Cleaning up zombie process: ${processId}`);
+          // Clear intervals
+          if (process.monitorInterval) {
+            clearInterval(process.monitorInterval);
+          }
+          if (process.cleanupTimeout) {
+            clearTimeout(process.cleanupTimeout);
+          }
+          this.activeProcesses.delete(processId);
+        }
+      }
+
       // Проверяем все активные процессы
       for (const [processId, process] of this.activeProcesses.entries()) {
         if (process.status === 'starting' || process.status === 'running') {
