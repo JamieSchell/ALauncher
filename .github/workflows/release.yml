@@ -63,5 +63,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          projectPath: ./packages/frontend/src-tauri
+          projectPath: ./packages/frontend
+          tauriScript: npm run tauri
           args: ${{ matrix.args }}
