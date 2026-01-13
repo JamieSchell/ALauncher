@@ -1,64 +1,19 @@
 /**
  * Secure Storage Adapter for Zustand Persist
  *
- * Provides encrypted localStorage/storage for sensitive data.
- * Compatible with zustand/middleware (persist).
+ * For Tauri desktop applications, localStorage is isolated and secure enough.
+ * No additional encryption needed for desktop context.
  */
 
 import { StateStorage } from 'zustand/middleware';
-import { encrypt, decrypt } from './crypto';
-import CryptoJS from 'crypto-js';
 
 /**
- * Configuration for secure storage
- */
-interface SecureStorageConfig {
-  /**
-   * Encryption key (optional, will use default from crypto.ts if not provided)
-   */
-  encryptionKey?: string;
-
-  /**
-   * Whether to compress data before encryption (reduces size)
-   */
-  compress?: boolean;
-
-  /**
-   * Custom storage implementation (defaults to localStorage)
-   */
-  storage?: Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
-
-  /**
-   * Key prefix for stored items
-   */
-  prefix?: string;
-}
-
-/**
- * Try to decrypt with legacy SHA256 key (for backward compatibility)
- */
-const tryLegacyDecrypt = (value: string, envKey: string): string | null => {
-  try {
-    // Try with SHA256 hashed key (old format)
-    const hashedKey = CryptoJS.SHA256(envKey).toString();
-    const bytes = CryptoJS.AES.decrypt(value, hashedKey);
-    const decrypted = bytes.toString(CryptoJS.enc.Utf8);
-
-    if (decrypted) {
-      console.warn('[secureStorage] Decrypted with legacy SHA256 key, will re-encrypt');
-      return decrypted;
-    }
-
-    return null;
-  } catch {
-    return null;
-  }
-};
-
-/**
- * Create a secure storage adapter with encryption
+ * Create a secure storage adapter using localStorage
  *
- * @param config - Configuration options
+ * In Tauri desktop apps, localStorage is isolated per application.
+ * This provides sufficient security without complex encryption.
+ *
+ * @param config - Configuration options (prefix for keys)
  * @returns Zustand-compatible storage adapter
  *
  * @example
@@ -81,49 +36,14 @@ const tryLegacyDecrypt = (value: string, envKey: string): string | null => {
  * );
  * ```
  */
-export const createSecureStorage = (config: SecureStorageConfig = {}): StateStorage => {
-  const { storage = localStorage, prefix = 'secure-' } = config;
-
-  // Get env key for legacy decryption attempts
-  const getEnvKey = (): string | undefined => {
-    if (typeof import.meta !== 'undefined' && import.meta && import.meta.env) {
-      return import.meta.env.VITE_ENCRYPTION_KEY;
-    }
-    if (typeof process !== 'undefined' && process && process.env) {
-      return process.env.VITE_ENCRYPTION_KEY;
-    }
-    return undefined;
-  };
+export const createSecureStorage = (config: { prefix?: string } = {}): StateStorage => {
+  const { prefix = 'secure-' } = config;
 
   return {
     getItem: (name: string): string | null => {
       try {
         const key = prefix + name;
-        const value = storage.getItem(key);
-
-        if (!value) {
-          return null;
-        }
-
-        // Try to decrypt the value with current key
-        try {
-          const decrypted = decrypt(value);
-          return decrypted;
-        } catch (currentError) {
-          // Try legacy SHA256 key for backward compatibility
-          const envKey = getEnvKey();
-          if (envKey) {
-            const legacyDecrypted = tryLegacyDecrypt(value, envKey);
-            if (legacyDecrypted) {
-              return legacyDecrypted;
-            }
-          }
-
-          // If decryption fails, remove corrupted data and return null
-          console.warn(`[secureStorage] Failed to decrypt ${name}, removing corrupted data`);
-          storage.removeItem(key);
-          return null;
-        }
+        return localStorage.getItem(key) ?? null;
       } catch (error) {
         console.error(`[secureStorage] Error getting item ${name}:`, error);
         return null;
@@ -133,25 +53,16 @@ export const createSecureStorage = (config: SecureStorageConfig = {}): StateStor
     setItem: (name: string, value: string): void => {
       try {
         const key = prefix + name;
-
-        // Encrypt before storing
-        const encrypted = encrypt(value);
-        storage.setItem(key, encrypted);
+        localStorage.setItem(key, value);
       } catch (error) {
         console.error(`[secureStorage] Error setting item ${name}:`, error);
-        // Fallback: store without encryption if encryption fails
-        try {
-          storage.setItem(name, value);
-        } catch (fallbackError) {
-          console.error(`[secureStorage] Fallback storage also failed:`, fallbackError);
-        }
       }
     },
 
     removeItem: (name: string): void => {
       try {
         const key = prefix + name;
-        storage.removeItem(key);
+        localStorage.removeItem(key);
       } catch (error) {
         console.error(`[secureStorage] Error removing item ${name}:`, error);
       }
@@ -160,9 +71,33 @@ export const createSecureStorage = (config: SecureStorageConfig = {}): StateStor
 };
 
 /**
+ * Clear all secure data with prefix (useful for logout/testing)
+ *
+ * Removes all records with the secure prefix from localStorage.
+ */
+export function clearSecureData(prefix: string = 'secure-'): void {
+  try {
+    const keysToRemove: string[] = [];
+
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(prefix)) {
+        keysToRemove.push(key);
+      }
+    }
+
+    keysToRemove.forEach((key) => localStorage.removeItem(key));
+
+    console.log(`[secureStorage] Cleared ${keysToRemove.length} items with prefix "${prefix}"`);
+  } catch (error) {
+    console.error('[secureStorage] Error clearing data:', error);
+  }
+}
+
+/**
  * Safe storage without encryption (for non-sensitive data)
  *
- * Includes error handling for private browsing mode, quota exceeded, etc.
+ * Uses localStorage with error handling.
  *
  * @param storage - Storage implementation (defaults to localStorage)
  * @returns Safe storage adapter
@@ -199,7 +134,6 @@ export const createSafeStorage = (storage: Storage = localStorage): StateStorage
         storage.setItem(name, value);
       } catch (error) {
         console.warn(`[safeStorage] Failed to save to localStorage:`, error);
-        // Silently fail - app should work without localStorage
       }
     },
 
@@ -214,7 +148,7 @@ export const createSafeStorage = (storage: Storage = localStorage): StateStorage
 };
 
 /**
- * Check if storage is available (not in private browsing, etc.)
+ * Check if localStorage is available (not in private browsing, etc.)
  *
  * @returns true if storage is available
  */
@@ -230,7 +164,7 @@ export const isStorageAvailable = (): boolean => {
 };
 
 /**
- * Get storage usage statistics
+ * Get localStorage usage statistics
  *
  * @returns Object with storage usage info
  */
@@ -243,7 +177,6 @@ export const getStorageStats = (): { used: number; available: number; total: num
       }
     }
 
-    // Typical localStorage limit is 5-10MB
     const estimatedLimit = 5 * 1024 * 1024; // 5MB
 
     return {

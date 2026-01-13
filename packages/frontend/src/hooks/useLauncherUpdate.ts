@@ -17,6 +17,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useTranslation } from '../hooks/useTranslation';
 import { isElectron, isTauri } from '../api/platformSimple';
 import { tauriApi } from '../api/tauri';
+import { check, type Update } from '@tauri-apps/plugin-updater';
 
 interface UpdateInfo {
   version: string;
@@ -89,13 +90,42 @@ export function useLauncherUpdate() {
     try {
       // Check if running in Tauri
       if (isTauri) {
-        // For Tauri, updates are handled differently - use Tauri's built-in updater
-        // For now, disable update checks in Tauri mode
-        console.log('[LauncherUpdate] Running in Tauri mode, update check not yet implemented');
-        setUpdateCheckResult({
-          hasUpdate: false,
-          error: undefined,
-        });
+        // Use Tauri's built-in updater plugin
+        try {
+          const update = await check({});
+
+          if (update) {
+            console.log('[LauncherUpdate] Update available!', {
+              version: update.version,
+              date: update.date,
+              body: update.body,
+            });
+
+            setUpdateCheckResult({
+              hasUpdate: true,
+              updateInfo: {
+                version: update.version,
+                downloadUrl: '', // Tauri handles download internally
+                releaseNotes: update.body,
+                isRequired: false, // Tauri doesn't provide this info
+              },
+              isRequired: false,
+            });
+          } else {
+            console.log('[LauncherUpdate] No updates available');
+            setUpdateCheckResult({
+              hasUpdate: false,
+            });
+          }
+        } catch (error) {
+          console.error('[LauncherUpdate] Tauri update check failed:', error);
+          // If update check fails, don't show an error to user - might be network issue
+          setUpdateCheckResult({
+            hasUpdate: false,
+            error: undefined, // Silent fail for update checks
+          });
+        }
+
         if (!silent) {
           setIsChecking(false);
         }

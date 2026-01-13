@@ -239,7 +239,11 @@ async fn open_devtools(app: tauri::AppHandle) -> Result<(), String> {
 pub fn run() {
     let result = std::panic::catch_unwind(|| {
         tauri::Builder::default()
-            // БЕЗ ПЛАГИНОВ - они вызывали краш на Windows
+            // Updater plugin for automatic updates
+            .plugin(tauri_plugin_updater::Builder::new().build())
+            // Store plugin for persistent data storage
+            .plugin(tauri_plugin_store::Builder::new().build())
+            // БЕЗ ДРУГИХ ПЛАГИНОВ - они вызывали краш на Windows
             // .plugin(tauri_plugin_process::init())
             // .plugin(tauri_plugin_devtools::init())
             // .plugin(tauri_plugin_shell::init())

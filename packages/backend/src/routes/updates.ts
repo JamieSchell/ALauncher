@@ -17,6 +17,30 @@ import { AuthService } from '../services/auth';
 const router = Router();
 
 /**
+ * GET /api/updates/:target/:version
+ * Tauri updater endpoint - returns update info for launcher
+ *
+ * @param target - Target platform (e.g., x86_64-pc-windows-msvc, x86_64-unknown-linux-gnu)
+ * @param version - Current launcher version
+ *
+ * Returns Tauri updater JSON format with download URL, version, notes, and signature
+ */
+router.get('/:target/:version', async (req, res, next) => {
+  try {
+    const { target, version } = req.params;
+
+    // TODO: Implement proper version checking and update availability
+    // For now, just return no update available (empty response)
+    // This prevents the updater from trying to download non-existent updates
+
+    // Tauri updater expects empty response when no update is available
+    res.status(204).send();
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
  * GET /api/updates/:profileId/:dirType
  * Get hashed directory for updates
  */

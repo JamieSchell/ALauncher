@@ -94,9 +94,9 @@ async function bootstrap() {
     },
     credentials: true,
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'x-csrf-token', 'x-session-id'],
     optionsSuccessStatus: 204,
-    exposedHeaders: ['Content-Type', 'Authorization'],
+    exposedHeaders: ['Content-Type', 'Authorization', 'x-csrf-token'],
     // For null origin, set to * (Electron will accept this)
     preflightContinue: false,
   }));

@@ -11,9 +11,13 @@ import { Layout } from './components/layout';
 import LoadingSpinner from './components/LoadingSpinner';
 import { useToastContext } from './providers/ToastProvider';
 import { logger } from './utils/logger';
+import { useAuthHydration } from './stores/authStore';
 
 function App() {
   const { updateCheckResult, currentVersion } = useLauncherUpdate();
+
+  // Автоматическое восстановление сессии при загрузке приложения
+  useAuthHydration();
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const { showError } = useToastContext();
 

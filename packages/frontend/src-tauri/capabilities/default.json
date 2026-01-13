@@ -32,6 +32,12 @@
     "process:default",
     "shell:default",
     "shell:allow-open",
+    "updater:default",
+    "updater:allow-check",
+    "updater:allow-download",
+    "updater:allow-download-and-install",
+    "updater:allow-install",
+    "store:default",
     "core:webview:allow-internal-toggle-devtools",
     {
       "identifier": "shell:allow-open",

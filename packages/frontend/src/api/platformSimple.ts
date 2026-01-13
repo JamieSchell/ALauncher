@@ -4,6 +4,80 @@
  */
 
 import { isTauri } from './tauri';
+import { listen } from '@tauri-apps/api/event';
+
+/**
+ * Store registered callbacks for game events
+ * Allows for cleanup and prevents duplicate listeners
+ */
+interface GameEventCallbacks {
+  exit: Array<(exitCode: number) => void>;
+  error: Array<(error: string) => void>;
+  log: Array<(log: string) => void>;
+}
+
+const gameCallbacks: GameEventCallbacks = {
+  exit: [],
+  error: [],
+  log: [],
+};
+
+/**
+ * Flag indicating if event listeners have been registered
+ */
+let eventListenersRegistered = false;
+
+/**
+ * Register Tauri event listeners for game events
+ * This should be called once when the first callback is registered
+ */
+async function registerEventListeners(): Promise<void> {
+  if (eventListenersRegistered || !isTauri) {
+    return;
+  }
+
+  try {
+    // Listen for game exit events
+    await listen<number>('game://exit', (event) => {
+      console.log('[platformAPI] Game exit event received:', event.payload);
+      gameCallbacks.exit.forEach(callback => {
+        try {
+          callback(event.payload);
+        } catch (error) {
+          console.error('[platformAPI] Error in exit callback:', error);
+        }
+      });
+    });
+
+    // Listen for game error events
+    await listen<string>('game://error', (event) => {
+      console.log('[platformAPI] Game error event received:', event.payload);
+      gameCallbacks.error.forEach(callback => {
+        try {
+          callback(event.payload);
+        } catch (error) {
+          console.error('[platformAPI] Error in error callback:', error);
+        }
+      });
+    });
+
+    // Listen for game log events
+    await listen<string>('game://log', (event) => {
+      gameCallbacks.log.forEach(callback => {
+        try {
+          callback(event.payload);
+        } catch (error) {
+          console.error('[platformAPI] Error in log callback:', error);
+        }
+      });
+    });
+
+    eventListenersRegistered = true;
+    console.log('[platformAPI] Game event listeners registered successfully');
+  } catch (error) {
+    console.error('[platformAPI] Failed to register event listeners:', error);
+  }
+}
 
 /**
  * Check if running in Electron environment
@@ -159,8 +233,9 @@ export const platformAPI = {
       console.warn('[platformAPI] onGameExit called in browser - ignoring');
       return;
     }
-    // Will be implemented via Tauri events
-    console.warn('[platformAPI] onGameExit not yet implemented');
+    gameCallbacks.exit.push(callback);
+    // Ensure event listeners are registered
+    registerEventListeners().catch(console.error);
   },
 
   /**
@@ -172,8 +247,9 @@ export const platformAPI = {
       console.warn('[platformAPI] onGameError called in browser - ignoring');
       return;
     }
-    // Will be implemented via Tauri events
-    console.warn('[platformAPI] onGameError not yet implemented');
+    gameCallbacks.error.push(callback);
+    // Ensure event listeners are registered
+    registerEventListeners().catch(console.error);
   },
 
   /**
@@ -185,8 +261,9 @@ export const platformAPI = {
       console.warn('[platformAPI] onGameLog called in browser - ignoring');
       return;
     }
-    // Will be implemented via Tauri events
-    console.warn('[platformAPI] onGameLog not yet implemented');
+    gameCallbacks.log.push(callback);
+    // Ensure event listeners are registered
+    registerEventListeners().catch(console.error);
   },
 
   /**

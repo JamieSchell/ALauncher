@@ -244,41 +244,29 @@ export const tauriApi = {
       if (!isTauri) {
         throw new Error('Not running in Tauri environment');
       }
-      // Пробуем несколько способов открытия DevTools
-      const { getCurrentWebviewWindow, WebviewWindow } = await import('@tauri-apps/api/webviewWindow');
-      
-      // Способ 1: getCurrentWebviewWindow (рекомендуемый)
+
+      // In Tauri v2, openDevtools() is no longer available in the JS API
+      // DevTools can be opened via:
+      // 1. Keyboard shortcuts (F12, Ctrl+Shift+I) in debug builds
+      // 2. Custom Rust command
+
+      // Try to use a custom Rust command if available
       try {
-        const currentWindow = getCurrentWebviewWindow();
-        if (currentWindow) {
-          await currentWindow.openDevtools();
-          return;
+        await invoke('open_devtools');
+        return;
+      } catch (invokeError) {
+        // Command not available, provide helpful message
+        const isDev = import.meta.env?.DEV ?? false;
+        if (isDev) {
+          console.warn('[DevTools] In development, use F12 or Ctrl+Shift+I to open DevTools');
+        } else {
+          console.warn('[DevTools] DevTools are disabled in production builds for security');
         }
-      } catch (e) {
-        console.log('getCurrentWebviewWindow failed, trying alternatives...', e);
-      }
-      
-      // Способ 2: WebviewWindow.getCurrent()
-      try {
-        const currentWindow = WebviewWindow.getCurrent();
-        if (currentWindow) {
-          await currentWindow.openDevtools();
-          return;
-        }
-      } catch (e) {
-        console.log('WebviewWindow.getCurrent() failed, trying getByLabel...', e);
-      }
-      
-      // Способ 3: Получить окно по label
-      const window = await WebviewWindow.getByLabel('main');
-      if (window) {
-        await window.openDevtools();
+        // Don't throw - just log the message
         return;
       }
-      
-      throw new Error('No webview window found');
     } catch (error) {
-      console.error('Failed to open devtools:', error);
+      console.error('[DevTools] Error:', error);
       throw error;
     }
   },

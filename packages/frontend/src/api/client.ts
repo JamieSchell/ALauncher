@@ -11,6 +11,104 @@ import { isTauri } from './tauri';
 import ErrorLoggerService from '../services/errorLogger';
 import { logger } from '../utils/logger';
 
+/**
+ * CSRF Token Manager
+ * Handles fetching, storing, and including CSRF tokens in API requests
+ */
+class CsrfTokenManager {
+  private token: string | null = null;
+  private fetchPromise: Promise<string> | null = null;
+
+  /**
+   * Get the current CSRF token
+   * If no token exists, fetch one from the server
+   */
+  async getToken(): Promise<string | null> {
+    // Return existing token if available
+    if (this.token) {
+      return this.token;
+    }
+
+    // If already fetching, wait for that request
+    if (this.fetchPromise) {
+      return this.fetchPromise;
+    }
+
+    // Fetch new token
+    this.fetchPromise = this.fetchToken();
+
+    try {
+      const token = await this.fetchPromise;
+      return token;
+    } finally {
+      this.fetchPromise = null;
+    }
+  }
+
+  /**
+   * Fetch a new CSRF token from the server
+   */
+  private async fetchToken(): Promise<string | null> {
+    try {
+      const response = await fetch(`${API_CONFIG.apiBaseUrl}/csrf-token`, {
+        method: 'GET',
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        logger.warn('[CSRF] Failed to fetch token, status:', response.status);
+        return null;
+      }
+
+      // Get token from response header
+      const token = response.headers.get('x-csrf-token');
+      if (token) {
+        this.token = token;
+        logger.debug('[CSRF] Token fetched successfully');
+        return token;
+      }
+
+      // Try to get from response body
+      const data = await response.json();
+      if (data?.data?.token) {
+        this.token = data.data.token;
+        logger.debug('[CSRF] Token fetched successfully from body');
+        return this.token;
+      }
+
+      return null;
+    } catch (error) {
+      logger.error('[CSRF] Error fetching token:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Update the stored token from a response header
+   */
+  updateTokenFromResponse(headers: Headers | Record<string, string>): void {
+    const token = headers instanceof Headers
+      ? headers.get('x-csrf-token')
+      : headers['x-csrf-token'];
+
+    if (token) {
+      this.token = token;
+      logger.debug('[CSRF] Token updated from response header');
+    }
+  }
+
+  /**
+   * Clear the stored token (e.g., on logout)
+   */
+  clearToken(): void {
+    this.token = null;
+    logger.debug('[CSRF] Token cleared');
+  }
+}
+
+// Singleton instance
+const csrfManager = new CsrfTokenManager();
+
 // Check if we're in Tauri
 const isTauriApp = isTauri;
 
@@ -64,18 +162,39 @@ async function fetchWithTimeout(
   }
 }
 
+// Methods that require CSRF protection
+const CSRF_PROTECTED_METHODS = ['POST', 'PUT', 'DELETE', 'PATCH'];
+
 // Tauri-based API client for production
 const createTauriClient = () => {
   return {
     async request<T = any>(config: any): Promise<{ data: T; status: number; statusText: string; headers: any; config: any }> {
       const { accessToken } = useAuthStore.getState();
       const fullURL = `${config.baseURL || API_CONFIG.apiBaseUrl}${config.url}`;
+      const method = config.method?.toUpperCase() || 'GET';
 
       logger.api('[API Request via Tauri]', config.url || '', {
-        method: config.method?.toUpperCase() || 'GET',
+        method,
         baseURL: config.baseURL || API_CONFIG.apiBaseUrl,
         fullURL,
       });
+
+      // Build headers
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'User-Agent': 'ALauncher/1.0',
+        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        ...config.headers,
+      };
+
+      // Add CSRF token for protected methods
+      if (CSRF_PROTECTED_METHODS.includes(method)) {
+        const csrfToken = await csrfManager.getToken();
+        if (csrfToken) {
+          headers['x-csrf-token'] = csrfToken;
+          logger.debug('[CSRF] Token added to request');
+        }
+      }
 
       try {
         // For Tauri, we can use fetch API which doesn't have CORS restrictions
@@ -83,19 +202,17 @@ const createTauriClient = () => {
         const response = await fetchWithTimeout(
           fullURL,
           {
-            method: config.method?.toUpperCase() || 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-              'User-Agent': 'ALauncher/1.0',
-              ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-              ...config.headers,
-            },
+            method,
+            headers,
             body: config.data ? JSON.stringify(config.data) : undefined,
             // Pass through AbortController signal if provided
             signal: config.signal as AbortSignal | undefined,
           },
           config.timeout || DEFAULT_TIMEOUT
         );
+
+        // Update CSRF token from response
+        csrfManager.updateTokenFromResponse(response.headers);
 
         const responseData = await response.json();
 
@@ -124,7 +241,7 @@ const createTauriClient = () => {
         if (statusCode !== 401 && statusCode !== 404) {
           ErrorLoggerService.logApiError(axiosError, {
             component: 'API_Client_Tauri',
-            action: config.method?.toUpperCase() || 'REQUEST',
+            action: method,
           }).catch(() => {
             // Silently fail to prevent infinite loops
           });
@@ -160,12 +277,14 @@ const axiosInstance = axios.create({
   },
 });
 
-// Request interceptor to add auth token (only for axios)
+// Request interceptor to add auth token and CSRF token (only for axios)
 axiosInstance.interceptors.request.use(
-  (config) => {
+  async (config) => {
     const fullURL = `${config.baseURL}${config.url}`;
+    const method = config.method?.toUpperCase() || 'GET';
+
     logger.api('[API Request]', config.url, {
-      method: config.method?.toUpperCase(),
+      method,
       baseURL: config.baseURL,
       fullURL,
       headers: {
@@ -178,6 +297,16 @@ axiosInstance.interceptors.request.use(
     if (accessToken) {
       config.headers.Authorization = `Bearer ${accessToken}`;
     }
+
+    // Add CSRF token for protected methods
+    if (CSRF_PROTECTED_METHODS.includes(method)) {
+      const csrfToken = await csrfManager.getToken();
+      if (csrfToken) {
+        config.headers['x-csrf-token'] = csrfToken;
+        logger.debug('[CSRF] Token added to axios request');
+      }
+    }
+
     // Don't set Content-Type for FormData - let browser set it with boundary
     if (config.data instanceof FormData) {
       delete config.headers['Content-Type'];
@@ -192,8 +321,17 @@ axiosInstance.interceptors.request.use(
 
 // Response interceptor for error handling (only for axios)
 axiosInstance.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Update CSRF token from response headers
+    csrfManager.updateTokenFromResponse(response.headers);
+    return response;
+  },
   async (error) => {
+    // Update CSRF token from error response headers too
+    if (error.response?.headers) {
+      csrfManager.updateTokenFromResponse(error.response.headers);
+    }
+
     // Reduce noise for expected auth errors
     const isAuthError = error.response?.status === 401 && error.config?.url?.includes('/auth/login');
 
@@ -227,6 +365,8 @@ axiosInstance.interceptors.response.use(
       const url = error.config?.url;
       if (url && !url.includes('/auth/login')) {
         useAuthStore.getState().clearAuth();
+        // Also clear CSRF token on logout
+        csrfManager.clearToken();
       }
     }
     return Promise.reject(error);
@@ -237,3 +377,6 @@ axiosInstance.interceptors.response.use(
 export const apiClient = isTauriApp && !import.meta.env.DEV
   ? createTauriClient()
   : axiosInstance;
+
+// Export CSRF manager for use in auth store
+export { csrfManager };

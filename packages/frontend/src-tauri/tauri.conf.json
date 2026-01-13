@@ -88,6 +88,14 @@
     "shell": {
       "open": true,
       "scope": ["^/devtools$", "^/alauncher$", "^/appimage$", "^/usr/bin/.*alauncher.*"]
+    },
+    "updater": {
+      "active": true,
+      "endpoints": [
+        "https://api.alauncher.su/api/updates/{{target}}/{{current_version}}"
+      ],
+      "dialog": true,
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDQwMEZFQUMwRTcyNjU5QTQKUldRTHpLQ0g2WHNWVlJNWkpXVVBKUURraTVFQmJrRjlCVm1jQlEyVmVYQT09Cg=="
     }
   }
 }
