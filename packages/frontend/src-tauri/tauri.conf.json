@@ -41,7 +41,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["deb", "rpm", "msi", "nsis"],
+    "targets": ["deb", "rpm"],
     "createUpdaterArtifacts": false,
     "category": "Game",
     "shortDescription": "Modern Minecraft Launcher",
@@ -60,17 +60,22 @@
       "nsis": {
         "installerIcon": "icons/icon.ico",
         "installMode": "perMachine",
-        "languages": ["English", "Russian"]
+        "languages": ["English", "Russian"],
+        "displayLanguageSelector": true
+      },
+      "webviewInstallMode": {
+        "type": "embedBootstrapper"
       }
     },
     "macOS": {
       "entitlements": null,
       "providerShortName": null,
-      "signingIdentity": null
+      "signingIdentity": null,
+      "minimumSystemVersion": "10.13"
     },
     "linux": {
       "deb": {
-        "depends": ["libwebkit2gtk-4.0-37", "libappindicator3-1"]
+        "depends": ["libwebkit2gtk-4.1-0", "libappindicator3-1"]
       },
       "appimage": {
         "bundleMediaFramework": true
