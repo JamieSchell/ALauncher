@@ -55,8 +55,6 @@ export default function HomePage() {
   const [activeProcessId, setActiveProcessId] = useState<string | null>(null);
 
   const { data: profiles, isLoading } = useProfiles({
-
-  const { data: profiles, isLoading } = useProfiles({
     refetchOnWindowFocus: true,
   });
 
