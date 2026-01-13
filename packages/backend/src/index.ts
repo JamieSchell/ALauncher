@@ -233,6 +233,23 @@ async function bootstrap() {
 
   // Routes (with rate limiting)
   // Note: auth routes have their own rate limiters applied in the route file
+
+  // API v1 - Versioned endpoints
+  // All endpoints are also available under /api/v1/ for future compatibility
+  app.use('/api/v1/auth', authRoutes);
+  app.use('/api/v1/profiles', apiLimiter, profileRoutes);
+  app.use('/api/v1/updates', apiLimiter, updateRoutes);
+  app.use('/api/v1/users', apiLimiter, userRoutes);
+  app.use('/api/v1/servers', apiLimiter, serverRoutes);
+  app.use('/api/v1/client-versions', apiLimiter, clientVersionRoutes);
+  app.use('/api/v1/crashes', apiLimiter, crashRoutes);
+  app.use('/api/v1/statistics', apiLimiter, statisticsRoutes);
+  app.use('/api/v1/notifications', apiLimiter, notificationRoutes);
+  app.use('/api/v1/launcher', apiLimiter, launcherRoutes);
+  app.use('/api/v1/audit', apiLimiter, auditRoutes);
+
+  // Non-versioned endpoints (for backward compatibility)
+  // Existing clients can continue using /api/ endpoints
   app.use('/api/auth', authRoutes);
   app.use('/api/profiles', apiLimiter, profileRoutes);
   app.use('/api/updates', apiLimiter, updateRoutes);
@@ -262,6 +279,37 @@ async function bootstrap() {
   });
 
   // Metrics endpoint (admin only - for monitoring)
+  app.get('/api/v1/metrics', (req, res) => {
+    const metrics = metricsService.getMetrics();
+    res.json({
+      success: true,
+      data: {
+        uptime: Math.floor(metrics.uptime / 1000),
+        uptimeFormatted: formatUptime(metrics.uptime),
+        requests: {
+          total: metrics.requests.total,
+          byMethod: metrics.requests.byMethod,
+          byPath: Object.entries(metrics.requests.byPath)
+            .sort(([, a], [, b]) => b - a)
+            .slice(0, 20)
+            .reduce((acc, [path, count]) => ({ ...acc, [path]: count }), {}),
+          byStatus: metrics.requests.byStatus,
+        },
+        responseTimes: {
+          avg: Math.round(metrics.avgResponseTime),
+          min: metrics.responseTimes.min === Infinity ? 0 : metrics.responseTimes.min,
+          max: metrics.responseTimes.max,
+        },
+        errors: {
+          total: metrics.errors.total,
+          byType: metrics.errors.byType,
+        },
+        activeConnections: metrics.activeConnections,
+      },
+    });
+  });
+
+  // Non-versioned metrics endpoint (for backward compatibility)
   app.get('/api/metrics', (req, res) => {
     const metrics = metricsService.getMetrics();
     res.json({
@@ -305,7 +353,48 @@ async function bootstrap() {
     return `${seconds}s`;
   }
 
-  // Cache management endpoint (admin only - for debugging/monitoring)
+  // Cache management endpoints (admin only - for debugging/monitoring)
+  app.get('/api/v1/cache/stats', (req, res) => {
+    const stats = cacheService.getStats();
+    res.json({
+      success: true,
+      data: {
+        ...stats,
+        sizeFormatted: formatBytes(stats.size),
+        topEntries: cacheService.getAllEntries().slice(0, 10),
+      },
+    });
+  });
+
+  // Clear cache endpoint
+  app.post('/api/v1/cache/clear', (req, res) => {
+    cacheService.clear();
+    res.json({
+      success: true,
+      message: 'Cache cleared successfully',
+    });
+  });
+
+  // Invalidate cache by pattern
+  app.post('/api/v1/cache/invalidate', (req, res) => {
+    const { pattern } = req.body;
+
+    if (!pattern) {
+      return res.status(400).json({
+        success: false,
+        error: 'Pattern is required',
+      });
+    }
+
+    const count = cacheService.invalidate(pattern);
+    res.json({
+      success: true,
+      message: `Invalidated ${count} cache entries`,
+      data: { count },
+    });
+  });
+
+  // Non-versioned cache endpoints (for backward compatibility)
   app.get('/api/cache/stats', (req, res) => {
     const stats = cacheService.getStats();
     res.json({
