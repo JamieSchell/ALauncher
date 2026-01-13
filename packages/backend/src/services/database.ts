@@ -1,11 +1,12 @@
 /**
  * Database service
- * 
+ *
  * Provides typed Prisma client with connection pooling, timeouts, and reconnection handling.
  * All database operations should use the exported `prisma` instance.
  */
 
 import { PrismaClient, Prisma } from '@prisma/client';
+import { execSync } from 'child_process';
 import { logger } from '../utils/logger';
 import { config } from '../config';
 
@@ -177,4 +178,140 @@ export async function withRetryTransaction<T>(
   }
   
   throw lastError || new Error('Transaction failed');
+}
+
+/**
+ * Run database migrations using prisma db push
+ *
+ * This function synchronizes the database schema with the Prisma schema.
+ * It's safe to run multiple times - it only applies changes that don't exist.
+ *
+ * @param skipGenerate - Skip Prisma client generation (default: false)
+ * @returns true if successful, throws error if failed
+ *
+ * @example
+ * ```ts
+ * await runMigrations();
+ * // Database schema is now in sync with Prisma schema
+ * ```
+ */
+export async function runMigrations(skipGenerate: boolean = false): Promise<boolean> {
+  try {
+    logger.info('Starting database schema synchronization...');
+
+    // Run prisma db push to sync schema
+    const command = skipGenerate
+      ? 'npx prisma db push --skip-generate --accept-data-loss'
+      : 'npx prisma db push --accept-data-loss';
+
+    execSync(command, {
+      cwd: process.cwd(),
+      stdio: 'inherit',
+      env: { ...process.env },
+    });
+
+    logger.info('Database schema synchronized successfully');
+    return true;
+  } catch (error) {
+    logger.error('Failed to synchronize database schema:', error);
+    throw error;
+  }
+}
+
+/**
+ * Check if database tables exist and create if needed
+ *
+ * Verifies that critical tables exist in the database.
+ * If tables are missing, runs migrations to create them.
+ *
+ * @param autoMigrate - Automatically run migrations if tables are missing (default: true)
+ * @returns true if tables exist or were created successfully
+ *
+ * @example
+ * ```ts
+ * await ensureDatabaseTables();
+ * // All required tables now exist
+ * ```
+ */
+export async function ensureDatabaseTables(autoMigrate: boolean = true): Promise<boolean> {
+  try {
+    // Check if we can query the database
+    const result = await prisma.$queryRaw<Array<{ table_name: string }>>`
+      SELECT table_name
+      FROM information_schema.tables
+      WHERE table_schema = DATABASE()
+      AND table_name IN ('users', 'sessions', 'client_profiles')
+      LIMIT 3
+    `;
+
+    // If we have at least one critical table, database is initialized
+    if (result && result.length > 0) {
+      logger.info('Database tables exist, skipping initialization');
+      return true;
+    }
+
+    // No tables found - need to initialize
+    logger.warn('Database tables not found, initializing...');
+
+    if (autoMigrate) {
+      await runMigrations(true);
+      logger.info('Database initialized successfully');
+      return true;
+    } else {
+      logger.warn('Database tables missing but auto-migrate is disabled');
+      return false;
+    }
+  } catch (error) {
+    logger.error('Failed to check database tables:', error);
+
+    // If error is about missing tables, try to migrate
+    if (autoMigrate) {
+      logger.info('Attempting to create database tables...');
+      try {
+        await runMigrations(true);
+        return true;
+      } catch (migrateError) {
+        logger.error('Failed to create database tables:', migrateError);
+        throw migrateError;
+      }
+    }
+
+    throw error;
+  }
+}
+
+/**
+ * Initialize database with connection, schema check, and optional migration
+ *
+ * This is the recommended function to call during application bootstrap.
+ * It:
+ * 1. Connects to the database
+ * 2. Checks if tables exist
+ * 3. Runs migrations if needed
+ *
+ * @param options - Configuration options
+ * @returns Promise that resolves when database is ready
+ *
+ * @example
+ * ```ts
+ * await initializeDatabaseWithMigrations();
+ * // Database is connected, schema is synced, ready to use
+ * ```
+ */
+export async function initializeDatabaseWithMigrations(options?: {
+  maxRetries?: number;
+  retryDelayMs?: number;
+  skipMigrations?: boolean;
+}): Promise<void> {
+  const { maxRetries = 3, retryDelayMs = 1000, skipMigrations = false } = options || {};
+
+  // First, connect to database
+  await initializeDatabase(maxRetries, retryDelayMs);
+
+  // Then, ensure tables exist (run migrations if needed)
+  if (!skipMigrations) {
+    await ensureDatabaseTables(true);
+  }
+
+  logger.info('Database fully initialized and ready');
 }

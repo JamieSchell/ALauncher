@@ -11,7 +11,11 @@ import { config } from './config';
 import { logger } from './utils/logger';
 import { errorHandler } from './middleware/errorHandler';
 import { initializeWebSocket, closeWebSocketServer } from './websocket';
-import { initializeDatabase, disconnectDatabase, checkDatabaseHealth } from './services/database';
+import {
+  initializeDatabaseWithMigrations,
+  disconnectDatabase,
+  checkDatabaseHealth
+} from './services/database';
 import { initializeKeys } from './services/crypto';
 import { apiLimiter } from './middleware/rateLimiter';
 import { requestIdMiddleware } from './middleware/requestId';
@@ -179,10 +183,10 @@ async function bootstrap() {
   // Request logging (only errors)
   // Removed verbose request logging for cleaner console output
 
-  // Initialize database
+  // Initialize database with auto-migration
   console.log('\n🔌 Initializing services...');
-  await initializeDatabase();
-  console.log('   ✅ Database connected');
+  await initializeDatabaseWithMigrations();
+  console.log('   ✅ Database connected and schema verified');
 
   // Initialize RSA keys
   await initializeKeys();
