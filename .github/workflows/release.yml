@@ -48,12 +48,15 @@ jobs:
         with:
           workspaces: './packages/frontend/src-tauri -> target'
 
-      - name: install frontend dependencies
-        working-directory: ./packages/frontend
+      - name: install root dependencies
         run: npm install --legacy-peer-deps
 
       - name: build shared package
         run: npm run build:shared
+
+      - name: install frontend dependencies
+        working-directory: ./packages/frontend
+        run: npm install --legacy-peer-deps
 
       - name: build frontend
         working-directory: ./packages/frontend
