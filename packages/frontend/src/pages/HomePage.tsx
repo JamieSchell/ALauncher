@@ -52,6 +52,9 @@ export default function HomePage() {
   const [clientReady, setClientReady] = useState<Record<string, boolean>>({});
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [selectedServerId, setSelectedServerId] = useState<string | null>(null);
+  const [activeProcessId, setActiveProcessId] = useState<string | null>(null);
+
+  const { data: profiles, isLoading } = useProfiles({
 
   const { data: profiles, isLoading } = useProfiles({
     refetchOnWindowFocus: true,
@@ -160,7 +163,9 @@ export default function HomePage() {
       });
 
       if (result.success) {
-        setCurrentSessionId(result.sessionId || null);
+        setCurrentSessionId(result.processId || null);
+        setActiveProcessId(result.processId || null);
+        // Keep launching=true while game is running
       } else {
         setLaunchError(result.error || 'Failed to launch game');
         setLaunching(false);
@@ -178,6 +183,22 @@ export default function HomePage() {
       updateSettings({ selectedProfile: profiles[0].profile.id });
     }
   }, [profiles, selectedProfile, updateSettings]);
+
+  // Monitor game process status and reset launching state when game exits
+  React.useEffect(() => {
+    if (!activeProcessId) return;
+
+    const checkInterval = setInterval(() => {
+      const isRunning = GameLauncherService.isGameRunning();
+      if (!isRunning) {
+        // Game has exited, reset launching state
+        setLaunching(false);
+        setActiveProcessId(null);
+      }
+    }, 1000);
+
+    return () => clearInterval(checkInterval);
+  }, [activeProcessId]);
 
   if (isLoading) {
     return (

@@ -81,6 +81,7 @@ export default function ServerDetailsPage() {
   const [clientReady, setClientReady] = useState(false);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [lastStatusUpdate, setLastStatusUpdate] = useState<number | null>(null);
+  const [activeProcessId, setActiveProcessId] = useState<string | null>(null);
 
   const { data: profileData, isLoading, isError, error } = useProfile(id, {
     enabled: !!id,
@@ -111,6 +112,22 @@ export default function ServerDetailsPage() {
       setLastStatusUpdate(Date.now());
     }
   }, [serverStatus]);
+
+  // Monitor game process status and reset launching state when game exits
+  React.useEffect(() => {
+    if (!activeProcessId) return;
+
+    const checkInterval = setInterval(() => {
+      const isRunning = GameLauncherService.isGameRunning();
+      if (!isRunning) {
+        // Game has exited, reset launching state
+        setLaunching(false);
+        setActiveProcessId(null);
+      }
+    }, 1000);
+
+    return () => clearInterval(checkInterval);
+  }, [activeProcessId]);
 
   // Economy leaderboard query
   const {
@@ -967,6 +984,8 @@ export default function ServerDetailsPage() {
       if (result.success) {
         console.log('Game launched successfully, ProcessID:', result.processId);
         setLaunchError(null);
+        setActiveProcessId(result.processId || null);
+        // Keep launching=true while game is running
 
         try {
           let osPlatform: string | null = null;
