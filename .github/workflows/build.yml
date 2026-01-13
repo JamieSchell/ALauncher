@@ -50,16 +50,20 @@ jobs:
         with:
           node-version: '22'
 
+      - name: Install root dependencies
+        run: npm ci
+
       - name: Install frontend dependencies
         working-directory: packages/frontend
         run: npm ci
 
-      - name: Build application
-        uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          projectPath: packages/frontend
+      - name: Build frontend
+        working-directory: packages/frontend
+        run: npm run build
+
+      - name: Build Tauri application
+        working-directory: packages/frontend
+        run: npx tauri build
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
