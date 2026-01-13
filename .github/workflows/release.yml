@@ -5,142 +5,63 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version (e.g. 1.0.0)'
-        required: true
-        default: '1.0.0'
-
-env:
-  CARGO_TERM_COLOR: always
 
 jobs:
   build:
+    permissions:
+      contents: write
     strategy:
       fail-fast: false
       matrix:
         include:
-          - platform: 'linux'
-            os: 'ubuntu-24.04'
-            target: 'x86_64-unknown-linux-gnu'
-            artifacts: 'deb,rpm,appimage'
-          - platform: 'windows'
-            os: 'windows-latest'
-            target: 'x86_64-pc-windows-msvc'
-            artifacts: 'nsis,msi'
-          - platform: 'macos'
-            os: 'macos-latest'
-            target: 'x86_64-apple-darwin'
-            artifacts: 'dmg,app'
+          - platform: 'macos-latest'
+            args: '--target universal-apple-darwin'
+          - platform: 'ubuntu-24.04'
+            args: ''
+          - platform: 'windows-latest'
+            args: ''
 
-    name: Build on ${{ matrix.platform }}
-
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.platform }}
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: install dependencies (ubuntu only)
+        if: matrix.platform == 'ubuntu-24.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: setup node
         uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'npm'
 
-      - name: Install dependencies (Ubuntu)
-        if: matrix.platform == 'linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev \
-            build-essential \
-            curl \
-            wget \
-            file \
-            libappindicator3-1 \
-            librsvg2-2
-
-      - name: Install Rust
+      - name: install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.target }}
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
           workspaces: './packages/frontend/src-tauri -> target'
 
-      - name: Install frontend dependencies
+      - name: install frontend dependencies
         working-directory: ./packages/frontend
         run: npm ci
 
-      - name: Build shared package
+      - name: build shared package
         run: npm run build:shared
 
-      - name: Build frontend
+      - name: build frontend
         working-directory: ./packages/frontend
         run: npm run build
 
-      - name: Build Tauri app
-        working-directory: ./packages/frontend
-        env:
-          TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
-          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
-        run: npm run tauri build --target ${{ matrix.artifacts }}
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: ALauncher-${{ matrix.platform }}-${{ github.ref_name }}
-          path: |
-            packages/frontend/src-tauri/target/release/bundle/*/
-            packages/frontend/src-tauri/target/release/bundle/*/*/
-            !packages/frontend/src-tauri/target/release/bundle/*/data
-            !packages/frontend/src-tauri/target/release/bundle/**/data
-          retention-days: 30
-
-      - name: Upload release assets
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            packages/frontend/src-tauri/target/release/bundle/*/*
-            packages/frontend/src-tauri/target/release/bundle/*/*/*
-            !packages/frontend/src-tauri/target/release/bundle/*/data
-            !packages/frontend/src-tauri/target/release/bundle/**/data
-          fail_on_unmatched_files: false
-          generate_release_notes: true
+      - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  release-summary:
-    name: Release Summary
-    runs-on: ubuntu-latest
-    needs: build
-    if: always()
-
-    steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-
-      - name: Create release summary
-        run: |
-          echo "# ALauncher Release Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Version:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## Download Installers" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          for dir in ALauncher-*; do
-            if [ -d "$dir" ]; then
-              echo "### $(echo $dir | sed 's/ALaunchER-//;s/-.*//')" >> $GITHUB_STEP_SUMMARY
-              echo '```' >> $GITHUB_STEP_SUMMARY
-              find "$dir" -type f -name "*.deb" -o -name "*.rpm" -o -name "*.AppImage" -o -name "*.msi" -o -name "*.exe" -o -name "*.dmg" -o -name "*.app" | while read file; do
-                size=$(du -h "$file" | cut -f1)
-                echo "- $(basename $file) ($size)" >> $GITHUB_STEP_SUMMARY
-              done
-              echo '```' >> $GITHUB_STEP_SUMMARY
-              echo "" >> $GITHUB_STEP_SUMMARY
-            fi
-          done
+        with:
+          projectPath: ./packages/frontend/src-tauri
+          args: ${{ matrix.args }}
