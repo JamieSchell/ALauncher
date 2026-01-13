@@ -17,17 +17,17 @@ const getApiBaseUrl = (): string => {
   
   // Development fallback
   if (import.meta.env.DEV) {
-    return 'http://5.188.119.206:7240';
+    return 'http://localhost:7240';
   }
-  
-  // Production fallback - use default production server if not configured
+
+  // Production fallback - use official API domain
   // This prevents the app from crashing if env var is missing
   logger.warn(
     '⚠️ VITE_API_URL is not configured. Using default production server.\n' +
     'Please set VITE_API_URL in .env.prod file.\n' +
-    'Example: VITE_API_URL=http://your-server.com:7240'
+    'Example: VITE_API_URL=https://api.alauncher.su'
   );
-  return 'http://5.188.119.206:7240';
+  return 'https://api.alauncher.su';
 };
 
 // Get WebSocket URL from environment variable

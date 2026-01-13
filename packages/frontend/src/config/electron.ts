@@ -90,17 +90,17 @@ const getApiBaseUrl = (): string => {
   if (process.env.NODE_ENV === 'development') {
     return 'http://localhost:7240';
   }
-  
-  // Production fallback - use default production server
+
+  // Production fallback - use official API domain
   console.warn(
     '⚠️  VITE_API_URL is not configured in Electron main process.\n' +
-    'Using default production server: http://5.188.119.206:7240\n' +
+    'Using default production server: https://api.alauncher.su\n' +
     'Please set VITE_API_URL in .env file or pass as environment variable.\n' +
-    'Example: VITE_API_URL=http://your-server.com:7240'
+    'Example: VITE_API_URL=https://api.alauncher.su'
   );
-  
+
   // Return default production server instead of localhost
-  return 'http://5.188.119.206:7240';
+  return 'https://api.alauncher.su';
 };
 
 // Get WebSocket URL
@@ -125,8 +125,8 @@ const getWebSocketUrl = (): string => {
     const protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
     return `${protocol}//${url.host}/ws`;
   } catch {
-    // Fallback if URL parsing fails
-    return 'ws://5.188.119.206/ws';
+    // Fallback if URL parsing fails - use official domain
+    return 'wss://api.alauncher.su/ws';
   }
 };
 

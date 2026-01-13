@@ -45,7 +45,7 @@ export function cspReplace(): Plugin {
       // Read .env file to get API URL
       const envFile = readEnvFile();
       const isProduction = process.env.NODE_ENV === 'production';
-      const defaultUrl = isProduction ? 'http://5.188.119.206:7240' : 'http://localhost:7240';
+      const defaultUrl = isProduction ? 'https://api.alauncher.su' : 'http://localhost:7240';
       const apiUrl = process.env.VITE_API_URL || envFile.VITE_API_URL || defaultUrl;
       
       let apiHost: string;
