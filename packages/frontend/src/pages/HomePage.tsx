@@ -225,7 +225,7 @@ export default function HomePage() {
                     {/* Status */}
                     <div className="text-center">
                       <div className="text-[10px] text-gray-600 font-mono mb-1">СТАТУС</div>
-                      <div className={`text-sm font-bold ${statusColor}`}>
+                      <div className={`text-sm font-bold ${isOnline ? 'text-status-success' : 'text-status-error'}`}>
                         {isOnline ? 'ОНЛАЙН' : 'ОФФЛАЙН'}
                       </div>
                     </div>
