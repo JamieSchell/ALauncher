@@ -119,9 +119,10 @@ export const createSecureStorage = (config: SecureStorageConfig = {}): StateStor
             }
           }
 
-          // If decryption fails, return as-is (might be legacy unencrypted data)
-          console.warn(`[secureStorage] Failed to decrypt ${name}, returning as-is`);
-          return value;
+          // If decryption fails, remove corrupted data and return null
+          console.warn(`[secureStorage] Failed to decrypt ${name}, removing corrupted data`);
+          storage.removeItem(key);
+          return null;
         }
       } catch (error) {
         console.error(`[secureStorage] Error getting item ${name}:`, error);
